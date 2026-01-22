@@ -152,6 +152,7 @@
         <BeachHouseManager v-else-if="activePage === 'beach-house'" />
         <AbtManager v-else-if="activePage === 'abt'" />
         <BlogManager v-else-if="activePage === 'blog'" />
+        <ExpertsManager v-else-if="activePage === 'experts'" />
       </v-container>
     </v-main>
   </div>
@@ -161,13 +162,15 @@
 import BeachHouseManager from '@/components/beach/BeachHouseManager.vue'
 import AbtManager from '@/components/abt/AbtManager.vue'
 import BlogManager from '@/components/blog/BlogManager.vue'
+import ExpertsManager from '@/components/experts/ExpertsManager.vue'
 
 export default {
   name: 'DashboardPage',
   components: {
     BeachHouseManager,
     AbtManager,
-    BlogManager
+    BlogManager,
+    ExpertsManager
   },
   data() {
     return {
@@ -192,7 +195,7 @@ export default {
             { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase' },
             { title: 'Beach House', icon: 'mdi-beach', page: 'beach-house' }, 
             { title: 'Blog Receptivo', icon: 'mdi-post-outline', page: 'blog' },
-            { title: 'Brazilian Experts', icon: 'mdi-map' },    
+            { title: 'Brazilian Experts', icon: 'mdi-map', page: 'experts' }
           ]
         },
         {

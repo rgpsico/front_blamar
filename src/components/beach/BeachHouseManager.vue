@@ -28,7 +28,7 @@
       >
         <template slot="item.imagens" slot-scope="{ item }">
           <v-avatar size="40" class="beach-manager__avatar">
-            <img :src="primaryImage(item)" :alt="item.name || item.nome" />
+            <img :src="primaryImage(item)" :alt="item.name || item.nome" @error="onImageError" />
           </v-avatar>
         </template>
         <template slot="item.ativo" slot-scope="{ item }">
@@ -151,6 +151,7 @@ export default {
       search: '',
       items: [],
       cidades: [],
+      defaultImage: require('@/assets/default.png'),
       dialog: false,
       dialogDelete: false,
       editedIndex: -1,
@@ -211,7 +212,7 @@ export default {
       if (item.foto1) {
         return `http://www.blumar.com.br/global/main_site/images/beach_house/${item.foto1}`
       }
-      return 'https://via.placeholder.com/80x80?text=BH'
+      return this.defaultImage
     },
     isActive(item) {
       return item.is_active === true || item.ativo === 't' || item.ativo === true
@@ -220,6 +221,9 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
+    },
+    onImageError(event) {
+      event.target.src = this.defaultImage
     },
     async fetchBeachHouses() {
       this.loading = true

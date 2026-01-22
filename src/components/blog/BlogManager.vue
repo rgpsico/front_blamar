@@ -80,7 +80,7 @@
       >
         <template slot="item.cover_photo" slot-scope="{ item }">
           <v-avatar size="40" class="blog-manager__avatar">
-            <img :src="coverImage(item)" :alt="item.title" />
+            <img :src="coverImage(item)" :alt="item.title" @error="onImageError" />
           </v-avatar>
         </template>
         <template slot="item.is_active" slot-scope="{ item }">
@@ -237,6 +237,7 @@ export default {
       classificacoes: [],
       cidades: [],
       regioes: [],
+      defaultImage: require('@/assets/default.png'),
       dialog: false,
       dialogDelete: false,
       citySearch: '',
@@ -322,7 +323,7 @@ export default {
     },
     coverImage(item) {
       if (!item.cover_photo) {
-        return 'https://via.placeholder.com/80x80?text=POST'
+        return this.defaultImage
       }
       if (item.cover_photo.startsWith('http')) {
         return item.cover_photo
@@ -341,6 +342,9 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
+    },
+    onImageError(event) {
+      event.target.src = this.defaultImage
     },
     buildQuery() {
       const params = new URLSearchParams()

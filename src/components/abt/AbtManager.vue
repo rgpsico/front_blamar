@@ -66,7 +66,7 @@
       >
         <template slot="item.imagens" slot-scope="{ item }">
           <v-avatar size="40" class="abt-manager__avatar">
-            <img :src="primaryImage(item)" :alt="item.name || item.nome" />
+            <img :src="primaryImage(item)" :alt="item.name || item.nome" @error="onImageError" />
           </v-avatar>
         </template>
         <template slot="item.ativo" slot-scope="{ item }">
@@ -175,6 +175,7 @@ export default {
       saving: false,
       items: [],
       cidades: [],
+      defaultImage: require('@/assets/default.png'),
       dialog: false,
       dialogDelete: false,
       filters: {
@@ -231,7 +232,7 @@ export default {
       if (item.imagens && item.imagens.length) {
         return item.imagens[0].image_url
       }
-      return 'https://via.placeholder.com/80x80?text=ABT'
+      return this.defaultImage
     },
     isActive(item) {
       return item.is_active === true || item.ativo === 't' || item.ativo === true
@@ -240,6 +241,9 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
+    },
+    onImageError(event) {
+      event.target.src = this.defaultImage
     },
     buildQuery() {
       const params = new URLSearchParams()
