@@ -89,6 +89,12 @@
           </v-chip>
         </template>
         <template slot="item.actions" slot-scope="{ item }">
+          <v-btn icon small color="info" :href="postUrl(item)" target="_blank">
+            <v-icon>mdi-eye</v-icon>
+          </v-btn>
+          <v-btn icon small color="secondary" @click="openStats(item)">
+            <v-icon>mdi-chart-bar</v-icon>
+          </v-btn>
           <v-btn icon small color="primary" @click="openEdit(item)">
             <v-icon>mdi-pencil</v-icon>
           </v-btn>
@@ -209,6 +215,55 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="dialogStats" max-width="600px">
+      <v-card>
+        <v-card-title class="blog-manager__dialog-title">
+          <span>Insights do Post</span>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="dialogStats = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <div class="blog-manager__stats-title">
+            {{ statsItem.title || statsItem.titulo }}
+          </div>
+          <v-row class="mt-4">
+            <v-col cols="12" sm="4">
+              <v-card class="blog-manager__stat" elevation="3">
+                <span>Visualizacoes</span>
+                <strong>{{ statsMock.views }}</strong>
+              </v-card>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-card class="blog-manager__stat" elevation="3">
+                <span>Tempo medio</span>
+                <strong>{{ statsMock.avgTime }}</strong>
+              </v-card>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-card class="blog-manager__stat" elevation="3">
+                <span>Taxa de retorno</span>
+                <strong>{{ statsMock.returnRate }}</strong>
+              </v-card>
+            </v-col>
+          </v-row>
+          <v-divider class="my-4"></v-divider>
+          <div class="blog-manager__stats-subtitle">Top locais</div>
+          <v-list dense>
+            <v-list-item v-for="(item, index) in statsMock.topPlaces" :key="index">
+              <v-list-item-content>
+                <v-list-item-title>{{ item.place }}</v-list-item-title>
+              </v-list-item-content>
+              <v-list-item-action>
+                <v-chip small color="primary" outlined>{{ item.views }}</v-chip>
+              </v-list-item-action>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="4000">
       {{ snackbar.text }}
       <template v-slot:action="{ attrs }">
@@ -240,6 +295,7 @@ export default {
       defaultImage: require('@/assets/default.png'),
       dialog: false,
       dialogDelete: false,
+      dialogStats: false,
       citySearch: '',
       filters: {
         titulo: '',
@@ -249,6 +305,7 @@ export default {
         regiao: ''
       },
       editedIndex: -1,
+      statsItem: {},
       editedItem: {
         id: null,
         titulo: '',
@@ -284,6 +341,17 @@ export default {
           reader.onerror = () => failure('Falha ao carregar imagem.')
           reader.readAsDataURL(blobInfo.blob())
         }
+      },
+      statsMock: {
+        views: '12.480',
+        avgTime: '3m 28s',
+        returnRate: '41%',
+        topPlaces: [
+          { place: 'Sao Paulo', views: '3.120' },
+          { place: 'Rio de Janeiro', views: '2.450' },
+          { place: 'Belo Horizonte', views: '1.870' },
+          { place: 'Salvador', views: '1.420' }
+        ]
       },
       statusOptions: [
         { text: 'Ativo', value: 'true' },
@@ -329,6 +397,10 @@ export default {
         return item.cover_photo
       }
       return `${IMAGE_BASE}${item.cover_photo}`
+    },
+    postUrl(item) {
+      const id = item.id || item.pk_blognacional || ''
+      return `https://www.blumar.com.br/blog/post.php?post=${id}`
     },
     cityFilter(item, queryText, itemText) {
       if (!queryText || queryText.length < 4) {
@@ -449,6 +521,10 @@ export default {
         titulo: item.title || ''
       }
       this.dialogDelete = true
+    },
+    openStats(item) {
+      this.statsItem = item || {}
+      this.dialogStats = true
     },
     closeDialog() {
       this.dialog = false
@@ -574,5 +650,34 @@ export default {
   font-weight: 600;
   margin-bottom: 6px;
   color: #475569;
+}
+
+.blog-manager__stats-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.blog-manager__stats-subtitle {
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.blog-manager__stat {
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.blog-manager__stat span {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.blog-manager__stat strong {
+  display: block;
+  font-size: 18px;
+  color: #0f172a;
 }
 </style>

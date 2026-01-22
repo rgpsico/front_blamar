@@ -304,11 +304,11 @@ export default {
 }
 
 .dashboard__menu-list .v-list-item-title {
-  font-size: 14.5px;
+  font-size: 16px;
 }
 
 .dashboard__menu-list .v-list-group__header .v-list-item-title {
-  font-size: 15px;
+  font-size: 16.5px;
   font-weight: 600;
 }
 
