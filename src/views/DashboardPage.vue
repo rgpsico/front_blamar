@@ -56,6 +56,10 @@
       <v-btn icon @click="toggleTheme">
         <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </v-btn>
+      <v-btn class="dashboard__logout" text color="primary" @click="logout">
+        <v-icon left>mdi-logout</v-icon>
+        Sair
+      </v-btn>
       <div class="dashboard__profile">
         <v-avatar size="36" class="mr-2">
           <img :src="profile.avatar" :alt="profile.name" />
@@ -153,6 +157,7 @@
         <AbtManager v-else-if="activePage === 'abt'" />
         <BlogManager v-else-if="activePage === 'blog'" />
         <ExpertsManager v-else-if="activePage === 'experts'" />
+        <CitiesManager v-else-if="activePage === 'cidades'" />
       </v-container>
     </v-main>
   </div>
@@ -163,6 +168,7 @@ import BeachHouseManager from '@/components/beach/BeachHouseManager.vue'
 import AbtManager from '@/components/abt/AbtManager.vue'
 import BlogManager from '@/components/blog/BlogManager.vue'
 import ExpertsManager from '@/components/experts/ExpertsManager.vue'
+import CitiesManager from '@/components/cities/CitiesManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -170,7 +176,8 @@ export default {
     BeachHouseManager,
     AbtManager,
     BlogManager,
-    ExpertsManager
+    ExpertsManager,
+    CitiesManager
   },
   data() {
     return {
@@ -241,6 +248,9 @@ export default {
   methods: {
     toggleTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+    },
+    logout() {
+      this.$emit('logout')
     },
     setPage(page) {
       if (!page) {
@@ -334,6 +344,10 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dashboard__logout {
+  margin-right: 12px;
 }
 
 .dashboard__profile-info {

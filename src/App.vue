@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <LoginPage v-if="!authenticated" @authenticated="onAuthenticated" />
-    <DashboardPage v-else />
+    <DashboardPage v-else @logout="onLogout" />
   </v-app>
 </template>
 
@@ -23,6 +23,11 @@ export default {
   methods: {
     onAuthenticated() {
       this.authenticated = true
+    },
+    onLogout() {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      this.authenticated = false
     }
   }
 }
