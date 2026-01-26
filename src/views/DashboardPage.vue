@@ -158,6 +158,7 @@
         <BlogManager v-else-if="activePage === 'blog'" />
         <ExpertsManager v-else-if="activePage === 'experts'" />
         <CitiesManager v-else-if="activePage === 'cidades'" />
+        <DeluxeManager v-else-if="activePage === 'deluxe'" />
       </v-container>
     </v-main>
   </div>
@@ -169,6 +170,7 @@ import AbtManager from '@/components/abt/AbtManager.vue'
 import BlogManager from '@/components/blog/BlogManager.vue'
 import ExpertsManager from '@/components/experts/ExpertsManager.vue'
 import CitiesManager from '@/components/cities/CitiesManager.vue'
+import DeluxeManager from '@/components/deluxe/DeluxeManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -177,7 +179,8 @@ export default {
     AbtManager,
     BlogManager,
     ExpertsManager,
-    CitiesManager
+    CitiesManager,
+    DeluxeManager
   },
   data() {
     return {
@@ -220,12 +223,11 @@ export default {
           icon: 'mdi-file-cabinet',
           open: false,
           items: [
-            { title: 'Deluxe', icon: 'mdi-diamond-stone' },
-            { title: 'Deluxe V2', icon: 'mdi-diamond-stone' },
+            { title: 'Deluxe', icon: 'mdi-diamond-stone', page: 'deluxe' },
             { title: 'File Web', icon: 'mdi-file-link' },
             { title: 'Guias', icon: 'mdi-map-marker-path' },
             { title: 'Hotel', icon: 'mdi-bed' },
-            { title: 'Hotel V2', icon: 'mdi-bed' }
+         
           ]
         }
       ],
