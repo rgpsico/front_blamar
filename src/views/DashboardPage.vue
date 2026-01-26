@@ -210,7 +210,7 @@ export default {
           icon: 'mdi-account-group',
           open: false,
           items: [
-            { title: 'Cidades', icon: 'mdi-city' },
+            { title: 'Cidades', icon: 'mdi-city', page: 'cidades' },
             { title: 'Clientes', icon: 'mdi-account-multiple-outline', active: true },
             { title: 'Contatos', icon: 'mdi-card-account-phone-outline' }
           ]

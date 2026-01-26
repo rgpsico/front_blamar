@@ -13,7 +13,39 @@
     <v-card class="cities-manager__filters" elevation="4">
       <v-row>
         <v-col cols="12" md="4">
-          <v-text-field v-model="search" label="Buscar cidade" dense outlined></v-text-field>
+          <v-text-field
+            v-model="filters.nome"
+            label="Buscar cidade"
+            dense
+            outlined
+            @input="scheduleFetch"
+          ></v-text-field>
+        </v-col>
+        <v-col cols="12" md="3">
+          <v-select
+            v-model="filters.regiao"
+            :items="regiaoOptions"
+            item-text="text"
+            item-value="value"
+            label="Regiao"
+            dense
+            outlined
+            @change="scheduleFetch"
+          ></v-select>
+        </v-col>
+        <v-col cols="12" md="3">
+          <v-text-field
+            v-model.number="filters.limit"
+            label="Limite"
+            type="number"
+            min="1"
+            dense
+            outlined
+            @change="fetchCities"
+          ></v-text-field>
+        </v-col>
+        <v-col cols="12" md="2" class="d-flex align-center">
+          <v-btn color="primary" block @click="fetchCities">Aplicar</v-btn>
         </v-col>
       </v-row>
     </v-card>
@@ -21,7 +53,7 @@
     <v-card elevation="6" class="mt-4">
       <v-data-table
         :headers="headers"
-        :items="filteredCities"
+        :items="cities"
         :loading="loading"
         item-key="cidade_cod"
         class="elevation-0"
@@ -88,6 +120,8 @@
 </template>
 
 <script>
+import axios from 'axios'
+
 const API_BASE = '/api/'
 
 export default {
@@ -97,7 +131,12 @@ export default {
       loading: false,
       saving: false,
       cities: [],
-      search: '',
+      filterTimer: null,
+      filters: {
+        nome: '',
+        regiao: 0,
+        limit: 200
+      },
       dialog: false,
       dialogDelete: false,
       editedIndex: -1,
@@ -111,6 +150,14 @@ export default {
         text: '',
         color: 'success'
       },
+      regiaoOptions: [
+        { text: 'Todas', value: 0 },
+        { text: 'Norte', value: 1 },
+        { text: 'Nordeste', value: 2 },
+        { text: 'Sudeste', value: 3 },
+        { text: 'Centro-Oeste', value: 4 },
+        { text: 'Sul', value: 5 }
+      ],
       headers: [
         { text: 'Codigo', value: 'cidade_cod' },
         { text: 'Nome PT', value: 'nome_pt' },
@@ -122,19 +169,6 @@ export default {
   computed: {
       dialogTitle() {
       return this.editedIndex === -1 ? 'Nova Cidade' : 'Editar Cidade'
-    },
-    filteredCities() {
-      if (!this.search) {
-        return this.cities
-      }
-      const term = this.search.toLowerCase()
-      return this.cities.filter(city => {
-        return (
-          String(city.nome_pt || '').toLowerCase().includes(term) ||
-          String(city.nome_en || '').toLowerCase().includes(term) ||
-          String(city.cidade_cod || '').includes(term)
-        )
-      })
     }
   },
   mounted() {
@@ -150,11 +184,30 @@ export default {
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
     },
+    scheduleFetch() {
+      if (this.filterTimer) {
+        clearTimeout(this.filterTimer)
+      }
+      this.filterTimer = setTimeout(() => {
+        this.fetchCities()
+      }, 400)
+    },
     async fetchCities() {
       this.loading = true
       try {
-        const response = await fetch(`${API_BASE}api_buscar_cidades.php?request=listar`)
-        const data = await response.json()
+        const params = new URLSearchParams({ request: 'listar_cidades' })
+        const limit = Number(this.filters.limit)
+        if (Number.isFinite(limit) && limit > 0) {
+          params.set('limit', String(limit))
+        }
+        if (this.filters.nome) {
+          params.set('filtro_nome', this.filters.nome)
+        }
+        if (this.filters.regiao) {
+          params.set('filtro_regiao', String(this.filters.regiao))
+        }
+        const response = await axios.get(`${API_BASE}cidades.php?${params.toString()}`)
+        const data = response.data
         this.cities = Array.isArray(data) ? data : []
       } catch (error) {
         this.showMessage(`Erro ao carregar: ${error.message}`, 'error')
@@ -198,11 +251,11 @@ export default {
       this.saving = true
       try {
         const isEdit = this.editedIndex > -1
-        const request = isEdit ? 'atualizar' : 'criar'
+        const request = isEdit ? 'atualizar_cidade' : 'criar_cidade'
         const method = isEdit ? 'PUT' : 'POST'
         const url = isEdit
-          ? `${API_BASE}api_buscar_cidades.php?request=${request}&id=${this.editedItem.cidade_cod}`
-          : `${API_BASE}api_buscar_cidades.php?request=${request}`
+          ? `${API_BASE}cidades.php?request=${request}&cidade_cod=${this.editedItem.cidade_cod}`
+          : `${API_BASE}cidades.php?request=${request}`
 
         const payload = {
           cidade_cod: this.editedItem.cidade_cod,
@@ -238,7 +291,7 @@ export default {
       this.saving = true
       try {
         const response = await fetch(
-          `${API_BASE}api_buscar_cidades.php?request=excluir&id=${this.editedItem.cidade_cod}`,
+          `${API_BASE}cidades.php?request=excluir_cidade&cidade_cod=${this.editedItem.cidade_cod}`,
           { method: 'DELETE', headers: this.authHeaders() }
         )
         const result = await response.json()
