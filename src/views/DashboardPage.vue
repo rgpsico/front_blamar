@@ -159,6 +159,7 @@
         <ExpertsManager v-else-if="activePage === 'experts'" />
         <CitiesManager v-else-if="activePage === 'cidades'" />
         <DeluxeManager v-else-if="activePage === 'deluxe'" />
+        <ClientsManager v-else-if="activePage === 'clientes'" />
       </v-container>
     </v-main>
   </div>
@@ -171,6 +172,7 @@ import BlogManager from '@/components/blog/BlogManager.vue'
 import ExpertsManager from '@/components/experts/ExpertsManager.vue'
 import CitiesManager from '@/components/cities/CitiesManager.vue'
 import DeluxeManager from '@/components/deluxe/DeluxeManager.vue'
+import ClientsManager from '@/components/clients/ClientsManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -180,7 +182,8 @@ export default {
     BlogManager,
     ExpertsManager,
     CitiesManager,
-    DeluxeManager
+    DeluxeManager,
+    ClientsManager
   },
   data() {
     return {
@@ -214,7 +217,7 @@ export default {
           open: false,
           items: [
             { title: 'Cidades', icon: 'mdi-city', page: 'cidades' },
-            { title: 'Clientes', icon: 'mdi-account-multiple-outline', active: true },
+            { title: 'Clientes', icon: 'mdi-account-multiple-outline', page: 'clientes' },
             { title: 'Contatos', icon: 'mdi-card-account-phone-outline' }
           ]
         },
