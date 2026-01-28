@@ -162,6 +162,7 @@
         <DeluxeManager v-else-if="activePage === 'deluxe'" />
         <ClientsManager v-else-if="activePage === 'clientes'" />
         <EmployeesManager v-else-if="activePage === 'funcionarios'" />
+        <HotelsManager v-else-if="activePage === 'hotel'" />
       </v-container>
     </v-main>
   </div>
@@ -177,6 +178,7 @@ import DeluxeManager from '@/components/deluxe/DeluxeManager.vue'
 import ClientsManager from '@/components/clients/ClientsManager.vue'
 import EmployeesManager from '@/components/employees/EmployeesManager.vue'
 import ImageBankManager from '@/components/image/ImageBankManager.vue'
+import HotelsManager from '@/components/hotels/HotelsManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -189,7 +191,8 @@ export default {
     DeluxeManager,
     ClientsManager,
     EmployeesManager,
-    ImageBankManager
+    ImageBankManager,
+    HotelsManager
   },
   data() {
     return {
@@ -236,7 +239,7 @@ export default {
             { title: 'Deluxe', icon: 'mdi-diamond-stone', page: 'deluxe' },
             { title: 'File Web', icon: 'mdi-file-link' },
             { title: 'Guias', icon: 'mdi-map-marker-path' },
-            { title: 'Hotel', icon: 'mdi-bed' },
+            { title: 'Hotel', icon: 'mdi-bed', page: 'hotel' },
          
           ]
         }
