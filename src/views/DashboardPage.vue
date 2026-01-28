@@ -153,6 +153,7 @@
             </v-col>
           </v-row>
         </div>
+        <ImageBankManager v-else-if="activePage === 'image'" />
         <BeachHouseManager v-else-if="activePage === 'beach-house'" />
         <AbtManager v-else-if="activePage === 'abt'" />
         <BlogManager v-else-if="activePage === 'blog'" />
@@ -175,6 +176,7 @@ import CitiesManager from '@/components/cities/CitiesManager.vue'
 import DeluxeManager from '@/components/deluxe/DeluxeManager.vue'
 import ClientsManager from '@/components/clients/ClientsManager.vue'
 import EmployeesManager from '@/components/employees/EmployeesManager.vue'
+import ImageBankManager from '@/components/image/ImageBankManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -186,7 +188,8 @@ export default {
     CitiesManager,
     DeluxeManager,
     ClientsManager,
-    EmployeesManager
+    EmployeesManager,
+    ImageBankManager
   },
   data() {
     return {
@@ -207,8 +210,8 @@ export default {
           open: true,
           items: [
             { title: 'Around Brazil Tours', icon: 'mdi-earth', page: 'abt' },     
-            { title: 'Banco de Imagem', icon: 'mdi-image-multiple' },
-            { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase' },
+            { title: 'Banco de Imagem', icon: 'mdi-image-multiple',  page: 'image' },
+            // { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase', page: '' },
             { title: 'Beach House', icon: 'mdi-beach', page: 'beach-house' }, 
             { title: 'Blog Receptivo', icon: 'mdi-post-outline', page: 'blog' },
             { title: 'Brazilian Experts', icon: 'mdi-map', page: 'experts' }
