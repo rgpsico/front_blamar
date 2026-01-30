@@ -65,7 +65,7 @@
         </v-col>
       </v-row>
       <div class="blog-manager__filter-actions">
-        <v-btn outlined color="primary" @click="fetchPosts">Aplicar</v-btn>
+        <v-btn outlined color="primary" @click="applyFilters">Aplicar</v-btn>
         <v-btn text @click="resetFilters">Limpar</v-btn>
       </div>
     </v-card>
@@ -103,6 +103,26 @@
           </v-btn>
         </template>
       </v-data-table>
+      <v-divider></v-divider>
+      <v-card-actions class="blog-manager__pagination">
+        <v-select
+          v-model="pagination.perPage"
+          :items="pagination.perPageOptions"
+          label="Por pagina"
+          dense
+          outlined
+          hide-details
+          class="blog-manager__per-page"
+          @change="changePerPage"
+        ></v-select>
+        <v-spacer></v-spacer>
+        <v-pagination
+          v-model="pagination.page"
+          :length="pagination.lastPage"
+          total-visible="7"
+          @input="fetchPosts"
+        ></v-pagination>
+      </v-card-actions>
     </v-card>
 
     <v-dialog v-model="dialog" max-width="860px" persistent>
@@ -304,6 +324,13 @@ export default {
         citie: '',
         regiao: ''
       },
+      pagination: {
+        page: 1,
+        perPage: 30,
+        total: 0,
+        lastPage: 1,
+        perPageOptions: [10, 20, 30, 50, 100]
+      },
       editedIndex: -1,
       statsItem: {},
       editedItem: {
@@ -426,7 +453,8 @@ export default {
       if (this.filters.classif) params.append('filtro_classif', this.filters.classif)
       if (this.filters.citie) params.append('filtro_citie', this.filters.citie)
       if (this.filters.regiao) params.append('filtro_regiao', this.filters.regiao)
-      params.append('limit', '200')
+      params.append('page', String(this.pagination.page))
+      params.append('per_page', String(this.pagination.perPage))
       return params.toString()
     },
     async fetchPosts() {
@@ -434,7 +462,18 @@ export default {
       try {
         const response = await fetch(`${API_BASE}blog.php?${this.buildQuery()}`)
         const data = await response.json()
-        this.items = Array.isArray(data) ? data : []
+        if (data && Array.isArray(data.data)) {
+          this.items = data.data
+          const pagination = data.pagination || {}
+          this.pagination.total = pagination.total || 0
+          this.pagination.lastPage = Math.max(1, pagination.last_page || 1)
+          this.pagination.page = pagination.current_page || this.pagination.page
+          this.pagination.perPage = pagination.per_page || this.pagination.perPage
+        } else {
+          this.items = Array.isArray(data) ? data : []
+          this.pagination.total = this.items.length
+          this.pagination.lastPage = 1
+        }
       } catch (error) {
         this.showMessage(`Erro ao carregar: ${error.message}`, 'error')
       } finally {
@@ -475,6 +514,15 @@ export default {
         citie: '',
         regiao: ''
       }
+      this.pagination.page = 1
+      this.fetchPosts()
+    },
+    applyFilters() {
+      this.pagination.page = 1
+      this.fetchPosts()
+    },
+    changePerPage() {
+      this.pagination.page = 1
       this.fetchPosts()
     },
     openCreate() {
@@ -634,6 +682,15 @@ export default {
   display: flex;
   gap: 8px;
   margin-top: 4px;
+}
+
+.blog-manager__pagination {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.blog-manager__per-page {
+  max-width: 160px;
 }
 
 .blog-manager__dialog-title {
