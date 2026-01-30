@@ -71,6 +71,26 @@
       </v-data-table>
     </v-card>
 
+    <v-card elevation="4" class="mt-4 hotels-manager__menu">
+      <v-card-title>Incentivos</v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col
+            v-for="item in incentivesMenu"
+            :key="item.key"
+            cols="12"
+            sm="4"
+            md="3"
+          >
+            <v-btn block outlined color="primary" @click="handleIncentiveAction(item)">
+              <v-icon left>{{ item.icon }}</v-icon>
+              {{ item.label }}
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+
     <v-dialog v-model="createDialog" max-width="880px" persistent>
       <v-card>
         <v-card-title class="hotels-manager__dialog-title">
@@ -280,6 +300,11 @@ export default {
         { text: 'Quartos', value: 'quartos' },
         { text: 'Status', value: 'status', sortable: false },
         { text: 'Acoes', value: 'actions', sortable: false, align: 'end' }
+      ],
+      incentivesMenu: [
+        { key: 'novo', label: 'Novo incentivo', icon: 'mdi-plus-box' },
+        { key: 'campanhas', label: 'Campanhas', icon: 'mdi-bullhorn' },
+        { key: 'relatorios', label: 'Relatorios', icon: 'mdi-file-chart' }
       ]
     }
   },
@@ -298,6 +323,9 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
+    },
+    handleIncentiveAction(item) {
+      this.showMessage(`Menu "${item.label}" em breve.`, 'info')
     },
     scheduleFetch() {
       if (this.filterTimer) {

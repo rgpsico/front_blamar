@@ -163,6 +163,7 @@
         <ClientsManager v-else-if="activePage === 'clientes'" />
         <EmployeesManager v-else-if="activePage === 'funcionarios'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
+        <IncentivosManager v-else-if="activePage === 'incentivos'" />
       </v-container>
     </v-main>
   </div>
@@ -179,6 +180,7 @@ import ClientsManager from '@/components/clients/ClientsManager.vue'
 import EmployeesManager from '@/components/employees/EmployeesManager.vue'
 import ImageBankManager from '@/components/image/ImageBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
+import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -192,7 +194,8 @@ export default {
     ClientsManager,
     EmployeesManager,
     ImageBankManager,
-    HotelsManager
+    HotelsManager,
+    IncentivosManager
   },
   data() {
     return {
@@ -240,6 +243,7 @@ export default {
             { title: 'File Web', icon: 'mdi-file-link' },
             { title: 'Guias', icon: 'mdi-map-marker-path' },
             { title: 'Hotel', icon: 'mdi-bed', page: 'hotel' },
+            { title: 'Incentivos', icon: 'mdi-gift', page: 'incentivos' }
          
           ]
         }
