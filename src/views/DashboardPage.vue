@@ -162,6 +162,7 @@
         <DeluxeManager v-else-if="activePage === 'deluxe'" />
         <ClientsManager v-else-if="activePage === 'clientes'" />
         <EmployeesManager v-else-if="activePage === 'funcionarios'" />
+        <UsersManager v-else-if="activePage === 'usuarios'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
         <IncentivosManager v-else-if="activePage === 'incentivos'" />
       </v-container>
@@ -181,6 +182,7 @@ import EmployeesManager from '@/components/employees/EmployeesManager.vue'
 import ImageBankManager from '@/components/image/ImageBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
 import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
+import UsersManager from '@/components/users/UsersManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -195,7 +197,8 @@ export default {
     EmployeesManager,
     ImageBankManager,
     HotelsManager,
-    IncentivosManager
+    IncentivosManager,
+    UsersManager
   },
   data() {
     return {
@@ -229,6 +232,7 @@ export default {
           open: false,
           items: [
             { title: 'Funcionarios', icon: 'mdi-account-tie', page: 'funcionarios' },
+            { title: 'Usuarios', icon: 'mdi-account', page: 'usuarios' },
             { title: 'Cidades', icon: 'mdi-city', page: 'cidades' },
             { title: 'Clientes', icon: 'mdi-account-multiple-outline', page: 'clientes' },
             { title: 'Contatos', icon: 'mdi-card-account-phone-outline' }

@@ -151,11 +151,70 @@
                 <div class="blog-manager__editor-label">Descritivo BE</div>
                 <TinyEditor v-model="createItem.descritivo_be" :init="editorInit" />
               </v-col>
+              <v-col cols="12">
+                <div class="blog-manager__editor-label">FAQ (Perguntas e Respostas)</div>
+                <v-card outlined class="pa-3">
+                  <v-row v-for="(qa, index) in createItem.faq" :key="index" class="mb-2">
+                    <v-col cols="12" md="5">
+                      <v-text-field v-model="qa.pergunta" label="Pergunta" outlined dense />
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-textarea
+                        v-model="qa.resposta"
+                        label="Resposta"
+                        outlined
+                        dense
+                        rows="2"
+                        auto-grow
+                      />
+                    </v-col>
+                    <v-col cols="12" md="1" class="d-flex align-center justify-end">
+                      <v-btn
+                        icon
+                        color="error"
+                        @click="removeFaq(createItem, index)"
+                        :disabled="createItem.faq.length === 1"
+                      >
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                  <v-btn outlined color="primary" @click="addFaq(createItem)">
+                    Adicionar pergunta
+                  </v-btn>
+                </v-card>
+              </v-col>
               <v-col cols="12" md="6">
                 <v-text-field v-model="createItem.foto_capa" label="Foto capa" outlined dense></v-text-field>
+                <v-btn
+                  small
+                  text
+                  color="primary"
+                  class="blog-manager__image-edit"
+                  :disabled="!createItem.foto_capa"
+                  @click="openImageEditor('create', 'foto_capa')"
+                >
+                  Editar imagem
+                </v-btn>
+                <div class="blog-manager__image-preview" v-if="createItem.foto_capa">
+                  <img :src="resolveImage(createItem.foto_capa)" alt="Preview capa" @error="onImageError" />
+                </div>
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field v-model="createItem.foto_topo" label="Foto topo" outlined dense></v-text-field>
+                <v-btn
+                  small
+                  text
+                  color="primary"
+                  class="blog-manager__image-edit"
+                  :disabled="!createItem.foto_topo"
+                  @click="openImageEditor('create', 'foto_topo')"
+                >
+                  Editar imagem
+                </v-btn>
+                <div class="blog-manager__image-preview" v-if="createItem.foto_topo">
+                  <img :src="resolveImage(createItem.foto_topo)" alt="Preview topo" @error="onImageError" />
+                </div>
               </v-col>
               <v-col cols="12" md="4">
                 <v-select
@@ -244,11 +303,72 @@
                 <div class="blog-manager__editor-label">Descritivo BE</div>
                 <TinyEditor v-model="editItem.descritivo_be" :init="editorInit" />
               </v-col>
+
+              <v-col cols="12">
+                <div class="blog-manager__editor-label">FAQ (Perguntas e Respostas)</div>
+                <v-card outlined class="pa-3">
+                  <v-row v-for="(qa, index) in editItem.faq" :key="index" class="mb-2">
+                    <v-col cols="12" md="5">
+                      <v-text-field v-model="qa.pergunta" label="Pergunta" outlined dense />
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-textarea
+                        v-model="qa.resposta"
+                        label="Resposta"
+                        outlined
+                        dense
+                        rows="2"
+                        auto-grow
+                      />
+                    </v-col>
+                    <v-col cols="12" md="1" class="d-flex align-center justify-end">
+                      <v-btn
+                        icon
+                        color="error"
+                        @click="removeFaq(editItem, index)"
+                        :disabled="editItem.faq.length === 1"
+                      >
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                  <v-btn outlined color="primary" @click="addFaq(editItem)">
+                    Adicionar pergunta
+                  </v-btn>
+                </v-card>
+              </v-col>
+
               <v-col cols="12" md="6">
                 <v-text-field v-model="editItem.foto_capa" label="Foto capa" outlined dense></v-text-field>
+                <v-btn
+                  small
+                  text
+                  color="primary"
+                  class="blog-manager__image-edit"
+                  :disabled="!editItem.foto_capa"
+                  @click="openImageEditor('edit', 'foto_capa')"
+                >
+                  Editar imagem
+                </v-btn>
+                <div class="blog-manager__image-preview" v-if="editItem.foto_capa">
+                  <img :src="resolveImage(editItem.foto_capa)" alt="Preview capa" @error="onImageError" />
+                </div>
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field v-model="editItem.foto_topo" label="Foto topo" outlined dense></v-text-field>
+                <v-btn
+                  small
+                  text
+                  color="primary"
+                  class="blog-manager__image-edit"
+                  :disabled="!editItem.foto_topo"
+                  @click="openImageEditor('edit', 'foto_topo')"
+                >
+                  Editar imagem
+                </v-btn>
+                <div class="blog-manager__image-preview" v-if="editItem.foto_topo">
+                  <img :src="resolveImage(editItem.foto_topo)" alt="Preview topo" @error="onImageError" />
+                </div>
               </v-col>
               <v-col cols="12" md="4">
                 <v-select
@@ -377,6 +497,64 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="imageEditor.open" max-width="720px" persistent>
+      <v-card>
+        <v-card-title class="blog-manager__dialog-title">
+          <span>Editar imagem</span>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="closeImageEditor">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <div v-if="imageEditor.error" class="blog-manager__image-error">
+            {{ imageEditor.error }}
+          </div>
+          <div class="blog-manager__image-editor">
+            <div class="blog-manager__image-editor-preview">
+              <img :src="imageEditor.src" alt="Original" />
+            </div>
+            <div class="blog-manager__image-editor-crop">
+              <div class="blog-manager__editor-label">Preview cortado</div>
+              <div class="blog-manager__image-crop-preview">
+                <img v-if="imageEditor.preview" :src="imageEditor.preview" alt="Corte" />
+                <div v-else class="blog-manager__image-placeholder">Ajuste zoom ou proporcao</div>
+              </div>
+            </div>
+          </div>
+          <v-row class="mt-4">
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="imageEditor.aspect"
+                :items="imageEditor.aspectOptions"
+                label="Proporcao"
+                dense
+                outlined
+              ></v-select>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-slider
+                v-model="imageEditor.zoom"
+                :min="1"
+                :max="3"
+                :step="0.1"
+                label="Zoom"
+                thumb-label
+              ></v-slider>
+            </v-col>
+          </v-row>
+          <canvas ref="imageEditorCanvas" class="blog-manager__image-canvas"></canvas>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="closeImageEditor">Cancelar</v-btn>
+          <v-btn color="primary" :disabled="!imageEditor.preview" @click="applyImageEdit">
+            Aplicar corte
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="4000">
       {{ snackbar.text }}
       <template v-slot:action="{ attrs }">
@@ -439,7 +617,8 @@ export default {
         regiao: '',
         url_video: '',
         meta_description: '',
-        ativo: true
+        ativo: true,
+        faq: [{ pergunta: '', resposta: '' }]
       },
       editItem: {
         id: null,
@@ -454,7 +633,8 @@ export default {
         regiao: '',
         url_video: '',
         meta_description: '',
-        ativo: true
+        ativo: true,
+        faq: [{ pergunta: '', resposta: '' }]
       },
       deleteItem: {
         id: null,
@@ -505,7 +685,19 @@ export default {
         { value: 4, label: 'Flights' },
         { value: 5, label: 'Destinations' },
         { value: 6, label: 'Festivals' }
-      ]
+      ],
+      imageEditor: {
+        open: false,
+        src: '',
+        target: null,
+        zoom: 1,
+        aspect: '16:9',
+        aspectOptions: ['16:9', '4:3', '1:1', '3:4', '9:16'],
+        preview: '',
+        error: '',
+        naturalWidth: 0,
+        naturalHeight: 0
+      }
     }
   },
   computed: {
@@ -514,6 +706,14 @@ export default {
         return 'Digite 4 caracteres'
       }
       return 'Nenhuma cidade encontrada'
+    }
+  },
+  watch: {
+    'imageEditor.zoom'() {
+      this.updateCropPreview()
+    },
+    'imageEditor.aspect'() {
+      this.updateCropPreview()
     }
   },
   mounted() {
@@ -535,9 +735,20 @@ export default {
         regiao: '',
         url_video: '',
         meta_description: '',
-        ativo: true
+        ativo: true,
+        faq: [{ pergunta: '', resposta: '' }]
       }
     },
+    addFaq(targetItem) {
+      targetItem.faq.push({ pergunta: '', resposta: '' })
+    },
+    removeFaq(targetItem, index) {
+      targetItem.faq.splice(index, 1)
+      if (targetItem.faq.length === 0) {
+        targetItem.faq.push({ pergunta: '', resposta: '' })
+      }
+    },
+
     authHeaders() {
       const token = localStorage.getItem('auth_token')
       return token ? { Authorization: `Bearer ${token}` } : {}
@@ -550,6 +761,18 @@ export default {
         return item.cover_photo
       }
       return `${IMAGE_BASE}${item.cover_photo}`
+    },
+    resolveImage(value) {
+      if (!value) {
+        return this.defaultImage
+      }
+      if (value.startsWith('data:')) {
+        return value
+      }
+      if (value.startsWith('http')) {
+        return value
+      }
+      return `${IMAGE_BASE}${value}`
     },
     postUrl(item) {
       const id = item.id || item.pk_blognacional || ''
@@ -570,6 +793,127 @@ export default {
     },
     onImageError(event) {
       event.target.src = this.defaultImage
+    },
+    openImageEditor(target, field) {
+      const source = target === 'create' ? this.createItem[field] : this.editItem[field]
+      if (!source) {
+        return
+      }
+      this.imageEditor.open = true
+      this.imageEditor.src = this.resolveImage(source)
+      this.imageEditor.target = { target, field }
+      this.imageEditor.zoom = 1
+      this.imageEditor.aspect = '16:9'
+      this.imageEditor.preview = ''
+      this.imageEditor.error = ''
+      this.loadImageForEdit()
+    },
+    closeImageEditor() {
+      this.imageEditor.open = false
+      this.imageEditor.preview = ''
+      this.imageEditor.error = ''
+    },
+    loadImageForEdit() {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        this.imageEditor.naturalWidth = img.naturalWidth
+        this.imageEditor.naturalHeight = img.naturalHeight
+        this.updateCropPreview(img)
+      }
+      img.onerror = () => {
+        this.imageEditor.error = 'Nao foi possivel carregar a imagem.'
+      }
+      img.src = this.imageEditor.src
+    },
+    parseAspect(value) {
+      const parts = String(value).split(':')
+      if (parts.length !== 2) {
+        return 16 / 9
+      }
+      const w = Number(parts[0])
+      const h = Number(parts[1])
+      if (!w || !h) {
+        return 16 / 9
+      }
+      return w / h
+    },
+    updateCropPreview(preloaded) {
+      if (!this.imageEditor.open) {
+        return
+      }
+      const img = preloaded || new Image()
+      if (!preloaded) {
+        img.crossOrigin = 'anonymous'
+        img.onload = () => this.renderCrop(img)
+        img.onerror = () => {
+          this.imageEditor.error = 'Nao foi possivel carregar a imagem.'
+        }
+        img.src = this.imageEditor.src
+        return
+      }
+      this.renderCrop(img)
+    },
+    renderCrop(img) {
+      const canvas = this.$refs.imageEditorCanvas
+      if (!canvas) {
+        return
+      }
+      const ctx = canvas.getContext('2d')
+      const aspect = this.parseAspect(this.imageEditor.aspect)
+      const imgW = img.naturalWidth || this.imageEditor.naturalWidth
+      const imgH = img.naturalHeight || this.imageEditor.naturalHeight
+      if (!imgW || !imgH) {
+        return
+      }
+
+      let cropW = imgW
+      let cropH = cropW / aspect
+      if (cropH > imgH) {
+        cropH = imgH
+        cropW = cropH * aspect
+      }
+
+      const zoom = Math.max(1, this.imageEditor.zoom || 1)
+      cropW = cropW / zoom
+      cropH = cropH / zoom
+
+      const sx = Math.max(0, (imgW - cropW) / 2)
+      const sy = Math.max(0, (imgH - cropH) / 2)
+
+      const maxOut = 1400
+      let outW = cropW
+      let outH = cropH
+      if (outW > maxOut) {
+        const scale = maxOut / outW
+        outW *= scale
+        outH *= scale
+      }
+
+      canvas.width = Math.round(outW)
+      canvas.height = Math.round(outH)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH)
+
+      try {
+        this.imageEditor.preview = canvas.toDataURL('image/jpeg', 0.9)
+        this.imageEditor.error = ''
+      } catch (error) {
+        this.imageEditor.error = 'Nao foi possivel gerar o corte (CORS).'
+        this.imageEditor.preview = ''
+      }
+    },
+    applyImageEdit() {
+      if (!this.imageEditor.preview || !this.imageEditor.target) {
+        return
+      }
+      const { target, field } = this.imageEditor.target
+      if (target === 'create') {
+        this.createItem[field] = this.imageEditor.preview
+      } else {
+        this.editItem[field] = this.imageEditor.preview
+      }
+      this.closeImageEditor()
     },
     buildQuery() {
       const params = new URLSearchParams()
@@ -656,6 +1000,7 @@ export default {
       this.dialogCreate = true
     },
     openEdit(item) {
+    
       this.editItem = {
         id: item.id,
         titulo: item.title || '',
@@ -669,7 +1014,8 @@ export default {
         regiao: item.region_id || '',
         url_video: item.video_url || '',
         meta_description: item.meta_description || '',
-        ativo: item.is_active === true
+        ativo: item.is_active === true,
+        faq: item.faq || [{ pergunta: '', resposta: '' }]
       }
       this.dialogEdit = true
     },
@@ -721,7 +1067,8 @@ export default {
           regiao: item.regiao,
           url_video: item.url_video,
           meta_description: item.meta_description,
-          ativo: item.ativo
+          ativo: item.ativo,
+           faq: (item.faq || []).filter(x => x.pergunta?.trim() || x.resposta?.trim())
         }
 
         const response = await fetch(url, {
@@ -829,6 +1176,70 @@ export default {
   font-weight: 600;
   margin-bottom: 6px;
   color: #475569;
+}
+
+.blog-manager__image-preview {
+  margin-top: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #f8fafc;
+  max-height: 180px;
+}
+
+.blog-manager__image-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.blog-manager__image-edit {
+  margin-top: -6px;
+  margin-left: -8px;
+}
+
+.blog-manager__image-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.blog-manager__image-editor-preview img,
+.blog-manager__image-crop-preview img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.blog-manager__image-crop-preview {
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  padding: 12px;
+}
+
+.blog-manager__image-placeholder {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.blog-manager__image-canvas {
+  display: none;
+}
+
+.blog-manager__image-error {
+  margin-bottom: 12px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .blog-manager__stats-title {
