@@ -322,34 +322,41 @@
                   <div>Salas de evento</div>
                   <v-btn small outlined color="primary" @click="addConventionRoom">Adicionar</v-btn>
                 </div>
-                <v-row v-for="(room, index) in editedItem.convention_rooms" :key="`croom-${index}`">
-                  <v-col cols="12" md="4">
-                    <v-text-field v-model="room.name" label="Nome" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field v-model.number="room.area_m2" label="Area m2" type="number" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field v-model.number="room.capacity_auditorium" label="Audit." type="number" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field v-model.number="room.capacity_banquet" label="Banquet" type="number" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field v-model.number="room.capacity_classroom" label="Class" type="number" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field v-model.number="room.capacity_u_shape" label="U" type="number" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="1" class="d-flex align-center">
-                    <v-btn icon color="error" @click="removeConventionRoom(index)">
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
-                  </v-col>
-                </v-row>
+                <div
+                  v-for="(room, index) in editedItem.convention_rooms"
+                  :key="`croom-${index}`"
+                  class="incentivos-manager__room-group"
+                >
+                  <v-row class="incentivos-manager__room-row">
+                    <v-col cols="12" md="4">
+                      <v-text-field v-model="room.name" label="Nome" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.area_m2" label="Area m2" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_auditorium" label="Audit." type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_banquet" label="Banquet" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_classroom" label="Class" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_u_shape" label="U" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="4">
+                      <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="1" class="d-flex align-center">
+                      <v-btn icon color="error" @click="removeConventionRoom(index)">
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                  <v-divider v-if="index < editedItem.convention_rooms.length - 1" class="my-2"></v-divider>
+                </div>
               </v-tab-item>
 
               <v-tab-item>
@@ -560,11 +567,15 @@ export default {
       this.activeTab = 0
       this.dialog = true
     },
-    openEdit(item) {
+    async openEdit(item) {
       this.editedIndex = this.items.indexOf(item)
       this.editedItem = this.normalizeItem(item)
       this.activeTab = 0
       this.dialog = true
+
+      if (item && item.inc_id) {
+        await this.fetchIncentiveDetail(item.inc_id)
+      }
     },
     openDelete(item) {
       this.editedItem = this.normalizeItem(item)
@@ -651,6 +662,25 @@ export default {
     },
     removeNote(index) {
       this.editedItem.notes.splice(index, 1)
+    },
+    async fetchIncentiveDetail(id) {
+      this.saving = true
+      try {
+        const response = await fetch(
+          `${API_BASE}api_incentives.php?request=buscar_incentive&id=${id}`,
+          { headers: this.authHeaders() }
+        )
+        const result = await response.json()
+        if (result && (result.error || result.success === false)) {
+          throw new Error(result.error || result.message || 'Erro ao carregar incentivo')
+        }
+        const data = result && result.data ? result.data : result
+        this.editedItem = this.normalizeItem(data || {})
+      } catch (error) {
+        this.showMessage(`Erro ao carregar incentivo: ${error.message}`, 'error')
+      } finally {
+        this.saving = false
+      }
     },
     async save() {
       if (!this.editedItem.inc_name) {
@@ -774,5 +804,17 @@ export default {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+}
+
+.incentivos-manager__room-group {
+  padding: 8px 4px;
+}
+
+.incentivos-manager__room-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  margin: 0;
+  background: #f8fafc;
 }
 </style>

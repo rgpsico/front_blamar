@@ -125,12 +125,12 @@
       </v-card-actions>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="860px" persistent>
+    <v-dialog v-model="dialogCreate" max-width="860px" persistent>
       <v-card>
         <v-card-title class="blog-manager__dialog-title">
-          <span>{{ dialogTitle }}</span>
+          <span>Novo Post</span>
           <v-spacer></v-spacer>
-          <v-btn icon @click="closeDialog">
+          <v-btn icon @click="closeCreateDialog">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -138,28 +138,28 @@
           <v-form>
             <v-row>
               <v-col cols="12" md="8">
-                <v-text-field v-model="editedItem.titulo" label="Titulo" outlined dense></v-text-field>
+                <v-text-field v-model="createItem.titulo" label="Titulo" outlined dense></v-text-field>
               </v-col>
               <v-col cols="12" md="4">
-                <v-text-field v-model="editedItem.data_post" label="Data" type="date" outlined dense></v-text-field>
+                <v-text-field v-model="createItem.data_post" label="Data" type="date" outlined dense></v-text-field>
               </v-col>
               <v-col cols="12">
                 <div class="blog-manager__editor-label">Descritivo Blumar</div>
-                <TinyEditor v-model="editedItem.descritivo_blumar" :init="editorInit" />
+                <TinyEditor v-model="createItem.descritivo_blumar" :init="editorInit" />
               </v-col>
               <v-col cols="12">
                 <div class="blog-manager__editor-label">Descritivo BE</div>
-                <TinyEditor v-model="editedItem.descritivo_be" :init="editorInit" />
+                <TinyEditor v-model="createItem.descritivo_be" :init="editorInit" />
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.foto_capa" label="Foto capa" outlined dense></v-text-field>
+                <v-text-field v-model="createItem.foto_capa" label="Foto capa" outlined dense></v-text-field>
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.foto_topo" label="Foto topo" outlined dense></v-text-field>
+                <v-text-field v-model="createItem.foto_topo" label="Foto topo" outlined dense></v-text-field>
               </v-col>
               <v-col cols="12" md="4">
                 <v-select
-                  v-model="editedItem.classif"
+                  v-model="createItem.classif"
                   :items="classificacoes"
                   item-text="label"
                   item-value="value"
@@ -170,7 +170,7 @@
               </v-col>
               <v-col cols="12" md="4">
                 <v-autocomplete
-                  v-model="editedItem.citie"
+                  v-model="createItem.citie"
                   :items="cidades"
                   item-text="label"
                   item-value="id"
@@ -184,7 +184,7 @@
               </v-col>
               <v-col cols="12" md="4">
                 <v-select
-                  v-model="editedItem.regiao"
+                  v-model="createItem.regiao"
                   :items="regioes"
                   item-text="label"
                   item-value="value"
@@ -194,26 +194,119 @@
                 ></v-select>
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.url_video" label="URL video" outlined dense></v-text-field>
+                <v-text-field v-model="createItem.url_video" label="URL video" outlined dense></v-text-field>
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="editedItem.meta_description"
+                  v-model="createItem.meta_description"
                   label="Meta description"
                   outlined
                   dense
                 ></v-text-field>
               </v-col>
               <v-col cols="12">
-                <v-switch v-model="editedItem.ativo" label="Ativo" inset></v-switch>
+                <v-switch v-model="createItem.ativo" label="Ativo" inset></v-switch>
               </v-col>
             </v-row>
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text @click="closeDialog">Cancelar</v-btn>
-          <v-btn color="primary" :loading="saving" @click="save">Salvar</v-btn>
+          <v-btn text @click="closeCreateDialog">Cancelar</v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveCreate">Salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="dialogEdit" max-width="860px" persistent>
+      <v-card>
+        <v-card-title class="blog-manager__dialog-title">
+          <span>Editar Post</span>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="closeEditDialog">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-form>
+            <v-row>
+              <v-col cols="12" md="8">
+                <v-text-field v-model="editItem.titulo" label="Titulo" outlined dense></v-text-field>
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-text-field v-model="editItem.data_post" label="Data" type="date" outlined dense></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <div class="blog-manager__editor-label">Descritivo Blumar</div>
+                <TinyEditor v-model="editItem.descritivo_blumar" :init="editorInit" />
+              </v-col>
+              <v-col cols="12">
+                <div class="blog-manager__editor-label">Descritivo BE</div>
+                <TinyEditor v-model="editItem.descritivo_be" :init="editorInit" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editItem.foto_capa" label="Foto capa" outlined dense></v-text-field>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editItem.foto_topo" label="Foto topo" outlined dense></v-text-field>
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-select
+                  v-model="editItem.classif"
+                  :items="classificacoes"
+                  item-text="label"
+                  item-value="value"
+                  label="Classificacao"
+                  dense
+                  outlined
+                ></v-select>
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-autocomplete
+                  v-model="editItem.citie"
+                  :items="cidades"
+                  item-text="label"
+                  item-value="id"
+                  label="Cidade"
+                  dense
+                  outlined
+                  :search-input.sync="citySearch"
+                  :no-data-text="cityNoDataText"
+                  :filter="cityFilter"
+                ></v-autocomplete>
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-select
+                  v-model="editItem.regiao"
+                  :items="regioes"
+                  item-text="label"
+                  item-value="value"
+                  label="Regiao"
+                  dense
+                  outlined
+                ></v-select>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editItem.url_video" label="URL video" outlined dense></v-text-field>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="editItem.meta_description"
+                  label="Meta description"
+                  outlined
+                  dense
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-switch v-model="editItem.ativo" label="Ativo" inset></v-switch>
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="closeEditDialog">Cancelar</v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveEdit">Salvar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -224,7 +317,7 @@
         <v-card-text>
           <v-alert type="warning" border="left" colored-border>
             Tem certeza que deseja excluir o post
-            <strong>{{ editedItem.titulo }}</strong>?
+            <strong>{{ deleteItem.titulo }}</strong>?
           </v-alert>
         </v-card-text>
         <v-card-actions>
@@ -313,7 +406,8 @@ export default {
       cidades: [],
       regioes: [],
       defaultImage: require('@/assets/default.png'),
-      dialog: false,
+      dialogCreate: false,
+      dialogEdit: false,
       dialogDelete: false,
       dialogStats: false,
       citySearch: '',
@@ -331,9 +425,8 @@ export default {
         lastPage: 1,
         perPageOptions: [10, 20, 30, 50, 100]
       },
-      editedIndex: -1,
       statsItem: {},
-      editedItem: {
+      createItem: {
         id: null,
         titulo: '',
         descritivo_blumar: '',
@@ -347,6 +440,25 @@ export default {
         url_video: '',
         meta_description: '',
         ativo: true
+      },
+      editItem: {
+        id: null,
+        titulo: '',
+        descritivo_blumar: '',
+        descritivo_be: '',
+        data_post: '',
+        foto_capa: '',
+        foto_topo: '',
+        classif: '',
+        citie: '',
+        regiao: '',
+        url_video: '',
+        meta_description: '',
+        ativo: true
+      },
+      deleteItem: {
+        id: null,
+        titulo: ''
       },
       snackbar: {
         show: false,
@@ -397,9 +509,6 @@ export default {
     }
   },
   computed: {
-    dialogTitle() {
-      return this.editedIndex === -1 ? 'Novo Post' : 'Editar Post'
-    },
     cityNoDataText() {
       if (!this.citySearch || this.citySearch.length < 4) {
         return 'Digite 4 caracteres'
@@ -412,6 +521,23 @@ export default {
     this.fetchPosts()
   },
   methods: {
+    emptyItem() {
+      return {
+        id: null,
+        titulo: '',
+        descritivo_blumar: '',
+        descritivo_be: '',
+        data_post: '',
+        foto_capa: '',
+        foto_topo: '',
+        classif: '',
+        citie: '',
+        regiao: '',
+        url_video: '',
+        meta_description: '',
+        ativo: true
+      }
+    },
     authHeaders() {
       const token = localStorage.getItem('auth_token')
       return token ? { Authorization: `Bearer ${token}` } : {}
@@ -526,27 +652,11 @@ export default {
       this.fetchPosts()
     },
     openCreate() {
-      this.editedIndex = -1
-      this.editedItem = {
-        id: null,
-        titulo: '',
-        descritivo_blumar: '',
-        descritivo_be: '',
-        data_post: '',
-        foto_capa: '',
-        foto_topo: '',
-        classif: '',
-        citie: '',
-        regiao: '',
-        url_video: '',
-        meta_description: '',
-        ativo: true
-      }
-      this.dialog = true
+      this.createItem = this.emptyItem()
+      this.dialogCreate = true
     },
     openEdit(item) {
-      this.editedIndex = this.items.indexOf(item)
-      this.editedItem = {
+      this.editItem = {
         id: item.id,
         titulo: item.title || '',
         descritivo_blumar: item.description || '',
@@ -561,10 +671,10 @@ export default {
         meta_description: item.meta_description || '',
         ativo: item.is_active === true
       }
-      this.dialog = true
+      this.dialogEdit = true
     },
     openDelete(item) {
-      this.editedItem = {
+      this.deleteItem = {
         id: item.id,
         titulo: item.title || ''
       }
@@ -574,36 +684,44 @@ export default {
       this.statsItem = item || {}
       this.dialogStats = true
     },
-    closeDialog() {
-      this.dialog = false
+    closeCreateDialog() {
+      this.dialogCreate = false
     },
-    async save() {
-      if (!this.editedItem.titulo || !this.editedItem.data_post) {
+    closeEditDialog() {
+      this.dialogEdit = false
+    },
+    async saveCreate() {
+      await this.saveItem(this.createItem, false)
+    },
+    async saveEdit() {
+      await this.saveItem(this.editItem, true)
+    },
+    async saveItem(item, isEdit) {
+      if (!item.titulo || !item.data_post) {
         this.showMessage('Informe titulo e data.', 'warning')
         return
       }
       this.saving = true
       try {
-        const isEdit = this.editedIndex > -1
         const request = isEdit ? 'atualizar_post' : 'criar_post'
         const method = isEdit ? 'PUT' : 'POST'
         const url = isEdit
-          ? `${API_BASE}blog.php?request=${request}&id=${this.editedItem.id}`
+          ? `${API_BASE}blog.php?request=${request}&id=${item.id}`
           : `${API_BASE}blog.php?request=${request}`
 
         const payload = {
-          titulo: this.editedItem.titulo,
-          descritivo_blumar: this.editedItem.descritivo_blumar,
-          descritivo_be: this.editedItem.descritivo_be,
-          data_post: this.editedItem.data_post,
-          foto_capa: this.editedItem.foto_capa,
-          foto_topo: this.editedItem.foto_topo,
-          classif: this.editedItem.classif,
-          citie: this.editedItem.citie,
-          regiao: this.editedItem.regiao,
-          url_video: this.editedItem.url_video,
-          meta_description: this.editedItem.meta_description,
-          ativo: this.editedItem.ativo
+          titulo: item.titulo,
+          descritivo_blumar: item.descritivo_blumar,
+          descritivo_be: item.descritivo_be,
+          data_post: item.data_post,
+          foto_capa: item.foto_capa,
+          foto_topo: item.foto_topo,
+          classif: item.classif,
+          citie: item.citie,
+          regiao: item.regiao,
+          url_video: item.url_video,
+          meta_description: item.meta_description,
+          ativo: item.ativo
         }
 
         const response = await fetch(url, {
@@ -619,7 +737,11 @@ export default {
           throw new Error(result.error || result.message || 'Erro ao salvar')
         }
         this.showMessage(isEdit ? 'Post atualizado.' : 'Post criado.')
-        this.dialog = false
+        if (isEdit) {
+          this.dialogEdit = false
+        } else {
+          this.dialogCreate = false
+        }
         await this.fetchPosts()
       } catch (error) {
         this.showMessage(`Erro ao salvar: ${error.message}`, 'error')
@@ -628,13 +750,13 @@ export default {
       }
     },
     async confirmDelete() {
-      if (!this.editedItem.id) {
+      if (!this.deleteItem.id) {
         return
       }
       this.saving = true
       try {
         const response = await fetch(
-          `${API_BASE}blog.php?request=excluir_post&id=${this.editedItem.id}`,
+          `${API_BASE}blog.php?request=excluir_post&id=${this.deleteItem.id}`,
           { method: 'DELETE', headers: this.authHeaders() }
         )
         const result = await response.json()
