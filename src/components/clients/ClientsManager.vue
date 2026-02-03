@@ -7,6 +7,9 @@
       </div>
       <v-spacer></v-spacer>
       <v-btn color="primary" class="mr-2" @click="openCreate">Novo Cliente</v-btn>
+      <v-btn outlined color="primary" class="mr-2" :loading="exporting" :disabled="exporting" @click="exportFiltered">
+        Exportar CSV
+      </v-btn>
       <v-btn outlined color="primary" @click="fetchClients">Atualizar</v-btn>
     </div>
 
@@ -305,6 +308,7 @@ export default {
     return {
       loading: false,
       saving: false,
+      exporting: false,
       clients: [],
       total: 0,
       filterTimer: null,
@@ -432,9 +436,12 @@ export default {
         }
       }, 400)
     },
-    buildListParams() {
+    buildListParams(overrides = {}) {
       const params = new URLSearchParams({ request: 'listar_clientes_paginate' })
-      const { page, itemsPerPage, sortBy, sortDesc } = this.tableOptions
+      const { page, itemsPerPage, sortBy, sortDesc } = {
+        ...this.tableOptions,
+        ...overrides
+      }
       params.set('page', String(page || 1))
       params.set('per_page', String(itemsPerPage || 20))
 
@@ -461,6 +468,107 @@ export default {
         params.set('filtro_ativo', this.filters.ativo)
       }
       return params
+    },
+    csvEscape(value, delimiter) {
+      if (value === null || value === undefined) {
+        return ''
+      }
+      const text = String(value)
+      const needsQuotes =
+        text.includes(delimiter) || text.includes('"') || text.includes('\n') || text.includes('\r')
+      const escaped = text.replace(/"/g, '""')
+      return needsQuotes ? `"${escaped}"` : escaped
+    },
+    formatExportValue(key, value) {
+      if (key === 'ativo') {
+        if (value === true || value === 'true' || value === 1 || value === '1') {
+          return 'Ativo'
+        }
+        if (value === false || value === 'false' || value === 0 || value === '0') {
+          return 'Inativo'
+        }
+        return value
+      }
+      return value
+    },
+    toCsv(items, columns, delimiter = ';') {
+      const header = columns.map((col) => this.csvEscape(col.label, delimiter)).join(delimiter)
+      const rows = items.map((item) => {
+        const values = columns.map((col) => {
+          const raw = this.formatExportValue(col.key, item[col.key])
+          return this.csvEscape(raw, delimiter)
+        })
+        return values.join(delimiter)
+      })
+      return [`\uFEFF${header}`, ...rows].join('\r\n')
+    },
+    downloadCsv(content, filename) {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    },
+    async exportFiltered() {
+      if (this.exporting) {
+        return
+      }
+      this.exporting = true
+      try {
+        const exportPerPage = 500
+        let page = 1
+        let total = 0
+        let collected = []
+        let keepGoing = true
+        while (keepGoing) {
+          const params = this.buildListParams({ page, itemsPerPage: exportPerPage })
+          const response = await axios.get(`${API_BASE}clientes.php?${params.toString()}`)
+          const data = response.data || {}
+          const pageItems = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []
+
+          if (page === 1) {
+            total = Number(data.total || pageItems.length || 0)
+          }
+
+          if (!pageItems.length) {
+            keepGoing = false
+            continue
+          }
+
+          collected = collected.concat(pageItems)
+          if (total && collected.length >= total) {
+            keepGoing = false
+            continue
+          }
+          page += 1
+        }
+
+        if (!collected.length) {
+          this.showMessage('Nenhum cliente encontrado para exportacao.', 'warning')
+          return
+        }
+
+        const columns = [
+          { key: 'id', label: 'ID' },
+          { key: 'nome', label: 'Nome' },
+          { key: 'login', label: 'Login' },
+          { key: 'email', label: 'Email' },
+          { key: 'nivel', label: 'Nivel' },
+          { key: 'ativo', label: 'Status' }
+        ]
+        const csv = this.toCsv(collected, columns)
+        const dateStamp = new Date().toISOString().slice(0, 10)
+        this.downloadCsv(csv, `clientes_${dateStamp}.csv`)
+        this.showMessage(`Exportados ${collected.length} clientes.`)
+      } catch (error) {
+        this.showMessage(`Erro ao exportar: ${error.message}`, 'error')
+      } finally {
+        this.exporting = false
+      }
     },
     async fetchClients() {
       this.loading = true

@@ -231,10 +231,44 @@ if ($method === 'OPTIONS') {
 
 try {
     switch ($request) {
+        // PROXY DE IMAGEM (para evitar CORS em edicao)
+        case 'proxy_image':
+            if ($method !== 'GET') response(array("error" => "Use GET"), 405);
+            $url = getStringParam('url');
+            if (!$url) {
+                response(array("error" => "URL obrigatoria"), 400);
+            }
+            $parts = parse_url($url);
+            $allowedHosts = array('www.blumar.com.br', 'blumar.com.br');
+            if (!$parts || empty($parts['host']) || !in_array($parts['host'], $allowedHosts)) {
+                response(array("error" => "Host nao permitido"), 400);
+            }
+            if (empty($parts['path']) || strpos($parts['path'], '/blog/') !== 0) {
+                response(array("error" => "Caminho nao permitido"), 400);
+            }
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            $data = curl_exec($ch);
+            $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode < 200 || $httpCode >= 300 || $data === false) {
+                response(array("error" => "Falha ao buscar imagem"), 502);
+            }
+
+            header("Access-Control-Allow-Origin: *");
+            header("Content-Type: " . ($contentType ?: "image/jpeg"));
+            header("Cache-Control: public, max-age=3600");
+            echo $data;
+            exit;
 
         // LISTAR POSTS
         case 'listar_posts':
-    if ($method !== 'GET') response(array("error" => "Use GET"), 405);
+            if ($method !== 'GET') response(array("error" => "Use GET"), 405);
 
     $filtro_titulo   = getStringParam('filtro_titulo');
     $filtro_ativo    = getParam('filtro_ativo', 'all');
@@ -608,7 +642,46 @@ try {
             response($classifs);
             break;
 
-        // ... (adicione aqui os cases de listar_cidades e listar_regioes que você já tinha, mantendo-os iguais)
+        case 'listar_regioes':
+            if ($method !== 'GET') response(array("error" => "Use GET"), 405);
+
+            $classif = getIntParam('classif');
+            $where = "WHERE ativo = 't'";
+            $params = array();
+            $idx = 1;
+
+            if ($classif) {
+                $where .= " AND classif = $" . $idx++;
+                $params[] = $classif;
+            }
+
+            $sql = "SELECT DISTINCT regiao FROM conteudo_internet.blog_nacional $where ORDER BY regiao";
+            $result = pg_query_params($conn, $sql, $params);
+            if (!$result) {
+                response(array("error" => "Erro ao buscar regioes"), 500);
+            }
+
+            $regioes_map = array(
+                '1' => 'Norte',
+                '2' => 'Nordeste',
+                '3' => 'Sudeste',
+                '4' => 'Centro-Oeste',
+                '5' => 'Sul'
+            );
+
+            $regioes = array();
+            while ($row = pg_fetch_assoc($result)) {
+                $reg = $row['regiao'];
+                if (isset($regioes_map[$reg])) {
+                    $regioes[] = array(
+                        'codigo' => (int)$reg,
+                        'nome'   => $regioes_map[$reg]
+                    );
+                }
+            }
+
+            response($regioes);
+            break;
 
         default:
             response(array("error" => "Rota inválida"), 400);

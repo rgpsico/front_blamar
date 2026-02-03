@@ -518,12 +518,12 @@
               <div class="blog-manager__editor-label">Preview cortado</div>
               <div class="blog-manager__image-crop-preview">
                 <img v-if="imageEditor.preview" :src="imageEditor.preview" alt="Corte" />
-                <div v-else class="blog-manager__image-placeholder">Ajuste zoom ou proporcao</div>
+                <div v-else class="blog-manager__image-placeholder">Ajuste o corte ou proporcao</div>
               </div>
             </div>
           </div>
           <v-row class="mt-4">
-            <v-col cols="12" md="6">
+            <v-col cols="12" md="4">
               <v-select
                 v-model="imageEditor.aspect"
                 :items="imageEditor.aspectOptions"
@@ -532,13 +532,23 @@
                 outlined
               ></v-select>
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col cols="12" md="4">
               <v-slider
-                v-model="imageEditor.zoom"
-                :min="1"
-                :max="3"
-                :step="0.1"
-                label="Zoom"
+                v-model="imageEditor.offsetX"
+                :min="0"
+                :max="100"
+                :step="1"
+                label="Corte horizontal"
+                thumb-label
+              ></v-slider>
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-slider
+                v-model="imageEditor.offsetY"
+                :min="0"
+                :max="100"
+                :step="1"
+                label="Corte vertical"
                 thumb-label
               ></v-slider>
             </v-col>
@@ -690,7 +700,8 @@ export default {
         open: false,
         src: '',
         target: null,
-        zoom: 1,
+        offsetX: 50,
+        offsetY: 50,
         aspect: '16:9',
         aspectOptions: ['16:9', '4:3', '1:1', '3:4', '9:16'],
         preview: '',
@@ -709,10 +720,13 @@ export default {
     }
   },
   watch: {
-    'imageEditor.zoom'() {
+    'imageEditor.aspect'() {
       this.updateCropPreview()
     },
-    'imageEditor.aspect'() {
+    'imageEditor.offsetX'() {
+      this.updateCropPreview()
+    },
+    'imageEditor.offsetY'() {
       this.updateCropPreview()
     }
   },
@@ -774,6 +788,12 @@ export default {
       }
       return `${IMAGE_BASE}${value}`
     },
+    proxyImage(value) {
+      if (!value || value.startsWith('data:') || !value.startsWith('http')) {
+        return value
+      }
+      return `${API_BASE}blog.php?request=proxy_image&url=${encodeURIComponent(value)}`
+    },
     postUrl(item) {
       const id = item.id || item.pk_blognacional || ''
       return `https://www.blumar.com.br/blog/post.php?post=${id}`
@@ -800,9 +820,11 @@ export default {
         return
       }
       this.imageEditor.open = true
-      this.imageEditor.src = this.resolveImage(source)
+      const resolved = this.resolveImage(source)
+      this.imageEditor.src = this.proxyImage(resolved)
       this.imageEditor.target = { target, field }
-      this.imageEditor.zoom = 1
+      this.imageEditor.offsetX = 50
+      this.imageEditor.offsetY = 50
       this.imageEditor.aspect = '16:9'
       this.imageEditor.preview = ''
       this.imageEditor.error = ''
@@ -874,12 +896,12 @@ export default {
         cropW = cropH * aspect
       }
 
-      const zoom = Math.max(1, this.imageEditor.zoom || 1)
-      cropW = cropW / zoom
-      cropH = cropH / zoom
-
-      const sx = Math.max(0, (imgW - cropW) / 2)
-      const sy = Math.max(0, (imgH - cropH) / 2)
+      const maxX = Math.max(0, imgW - cropW)
+      const maxY = Math.max(0, imgH - cropH)
+      const offsetX = Math.min(100, Math.max(0, this.imageEditor.offsetX || 0)) / 100
+      const offsetY = Math.min(100, Math.max(0, this.imageEditor.offsetY || 0)) / 100
+      const sx = maxX * offsetX
+      const sy = maxY * offsetY
 
       const maxOut = 1400
       let outW = cropW
