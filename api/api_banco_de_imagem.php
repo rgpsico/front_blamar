@@ -1327,97 +1327,120 @@ switch ($action) {
     // Ex: POST ?action=upload_image (multipart/form-data)
     // Campos: titulo, descricao, arquivo
     // ================================================
-    case 'upload_image':
-        header('Content-Type: application/json; charset=utf-8');
+   case 'upload_image':
+    header('Content-Type: application/json; charset=utf-8');
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'error' => 'M?todo n?o permitido']);
-            exit;
-        }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'Método não permitido']);
+        exit;
+    }
 
-        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Arquivo ? obrigat?rio']);
-            exit;
-        }
+    if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório']);
+        exit;
+    }
 
-        $titulo = isset($_POST['titulo']) ? pg_escape_string(trim($_POST['titulo'])) : '';
-        $descricao = isset($_POST['descricao']) ? pg_escape_string(trim($_POST['descricao'])) : '';
-        $pasta = isset($_POST['pasta']) ? trim($_POST['pasta']) : '';
+    $titulo = isset($_POST['titulo']) ? pg_escape_string(trim($_POST['titulo'])) : '';
+    $descricao = isset($_POST['descricao']) ? pg_escape_string(trim($_POST['descricao'])) : '';
+    $pasta = isset($_POST['pasta']) ? trim($_POST['pasta']) : '';
 
-        if ($titulo === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'T?tulo ? obrigat?rio']);
-            exit;
-        }
+    if ($titulo === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
+        exit;
+    }
 
-        $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
-        if (!is_dir($baseDir)) {
-            mkdir($baseDir, 0775, true);
-        }
+    // === SALVA LOCALMENTE ===
+    $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
+    if (!is_dir($baseDir)) mkdir($baseDir, 0775, true);
 
-        $safeFolder = '';
-        if ($pasta !== '') {
-            $safeFolder = preg_replace('/[^a-zA-Z0-9_-]/', '_', $pasta);
-        }
+    $safeFolder = preg_replace('/[^a-zA-Z0-9_\/-]/', '_', $pasta);
+    $uploadDir = $safeFolder ? ($baseDir . '/' . $safeFolder) : $baseDir;
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
 
-        $uploadDir = $safeFolder ? ($baseDir . '/' . $safeFolder) : $baseDir;
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0775, true);
-        }
+    $originalName = $_FILES['arquivo']['name'];
+    $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+    $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    $fileName = $safeName . '_' . time() . '.' . $ext;
+    $destPath = $uploadDir . '/' . $fileName;
 
-        $originalName = $_FILES['arquivo']['name'];
-        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-        $fileName = $safeName . '_' . time() . ($ext ? '.' . $ext : '');
-        $destPath = $uploadDir . '/' . $fileName;
+    if (!move_uploaded_file($_FILES['arquivo']['tmp_name'], $destPath)) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Falha ao salvar local']);
+        exit;
+    }
 
-        if (!move_uploaded_file($_FILES['arquivo']['tmp_name'], $destPath)) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Falha ao salvar o arquivo']);
-            exit;
-        }
+    // === PEGA TODAS AS VARIAÇÕES ===
+    $baseSemExt = pathinfo($destPath, PATHINFO_FILENAME);
+    $dir = dirname($destPath);
+    $arquivos = glob($dir . '/' . $baseSemExt . '*');
 
-        $relativePath = 'bancoimagemfotos/uploads/' . ($safeFolder ? ($safeFolder . '/') : '') . $fileName;
+    // === ENVIA TODAS AO FLASK ===
+    $enviados = [];
 
-        $sql = "INSERT INTO banco_imagem.bco_img
-                    (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto)
-                VALUES
-                    ($1, $1, $1, $1, $1, $1, $2, $3, 1)
-                RETURNING pk_bco_img, tp_produto, legenda, palavras_chave, tam_1, tam_2, tam_3, tam_4, tam_5, zip";
+    foreach ($arquivos as $arquivoLocal) {
 
-        $result = pg_query_params($conn, $sql, array($relativePath, $titulo, $descricao));
+        $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp");
 
-        if (!$result) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Erro ao salvar no banco: ' . pg_last_error($conn)]);
-            exit;
-        }
-
-        $row = pg_fetch_assoc($result);
-        $base_url = 'https://www.blumar.com.br/';
-        $image = [
-            'pk_bco_img' => $row['pk_bco_img'],
-            'tp_produto' => $row['tp_produto'],
-            'legenda' => $row['legenda'],
-            'palavras_chave' => $row['palavras_chave'],
-            'urls' => [
-                'tam_4' => $base_url . str_replace(' ', '%20', $row['tam_4']),
-                'tam_3' => $base_url . str_replace(' ', '%20', $row['tam_3']),
-                'tam_2' => $base_url . str_replace(' ', '%20', $row['tam_2']),
-                'tam_1' => $base_url . str_replace(' ', '%20', $row['tam_1']),
-                'tam_5' => $base_url . str_replace(' ', '%20', $row['tam_5']),
-                'zip'   => $base_url . str_replace(' ', '%20', $row['zip'])
-            ]
+        $post = [
+            'pasta' => $safeFolder ?: 'uploads',
+            'file'  => new CURLFile(realpath($arquivoLocal))
         ];
-        $image['preview_url'] = $image['urls']['tam_4'] ?? $image['urls']['tam_3'] ?? $image['urls']['tam_2'] ?? $image['urls']['tam_1'];
 
-        echo json_encode([
-            'success' => true,
-            'image' => $image
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $post,
+            CURLOPT_HTTPHEADER => ["Authorization: Bearer 123456"],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30
         ]);
-        break;
+
+        $response = curl_exec($ch);
+
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            if (!empty($data['success'])) {
+                $enviados[] = $data['path'];
+            }
+        }
+
+        curl_close($ch);
+    }
+
+    if (count($enviados) === 0) {
+        echo json_encode(['success'=>false,'error'=>'Nenhuma imagem foi enviada ao banco']);
+        exit;
+    }
+
+    // === SALVA NO BANCO USANDO CAMINHOS REAIS ===
+    $tam_1 = $enviados[0] ?? null;
+    $tam_2 = $enviados[1] ?? null;
+    $tam_3 = $enviados[2] ?? null;
+    $tam_4 = $enviados[3] ?? null;
+    $tam_5 = $enviados[4] ?? null;
+    $zip   = $enviados[0] ?? null;
+
+    $sql = "INSERT INTO banco_imagem.bco_img
+        (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1)
+        RETURNING pk_bco_img";
+
+    $res = pg_query_params($conn, $sql, [
+        $tam_1, $tam_2, $tam_3, $tam_4, $tam_5, $zip,
+        $titulo, $descricao
+    ]);
+
+    $row = pg_fetch_assoc($res);
+
+    echo json_encode([
+        'success' => true,
+        'pk_bco_img' => $row['pk_bco_img'],
+        'paths' => $enviados
+    ]);
+    break;
+
 
     // ================================================
     // LISTAR PASTAS DE UPLOAD
@@ -1442,32 +1465,32 @@ switch ($action) {
     // CRIAR PASTA DE UPLOAD
     // Ex: POST ?action=create_upload_folder { "name": "minha_pasta" }
     // ================================================
-    case 'create_upload_folder':
-        header('Content-Type: application/json; charset=utf-8');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'error' => 'Método não permitido']);
-            exit;
-        }
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true);
-        $name = isset($data['name']) ? trim($data['name']) : '';
-        if ($name === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Nome da pasta é obrigatório']);
-            exit;
-        }
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $name);
-        $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
-        if (!is_dir($baseDir)) {
-            mkdir($baseDir, 0775, true);
-        }
-        $folderPath = $baseDir . '/' . $safeName;
-        if (!is_dir($folderPath)) {
-            mkdir($folderPath, 0775, true);
-        }
-        echo json_encode(['success' => true, 'folder' => $safeName]);
-        break;
+    // case 'create_upload_folder':
+    //     header('Content-Type: application/json; charset=utf-8');
+    //     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    //         http_response_code(405);
+    //         echo json_encode(['success' => false, 'error' => 'Método não permitido']);
+    //         exit;
+    //     }
+    //     $input = file_get_contents('php://input');
+    //     $data = json_decode($input, true);
+    //     $name = isset($data['name']) ? trim($data['name']) : '';
+    //     if ($name === '') {
+    //         http_response_code(400);
+    //         echo json_encode(['success' => false, 'error' => 'Nome da pasta é obrigatório']);
+    //         exit;
+    //     }
+    //     $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $name);
+    //     $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
+    //     if (!is_dir($baseDir)) {
+    //         mkdir($baseDir, 0775, true);
+    //     }
+    //     $folderPath = $baseDir . '/' . $safeName;
+    //     if (!is_dir($folderPath)) {
+    //         mkdir($folderPath, 0775, true);
+    //     }
+    //     echo json_encode(['success' => true, 'folder' => $safeName]);
+    //     break;
 
 
     default:

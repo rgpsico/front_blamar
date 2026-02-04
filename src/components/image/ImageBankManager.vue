@@ -326,6 +326,43 @@
         </v-card-title>
         <v-card-text>
           <v-row>
+            <v-col cols="12">
+              <v-radio-group
+                v-model="createForm.destino_tipo"
+                row
+                label="Destino da imagem"
+                @change="onCreateDestinoChange"
+              >
+                <v-radio label="Hotel" value="hotel"></v-radio>
+                <v-radio label="Cidade" value="cidade"></v-radio>
+              </v-radio-group>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-autocomplete
+                v-model="createForm.cidade"
+                :items="cityOptions"
+                item-text="nome_en"
+                return-object
+                label="Cidade"
+                dense
+                outlined
+                @change="onCreateCidadeChange"
+              ></v-autocomplete>
+            </v-col>
+            <v-col cols="12" md="6" v-if="createForm.destino_tipo === 'hotel'">
+              <v-select
+                v-model="createForm.hotel"
+                :items="createHotelOptions"
+                item-text="nome_for"
+                item-value="mneu_for"
+                return-object
+                label="Hotel"
+                dense
+                outlined
+                :disabled="!createForm.cidade"
+                @change="updateCreateFolder"
+              ></v-select>
+            </v-col>
             <v-col cols="12" md="6">
               <v-text-field v-model="editForm.legenda" label="Legenda" dense outlined></v-text-field>
             </v-col>
@@ -521,6 +558,42 @@
         </v-card-title>
         <v-card-text>
           <v-row>
+            <v-col cols="12">
+              <v-radio-group
+                v-model="createForm.destino_tipo"
+                row
+                label="Destino da imagem"
+                @change="onCreateDestinoChange"
+              >
+                <v-radio label="Hotel" value="hotel"></v-radio>
+                <v-radio label="Cidade" value="cidade"></v-radio>
+              </v-radio-group>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-autocomplete
+                v-model="createForm.cidade"
+                :items="cityOptions"
+                item-text="nome_en"
+                return-object
+                label="Cidade"
+                dense
+                outlined
+                @change="fetchCreateHotelsByCity"
+              ></v-autocomplete>
+            </v-col>
+            <v-col cols="12" md="6" v-if="createForm.destino_tipo === 'hotel'">
+              <v-select
+                v-model="createForm.hotel"
+                :items="createHotelOptions"
+                item-text="nome_for"
+                item-value="mneu_for"
+                return-object
+                label="Hotel"
+                dense
+                outlined
+                :disabled="!createForm.cidade"
+              ></v-select>
+            </v-col>
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="createForm.titulo"
@@ -555,6 +628,7 @@
                   label="Nova pasta"
                   dense
                   outlined
+                  @blur="normalizeNovaPasta"
                 ></v-text-field>
                 <v-btn
                   class="image-bank__folder-create-btn"
@@ -629,7 +703,11 @@ export default {
       createLoading: false,
       createFolderLoading: false,
       folderOptions: [],
+      createHotelOptions: [],
       createForm: {
+        destino_tipo: 'hotel',
+        cidade: null,
+        hotel: null,
         titulo: '',
         descricao: '',
         arquivo: null,
@@ -799,6 +877,62 @@ export default {
       } catch (error) {
         this.showMessage(`Erro ao buscar hoteis: ${error.message}`, 'error')
       }
+    },
+    async fetchCreateHotelsByCity() {
+      try {
+        if (!this.createForm.cidade) {
+          this.createHotelOptions = []
+          this.createForm.hotel = null
+          return
+        }
+        const cityName = this.createForm.cidade?.nome_en || ''
+        const response = await axios.get(
+          `${API_BASE}?action=hotels_by_city&city=${encodeURIComponent(cityName)}`
+        )
+        const data = response.data
+        this.createHotelOptions = Array.isArray(data?.hotels) ? data.hotels : []
+        this.createForm.hotel = null
+      } catch (error) {
+        this.showMessage(`Erro ao buscar hoteis: ${error.message}`, 'error')
+      }
+    },
+    onCreateCidadeChange() {
+      this.fetchCreateHotelsByCity()
+      this.updateCreateFolder()
+    },
+    onCreateDestinoChange() {
+      this.createForm.hotel = null
+      if (this.createForm.destino_tipo !== 'hotel') {
+        this.createHotelOptions = []
+      }
+      this.updateCreateFolder()
+    },
+    updateCreateFolder() {
+      const tipo = this.createForm.destino_tipo
+      if (tipo === 'cidade' && this.createForm.cidade?.nome_en) {
+        const slug = this.normalizeFolderName(this.createForm.cidade.nome_en)
+        this.createForm.pasta = `cidade/${slug}`
+        return
+      }
+      if (tipo === 'hotel' && this.createForm.hotel?.nome_for) {
+        const slug = this.normalizeFolderName(this.createForm.hotel.nome_for)
+        this.createForm.pasta = `hotel/${slug}`
+        return
+      }
+    },
+    normalizeNovaPasta() {
+      if (!this.createForm.nova_pasta) return
+      this.createForm.nova_pasta = this.normalizeFolderName(this.createForm.nova_pasta)
+    },
+    normalizeFolderName(value) {
+      if (!value) return ''
+      return String(value)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_/-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '')
     },
     async runSearch() {
       this.loading = true
@@ -1065,7 +1199,11 @@ export default {
         const formData = new FormData()
         formData.append('titulo', this.createForm.titulo)
         formData.append('descricao', this.createForm.descricao || '')
-        formData.append('pasta', this.createForm.pasta || '')
+        const pastaNormalizada = this.normalizeFolderName(this.createForm.pasta || '')
+        formData.append('pasta', pastaNormalizada)
+        if (this.createForm.cidade?.nome_en) {
+          formData.append('cidade_nome', this.normalizeFolderName(this.createForm.cidade.nome_en))
+        }
         formData.append('arquivo', this.createForm.arquivo)
 
         const response = await axios.post(`${API_BASE}?action=upload_image`, formData, {
@@ -1079,7 +1217,16 @@ export default {
           }
           this.showMessage('Imagem cadastrada com sucesso.')
           this.createDialog = false
-          this.createForm = { titulo: '', descricao: '', arquivo: null, pasta: '', nova_pasta: '' }
+          this.createForm = {
+            destino_tipo: 'hotel',
+            cidade: null,
+            hotel: null,
+            titulo: '',
+            descricao: '',
+            arquivo: null,
+            pasta: '',
+            nova_pasta: ''
+          }
           return
         }
 
@@ -1105,12 +1252,13 @@ export default {
       }
       this.createFolderLoading = true
       try {
+        const normalized = this.normalizeFolderName(this.createForm.nova_pasta)
         const response = await axios.post(`${API_BASE}?action=create_upload_folder`, {
-          name: this.createForm.nova_pasta
+          name: normalized
         })
         if (response.data?.success) {
           await this.loadFolders()
-          this.createForm.pasta = response.data?.folder || this.createForm.nova_pasta
+          this.createForm.pasta = response.data?.folder || normalized
           this.createForm.nova_pasta = ''
           this.showMessage('Pasta criada com sucesso.')
           return
