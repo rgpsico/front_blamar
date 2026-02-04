@@ -578,7 +578,7 @@
                 label="Cidade"
                 dense
                 outlined
-                @change="fetchCreateHotelsByCity"
+                @change="onCreateCidadeChange"
               ></v-autocomplete>
             </v-col>
             <v-col cols="12" md="6" v-if="createForm.destino_tipo === 'hotel'">
@@ -880,7 +880,7 @@ export default {
     },
     async fetchCreateHotelsByCity() {
       try {
-        if (!this.createForm.cidade) {
+        if (!this.createForm.cidade || this.createForm.destino_tipo !== 'hotel') {
           this.createHotelOptions = []
           this.createForm.hotel = null
           return
@@ -897,7 +897,12 @@ export default {
       }
     },
     onCreateCidadeChange() {
-      this.fetchCreateHotelsByCity()
+      this.createForm.hotel = null
+      if (this.createForm.destino_tipo === 'hotel') {
+        this.fetchCreateHotelsByCity()
+      } else {
+        this.createHotelOptions = []
+      }
       this.updateCreateFolder()
     },
     onCreateDestinoChange() {
@@ -1223,9 +1228,20 @@ export default {
         if (this.createForm.cidade?.nome_en) {
           formData.append('cidade_nome', this.normalizeFolderName(this.createForm.cidade.nome_en))
         }
+        if (this.createForm.cidade?.cidade_cod) {
+          formData.append('fk_cidcod', this.createForm.cidade.cidade_cod)
+        }
         formData.append('arquivo', this.createForm.arquivo)
 
-        const response = await axios.post(`${API_BASE}?action=upload_image`, formData, {
+        const action =
+          this.createForm.destino_tipo === 'hotel' ? 'upload_image_hotel' : 'upload_image'
+        if (this.createForm.destino_tipo === 'hotel' && this.createForm.hotel?.nome_for) {
+          formData.append('hotel_nome', this.normalizeFolderName(this.createForm.hotel.nome_for))
+        }
+        if (this.createForm.destino_tipo === 'hotel' && this.createForm.hotel?.mneu_for) {
+          formData.append('mneu_for', this.createForm.hotel.mneu_for)
+        }
+        const response = await axios.post(`${API_BASE}?action=${action}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
 

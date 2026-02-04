@@ -15,6 +15,7 @@ CORS(app)
 
 BASE_PATH = os.getenv("BASE_PATH", "Z:\\wwwinternet\\bancodeimagemfotosteste")
 BASE_PATH_CIDADE = os.getenv("BASE_PATH_CIDADE", "Z:\\wwwinternet\\bancoimagemfotosteste\\cidade")
+BASE_PATH_HOTEL = os.getenv("BASE_PATH_HOTEL", "Z:\\wwwinternet\\bancoimagemfotosteste\\hotel")
 TOKEN = os.getenv("API_TOKEN")
 
 SIZES = {
@@ -86,6 +87,14 @@ def sanitize_rel_path(path):
             return None
 
     return "/".join(parts)
+
+def normalize_name(value):
+    if not value:
+        return ""
+    name = str(value).strip().lower()
+    name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
+    name = "_".join(filter(None, name.split("_")))
+    return name
 
 
 def gerar_tamanhos(caminho_original, pasta, nome_base, ext):
@@ -181,6 +190,72 @@ def upload_from_erp_enviar_para_cidade():
             "original": f"{safe_cidade}/{safe_pasta}/{filename}",
             "sizes": {
                 k: f"{safe_cidade}/{safe_pasta}/{Path(v).name}"
+                for k, v in sizes.items()
+            },
+            "full_path": caminho_final
+        })
+
+    except Exception as e:
+        registrar_log_movimentacao("ERP", caminho_final, sucesso=False, erro=str(e))
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/upload_from_erp_enviar_para_hotel', methods=['POST'])
+def upload_from_erp_enviar_para_hotel():
+    if not validar_token():
+        return jsonify({"success": False, "error": "Token inválido"}), 401
+
+    file = request.files.get("file")
+    cidade_nome = request.form.get("cidade_nome", "").strip()
+    hotel_nome = request.form.get("hotel_nome", "").strip()
+
+    if not file:
+        return jsonify({"success": False, "error": "Arquivo não enviado"}), 400
+
+    if not cidade_nome or not hotel_nome:
+        return jsonify({"success": False, "error": "cidade_nome e hotel_nome são obrigatórios"}), 400
+
+    cidade_slug = normalize_name(cidade_nome)
+    hotel_slug = normalize_name(hotel_nome)
+    safe_path = sanitize_rel_path(f"{cidade_slug}/{hotel_slug}")
+
+    if not safe_path:
+        return jsonify({"success": False, "error": "Pasta inválida"}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in EXTENSOES_IMAGEM:
+        return jsonify({"success": False, "error": "Extensão não permitida"}), 400
+
+    destino_dir = os.path.join(
+        BASE_PATH_HOTEL,
+        safe_path.replace("/", os.sep)
+    )
+
+    os.makedirs(destino_dir, exist_ok=True)
+
+    nome = Path(file.filename).stem
+    nome = "".join(c if c.isalnum() or c in "-_" else "_" for c in nome)
+    filename = f"{nome}_{int(datetime.now().timestamp())}{ext}"
+
+    caminho_final = os.path.join(destino_dir, filename)
+
+    try:
+        file.save(caminho_final)
+        sizes = gerar_tamanhos(caminho_final, destino_dir, nome, ext)
+
+        registrar_log_movimentacao(
+            "ERP",
+            f"hotel/{safe_path}/{filename}",
+            sucesso=True
+        )
+
+        return jsonify({
+            "success": True,
+            "cidade": cidade_slug,
+            "hotel": hotel_slug,
+            "original": f"hotel/{safe_path}/{filename}",
+            "sizes": {
+                k: f"hotel/{safe_path}/{Path(v).name}"
                 for k, v in sizes.items()
             },
             "full_path": caminho_final
