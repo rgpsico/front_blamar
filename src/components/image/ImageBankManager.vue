@@ -966,7 +966,7 @@ export default {
         }
 
         if (hasCity) {
-          this.showMessage('Selecione um hotel para listar as imagens ou use a busca por termo.', 'warning')
+          await this.fetchImagesForCity()
           return
         }
 
@@ -990,6 +990,25 @@ export default {
         this.images = Array.isArray(response.data?.images) ? response.data.images : []
       } catch (error) {
         this.showMessage(`Erro ao buscar imagens: ${error.message}`, 'error')
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchImagesForCity() {
+      if (!this.selectedCity?.cidade_cod) {
+        this.images = []
+        return
+      }
+      this.loading = true
+      try {
+        const response = await axios.get(
+          `${API_BASE}?action=city_generic_images&cidade_cod=${encodeURIComponent(
+            this.selectedCity.cidade_cod
+          )}`
+        )
+        this.images = Array.isArray(response.data?.images) ? response.data.images : []
+      } catch (error) {
+        this.showMessage(`Erro ao buscar imagens da cidade: ${error.message}`, 'error')
       } finally {
         this.loading = false
       }
