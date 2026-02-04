@@ -1327,119 +1327,130 @@ switch ($action) {
     // Ex: POST ?action=upload_image (multipart/form-data)
     // Campos: titulo, descricao, arquivo
     // ================================================
-   case 'upload_image':
-    header('Content-Type: application/json; charset=utf-8');
+    case 'upload_image':
+        header('Content-Type: application/json; charset=utf-8');
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        echo json_encode(['success' => false, 'error' => 'Método não permitido']);
-        exit;
-    }
+    
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Método não permitido']);
+            exit;
+        }
 
-    if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório']);
-        exit;
-    }
+        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório']);
+            exit;
+        }
 
-    $titulo = isset($_POST['titulo']) ? pg_escape_string(trim($_POST['titulo'])) : '';
-    $descricao = isset($_POST['descricao']) ? pg_escape_string(trim($_POST['descricao'])) : '';
-    $pasta = isset($_POST['pasta']) ? trim($_POST['pasta']) : '';
+        $titulo = isset($_POST['titulo']) ? pg_escape_string(trim($_POST['titulo'])) : '';
+        $descricao = isset($_POST['descricao']) ? pg_escape_string(trim($_POST['descricao'])) : '';
+        $pasta = isset($_POST['pasta']) ? trim($_POST['pasta']) : '';
 
-    if ($titulo === '') {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
-        exit;
-    }
+        if ($titulo === '') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
+            exit;
+        }
 
-    // === SALVA LOCALMENTE ===
-    $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
-    if (!is_dir($baseDir)) mkdir($baseDir, 0775, true);
+        // === SALVA LOCALMENTE ===
+        $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
+        if (!is_dir($baseDir)) mkdir($baseDir, 0775, true);
 
-    $safeFolder = preg_replace('/[^a-zA-Z0-9_\/-]/', '_', $pasta);
-    $uploadDir = $safeFolder ? ($baseDir . '/' . $safeFolder) : $baseDir;
-    if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+        $safeFolder = preg_replace('/[^a-zA-Z0-9_\/-]/', '_', $pasta);
+        $uploadDir = $safeFolder ? ($baseDir . '/' . $safeFolder) : $baseDir;
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
 
-    $originalName = $_FILES['arquivo']['name'];
-    $ext = pathinfo($originalName, PATHINFO_EXTENSION);
-    $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-    $fileName = $safeName . '_' . time() . '.' . $ext;
-    $destPath = $uploadDir . '/' . $fileName;
+        $originalName = $_FILES['arquivo']['name'];
+        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+        $fileName = $safeName . '_' . time() . '.' . $ext;
+        $destPath = $uploadDir . '/' . $fileName;
 
-    if (!move_uploaded_file($_FILES['arquivo']['tmp_name'], $destPath)) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Falha ao salvar local']);
-        exit;
-    }
+        if (!move_uploaded_file($_FILES['arquivo']['tmp_name'], $destPath)) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Falha ao salvar local']);
+            exit;
+        }
 
-    // === PEGA TODAS AS VARIAÇÕES ===
-    $baseSemExt = pathinfo($destPath, PATHINFO_FILENAME);
-    $dir = dirname($destPath);
-    $arquivos = glob($dir . '/' . $baseSemExt . '*');
+        // === PEGA TODAS AS VARIAÇÕES ===
+        $baseSemExt = pathinfo($destPath, PATHINFO_FILENAME);
+        $dir = dirname($destPath);
+        $arquivos = glob($dir . '/' . $baseSemExt . '*');
 
-    // === ENVIA TODAS AO FLASK ===
-    $enviados = [];
+        // === ENVIA TODAS AO FLASK ===
+        $enviados = [];
 
-    foreach ($arquivos as $arquivoLocal) {
+        foreach ($arquivos as $arquivoLocal) {
 
-        $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp");
+        $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_cidade");
 
-        $post = [
-            'pasta' => $safeFolder ?: 'uploads',
-            'file'  => new CURLFile(realpath($arquivoLocal))
+        $post = [       
+            'cidade_nome' => $_POST['cidade_nome'] ?? '',
+            'file'        => new CURLFile(realpath($arquivoLocal)),
         ];
 
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $post,
-            CURLOPT_HTTPHEADER => ["Authorization: Bearer 123456"],
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer 123456"
+            ],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30
         ]);
 
         $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        if ($response !== false) {
+        if ($response === false || $httpCode !== 200) {
+            error_log("Erro CURL (HTTP $httpCode): " . curl_error($ch) . " - Resposta: " . $response);
+        } else {
             $data = json_decode($response, true);
-            if (!empty($data['success'])) {
-                $enviados[] = $data['path'];
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("JSON inválido do Flask: " . $response);
+            } elseif (!empty($data['success'])) {
+                $enviados[] = $data['original'] ?? '';   // ← CORREÇÃO AQUI
+            } else {
+                error_log("Falha no upload Flask: " . $response);
             }
         }
 
         curl_close($ch);
     }
 
-    if (count($enviados) === 0) {
-        echo json_encode(['success'=>false,'error'=>'Nenhuma imagem foi enviada ao banco']);
-        exit;
-    }
 
-    // === SALVA NO BANCO USANDO CAMINHOS REAIS ===
-    $tam_1 = $enviados[0] ?? null;
-    $tam_2 = $enviados[1] ?? null;
-    $tam_3 = $enviados[2] ?? null;
-    $tam_4 = $enviados[3] ?? null;
-    $tam_5 = $enviados[4] ?? null;
-    $zip   = $enviados[0] ?? null;
+        if (count($enviados) === 0) {
+            echo json_encode(['success'=>false,'error'=>'Nenhuma imagem foi enviada ao banco']);
+            exit;
+        }
 
-    $sql = "INSERT INTO banco_imagem.bco_img
-        (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1)
-        RETURNING pk_bco_img";
+        // === SALVA NO BANCO USANDO CAMINHOS REAIS ===
+        $tam_1 = $enviados[0] ?? null;
+        $tam_2 = $enviados[1] ?? null;
+        $tam_3 = $enviados[2] ?? null;
+        $tam_4 = $enviados[3] ?? null;
+        $tam_5 = $enviados[4] ?? null;
+        $zip   = $enviados[0] ?? null;
 
-    $res = pg_query_params($conn, $sql, [
-        $tam_1, $tam_2, $tam_3, $tam_4, $tam_5, $zip,
-        $titulo, $descricao
-    ]);
+        $sql = "INSERT INTO banco_imagem.bco_img
+            (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1)
+            RETURNING pk_bco_img";
 
-    $row = pg_fetch_assoc($res);
+        $res = pg_query_params($conn, $sql, [
+            $tam_1, $tam_2, $tam_3, $tam_4, $tam_5, $zip,
+            $titulo, $descricao
+        ]);
 
-    echo json_encode([
-        'success' => true,
-        'pk_bco_img' => $row['pk_bco_img'],
-        'paths' => $enviados
-    ]);
-    break;
+        $row = pg_fetch_assoc($res);
+
+        echo json_encode([
+            'success' => true,
+            'pk_bco_img' => $row['pk_bco_img'],
+            'paths' => $enviados
+        ]);
+        break;
 
 
     // ================================================
