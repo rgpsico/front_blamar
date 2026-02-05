@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 import shutil
 from datetime import datetime
 from PIL import Image
-
+from pathlib import Path
+import zipfile
+from pathlib import Path
 
 load_dotenv()
 
@@ -16,6 +18,7 @@ CORS(app)
 BASE_PATH = os.getenv("BASE_PATH", "Z:\\wwwinternet\\bancodeimagemfotosteste")
 BASE_PATH_CIDADE = os.getenv("BASE_PATH_CIDADE", "Z:\\wwwinternet\\bancoimagemfotosteste\\cidade")
 BASE_PATH_HOTEL = os.getenv("BASE_PATH_HOTEL", "Z:\\wwwinternet\\bancoimagemfotosteste\\hotel")
+
 TOKEN = os.getenv("API_TOKEN")
 
 SIZES = {
@@ -88,14 +91,6 @@ def sanitize_rel_path(path):
 
     return "/".join(parts)
 
-def normalize_name(value):
-    if not value:
-        return ""
-    name = str(value).strip().lower()
-    name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
-    name = "_".join(filter(None, name.split("_")))
-    return name
-
 
 def gerar_tamanhos(caminho_original, pasta, nome_base, ext):
     img = Image.open(caminho_original)
@@ -129,77 +124,18 @@ def sanitize_rel_path(path):
     return "/".join(parts)
 
 
-@app.route('/api/upload_from_erp_enviar_para_cidade', methods=['POST'])
-def upload_from_erp_enviar_para_cidade():
-    if not validar_token():
-        return jsonify({"success": False, "error": "Token inválido"}), 401
-
-    file = request.files.get("file")
-    cidade_nome = request.form.get("cidade_nome", "").strip()
-
-    print("Cidade recebida:", cidade_nome)
-
-    if not file:
-        return jsonify({"success": False, "error": "Arquivo não enviado"}), 400
-
-    if not cidade_nome:
-        return jsonify({"success": False, "error": "cidade_nome é obrigatório"}), 400
-
-    # sanitiza
-    safe_cidade = sanitize_rel_path(cidade_nome)
-
-    if not safe_cidade:
-        return jsonify({"success": False, "error": "Nome da cidade inválido"}), 400
-
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in EXTENSOES_IMAGEM:
-        return jsonify({"success": False, "error": "Extensão não permitida"}), 400
-
-    # caminho final: BASE/cidade
-    destino_dir = os.path.join(
-        BASE_PATH_CIDADE,
-        safe_cidade.replace("/", os.sep)
-    )
-
-    print("Destino final:", destino_dir)
-    os.makedirs(destino_dir, exist_ok=True)
-
-    nome = Path(file.filename).stem
-    nome = "".join(c if c.isalnum() or c in "-_" else "_" for c in nome)
-    filename = f"{nome}_{int(datetime.now().timestamp())}{ext}"
-
-    caminho_final = os.path.join(destino_dir, filename)
-
-    try:
-        # salva original
-        file.save(caminho_final)
-
-        # gera tamanhos (mantém dentro da pasta da cidade)
-        sizes = gerar_tamanhos(caminho_final, destino_dir, nome, ext)
-
-        # registra log com caminho correto (sem duplicação)
-        registrar_log_movimentacao(
-            "ERP",
-            f"{safe_cidade}/{filename}",
-            sucesso=True
-        )
-
-        return jsonify({
-            "success": True,
-            "cidade": safe_cidade,
-            "original": f"{safe_cidade}/{filename}",          # ← AQUI ESTÁ A CORREÇÃO PRINCIPAL
-            "sizes": {
-                k: f"{safe_cidade}/{Path(v).name}"            # ← só cidade + nome do arquivo
-                for k, v in sizes.items()
-            },
-            "full_path": caminho_final
-        })
-
-    except Exception as e:
-        registrar_log_movimentacao("ERP", caminho_final, sucesso=False, erro=str(e))
-        return jsonify({"success": False, "error": str(e)}), 500
+def normalize_name(value):
+    if not value:
+        return ""
+    name = str(value).strip().lower()
+    name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
+    name = "_".join(filter(None, name.split("_")))
+    return name
 
 
+
+
+# ... (certifique-se de que zipfile está importado no topo do arquivo)
 @app.route('/api/upload_from_erp_enviar_para_hotel', methods=['POST'])
 def upload_from_erp_enviar_para_hotel():
     if not validar_token():
@@ -239,9 +175,31 @@ def upload_from_erp_enviar_para_hotel():
 
     caminho_final = os.path.join(destino_dir, filename)
 
+    zip_rel_path = None  # inicializa para evitar NameError
+
     try:
         file.save(caminho_final)
         sizes = gerar_tamanhos(caminho_final, destino_dir, nome, ext)
+
+        # GERA O ZIP
+        zip_filename = f"{nome}_{int(datetime.now().timestamp())}_all.zip"
+        zip_path = os.path.join(destino_dir, zip_filename)
+
+        print(f"[HOTEL ZIP] Gerando em: {zip_path}")
+
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Original
+            zipf.write(caminho_final, arcname=Path(caminho_final).name)
+
+            # Variações
+            for size_path in sizes.values():
+                if os.path.exists(size_path):
+                    zipf.write(size_path, arcname=Path(size_path).name)
+                else:
+                    print(f"[HOTEL ZIP] Variação não encontrada: {size_path}")
+
+        zip_rel_path = f"bancoimagemfotos/hotel/{safe_path}/{zip_filename}"
+        print(f"[HOTEL ZIP] Gerado com sucesso: {zip_rel_path}")
 
         registrar_log_movimentacao(
             "ERP",
@@ -253,17 +211,170 @@ def upload_from_erp_enviar_para_hotel():
             "success": True,
             "cidade": cidade_slug,
             "hotel": hotel_slug,
-            "original": f"hotel/{safe_path}/{filename}",
+            "original": f"bancoimagemfotos/hotel/{safe_path}/{filename}",
             "sizes": {
-                k: f"hotel/{safe_path}/{Path(v).name}"
+                k: f"bancoimagemfotos/hotel/{safe_path}/{os.path.basename(v)}"
                 for k, v in sizes.items()
             },
+            "zip": zip_rel_path,  # ← agora incluído
             "full_path": caminho_final
         })
 
     except Exception as e:
-        registrar_log_movimentacao("ERP", caminho_final, sucesso=False, erro=str(e))
-        return jsonify({"success": False, "error": str(e)}), 500
+        print(f"[HOTEL ERRO] {str(e)}")
+
+        if 'zip_path' in locals() and os.path.exists(zip_path):
+            try:
+                os.remove(zip_path)
+                print("[HOTEL] ZIP parcial removido")
+            except:
+                pass
+
+        registrar_log_movimentacao(
+            "ERP",
+            caminho_final,
+            sucesso=False,
+            erro=str(e)
+        )
+
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "zip": None
+        }), 500
+
+    except Exception as e:
+        print(f"[HOTEL] Erro durante processamento: {str(e)}")
+
+        # Remove ZIP parcial se existir
+        if 'zip_path' in locals() and os.path.exists(zip_path):
+            try:
+                os.remove(zip_path)
+                print("[HOTEL] ZIP parcial removido")
+            except:
+                pass
+
+        registrar_log_movimentacao(
+            "ERP",
+            caminho_final,
+            sucesso=False,
+            erro=str(e)
+        )
+
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "zip": None
+        }), 500
+
+
+@app.route('/api/upload_from_erp_enviar_para_cidade', methods=['POST'])
+def upload_from_erp_enviar_para_cidade():
+    if not validar_token():
+        return jsonify({"success": False, "error": "Token inválido"}), 401
+
+    file = request.files.get("file")
+    cidade_nome = request.form.get("cidade_nome", "").strip()
+
+    print("Cidade recebida:", cidade_nome)
+
+    if not file:
+        return jsonify({"success": False, "error": "Arquivo não enviado"}), 400
+
+    if not cidade_nome:
+        return jsonify({"success": False, "error": "cidade_nome é obrigatório"}), 400
+
+    safe_cidade = sanitize_rel_path(cidade_nome)
+    if not safe_cidade:
+        return jsonify({"success": False, "error": "Nome da cidade inválido"}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in EXTENSOES_IMAGEM:
+        return jsonify({"success": False, "error": "Extensão não permitida"}), 400
+
+    destino_dir = os.path.join(
+        BASE_PATH_CIDADE,
+        safe_cidade.replace("/", os.sep)
+    )
+    print("Destino final:", destino_dir)
+    os.makedirs(destino_dir, exist_ok=True)
+
+    nome = Path(file.filename).stem
+    nome = "".join(c if c.isalnum() or c in "-_" else "_" for c in nome)
+    filename = f"{nome}_{int(datetime.now().timestamp())}{ext}"
+
+    caminho_final = os.path.join(destino_dir, filename)
+
+    zip_rel_path = None  # ← inicializamos como None
+
+    try:
+        # Salva original
+        file.save(caminho_final)
+
+        # Gera variações
+        sizes = gerar_tamanhos(caminho_final, destino_dir, nome, ext)
+
+        # Gera ZIP
+        zip_filename = f"{nome}_{int(datetime.now().timestamp())}_all.zip"
+        zip_path = os.path.join(destino_dir, zip_filename)
+
+        print(f"Gerando ZIP em: {zip_path}")
+
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Original
+            zipf.write(caminho_final, arcname=Path(caminho_final).name)
+
+            # Variações
+            for size_path in sizes.values():
+                if os.path.exists(size_path):
+                    zipf.write(size_path, arcname=Path(size_path).name)
+                else:
+                    print(f"Aviso: variação não encontrada para zip: {size_path}")
+
+        zip_rel_path = f"{safe_cidade}/{zip_filename}"
+        print(f"ZIP gerado com sucesso: {zip_rel_path}")
+
+        registrar_log_movimentacao(
+            "ERP",
+            f"{safe_cidade}/{filename}",
+            sucesso=True
+        )
+
+        return jsonify({
+            "success": True,
+            "cidade": safe_cidade,
+            "original": f"bancoimagemfotos/{safe_cidade}/{filename}",
+            "sizes": {
+                k: f"bancoimagemfotos/{safe_cidade}/{os.path.basename(v)}"
+                for k, v in sizes.items()
+            },
+            "zip": zip_rel_path,
+            "full_path": caminho_final
+        })
+
+    except Exception as e:
+        print(f"Erro durante processamento: {str(e)}")
+
+        # Limpa zip parcial se existir
+        if 'zip_path' in locals() and os.path.exists(zip_path):
+            try:
+                os.remove(zip_path)
+                print("ZIP parcial removido")
+            except:
+                print("Falha ao remover ZIP parcial")
+
+        registrar_log_movimentacao(
+            "ERP",
+            caminho_final,
+            sucesso=False,
+            erro=str(e)
+        )
+
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "zip": None  # garante que não vai quebrar no PHP
+        }), 500
 
 
 

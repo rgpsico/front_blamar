@@ -1342,7 +1342,7 @@ switch ($action) {
     $cidade_nome  = isset($_POST['cidade_nome'])  ? trim($_POST['cidade_nome'])                    : '';
     $hotel_nome   = isset($_POST['hotel_nome'])   ? trim($_POST['hotel_nome'])                     : '';
     $mneu_for     = isset($_POST['mneu_for'])     ? pg_escape_string(trim($_POST['mneu_for']))     : '';
-    $fk_cidcod    = isset($_POST['fk_cidcod'])    ? (int)$_POST['fk_cidcod']                       : 0;   // ← Código da cidade
+    $fk_cidcod    = isset($_POST['fk_cidcod'])    ? (int)$_POST['fk_cidcod']                       : 0;
 
     if ($titulo === '') {
         http_response_code(400);
@@ -1362,7 +1362,7 @@ switch ($action) {
         exit;
     }
 
-    // Envia diretamente o arquivo para o Flask (sem salvar localmente)
+    // Envia diretamente para o Flask
     $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_hotel");
 
     $post = [
@@ -1382,7 +1382,7 @@ switch ($action) {
             "Authorization: Bearer 123456"
         ],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 90,
+        CURLOPT_TIMEOUT        => 120,  // aumentei um pouco por causa do zip
     ]);
 
     $response = curl_exec($ch);
@@ -1393,6 +1393,7 @@ switch ($action) {
 
     if ($response === false || $httpCode !== 200) {
         error_log("Erro CURL upload hotel (HTTP $httpCode): $curlError - Resposta: $response");
+        http_response_code(502);
         echo json_encode([
             'success' => false,
             'error'   => 'Falha ao enviar para o servidor de imagens'
@@ -1402,8 +1403,9 @@ switch ($action) {
 
     $data = json_decode($response, true);
 
-    if (json_last_error() !== JSON_ERROR_NONE) {
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
         error_log("JSON inválido do Flask (hotel): " . $response);
+        http_response_code(502);
         echo json_encode([
             'success' => false,
             'error'   => 'Resposta inválida do servidor de imagens'
@@ -1412,7 +1414,7 @@ switch ($action) {
     }
 
     if (empty($data['success']) || empty($data['original'])) {
-        error_log("Falha no upload Flask hotel: " . $response);
+        error_log("Falha no upload Flask hotel: " . json_encode($data));
         echo json_encode([
             'success' => false,
             'error'   => $data['error'] ?? 'Upload falhou no servidor'
@@ -1420,17 +1422,22 @@ switch ($action) {
         exit;
     }
 
-    // Coleta os caminhos retornados
+    // Coleta caminhos
     $enviados = [];
 
-    // Caminho principal
-    $path = trim($data['original'] ?? '', '/');
-    $enviados[] = $path;
+    // Original
+    $original_path = trim($data['original'] ?? '', '/');
+    if ($original_path) {
+        $enviados[] = $original_path;
+    }
 
-    // Se houver variações (sizes)
+    // Variações (sizes)
     if (!empty($data['sizes']) && is_array($data['sizes'])) {
         foreach ($data['sizes'] as $sizePath) {
-            $enviados[] = trim($sizePath, '/');
+            $cleanPath = trim($sizePath, '/');
+            if ($cleanPath && !in_array($cleanPath, $enviados)) {
+                $enviados[] = $cleanPath;
+            }
         }
     }
 
@@ -1442,66 +1449,91 @@ switch ($action) {
         exit;
     }
 
-    // Salva no banco com o fk_cidcod
+    // ZIP: prioriza o que veio do Flask
+    $zip_path = null;
+    if (!empty($data['zip'])) {
+        $zip_path = trim($data['zip'], '/');
+    }
+
+    // Fallback opcional (pode remover se quiser que falhe quando não vier zip)
+    if (!$zip_path && !empty($enviados)) {
+        $zip_path = $enviados[0];
+    }
+
+    // Mapeamento para os campos da tabela
+    $tam_1 = $enviados[0] ?? null;
+    $tam_2 = $enviados[1] ?? null;
+    $tam_3 = $enviados[2] ?? null;
+    $tam_4 = $enviados[3] ?? null;
+    $tam_5 = $enviados[4] ?? null;
+    $zip   = $zip_path;
+
+    // Debug temporário (remova depois de testar)
+    $debug_info = [
+        'flask_original' => $data['original'] ?? null,
+        'flask_zip'      => $data['zip'] ?? 'NÃO VEIO ZIP DO FLASK',
+        'zip_usado'      => $zip,
+        'enviados_total' => count($enviados),
+        'enviados'       => $enviados
+    ];
+
     // ================================================
-// Salva no banco PostgreSQL
-// ================================================
-$tam_1 = $enviados[0] ?? null;
-$tam_2 = $enviados[1] ?? null;
-$tam_3 = $enviados[2] ?? null;
-$tam_4 = $enviados[3] ?? null;
-$tam_5 = $enviados[4] ?? null;
-$zip   = $enviados[0] ?? null;
+    // Insere no banco
+    // ================================================
+    $sql = "INSERT INTO banco_imagem.bco_img
+        (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto, mneu_for, fk_cidcod)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 10, $9, $10)
+        RETURNING pk_bco_img";
 
-$sql = "INSERT INTO banco_imagem.bco_img
-    (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto, mneu_for, fk_cidcod)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING pk_bco_img";
+    $params = [
+        $tam_1,
+        $tam_2,
+        $tam_3,
+        $tam_4,
+        $tam_5,
+        $zip,
+        $titulo,
+        $descricao,
+        $mneu_for,
+        $fk_cidcod
+    ];
 
-$params = [
-    $tam_1,
-    $tam_2,
-    $tam_3,
-    $tam_4,
-    $tam_5,
-    $zip,
-    $titulo,
-    $descricao,
-    10,             // tp_produto = 1 (ou 10, conforme sua necessidade)
-    $mneu_for,
-    $fk_cidcod
-];
+    $res = pg_query_params($conn, $sql, $params);
 
-$res = pg_query_params($conn, $sql, $params);
+    if ($res === false) {
+        $pg_error = pg_last_error($conn);
+        error_log("Erro ao inserir imagem hotel no banco: " . $pg_error);
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Falha ao registrar imagem no banco de dados',
+            'detalhe' => $pg_error
+        ]);
+        exit;
+    }
 
-if ($res === false) {
-    $pg_error = pg_last_error($conn);
-    error_log("Erro ao inserir imagem hotel no banco: " . $pg_error);
+    $row = pg_fetch_assoc($res);
+
+    if (!$row || empty($row['pk_bco_img'])) {
+        error_log("Insert executado mas RETURNING não retornou pk_bco_img");
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Erro ao recuperar ID da imagem inserida'
+        ]);
+        exit;
+    }
+
+    // Resposta de sucesso
     echo json_encode([
-        'success' => false,
-        'error'   => 'Falha ao registrar imagem no banco de dados',
-        'detalhe' => $pg_error   // opcional: ajuda no debug
+        'success'     => true,
+        'pk_bco_img'  => $row['pk_bco_img'],
+        'paths'       => $enviados,
+        'original'    => $original_path,
+        'zip'         => $zip,
+        'debug'       => $debug_info  // ← veja isso na resposta para confirmar
     ]);
-    exit;
-}
 
-$row = pg_fetch_assoc($res);
-
-if (!$row || empty($row['pk_bco_img'])) {
-    error_log("Insert executado mas RETURNING não retornou pk_bco_img");
-    echo json_encode([
-        'success' => false,
-        'error'   => 'Erro ao recuperar ID da imagem inserida'
-    ]);
-    exit;
-}
-
-echo json_encode([
-    'success'    => true,
-    'pk_bco_img' => $row['pk_bco_img'],
-    'paths'      => $enviados,
-    'original'   => $tam_1
-]);
     break;
     // ================================================
     // UPLOAD DE IMAGEM
@@ -1702,14 +1734,14 @@ echo json_encode([
         'paths'       => array_filter($tamanhos),
         'zip'         => $zip,
         // Descomente temporariamente para ver o que foi mapeado
-        // 'debug_mapeamento' => [
-        //     'tam_1' => $tam_1,
-        //     'tam_2' => $tam_2,
-        //     'tam_3' => $tam_3,
-        //     'tam_4' => $tam_4,
-        //     'tam_5' => $tam_5,
-        //     'zip'   => $zip
-        // ]
+         'debug_mapeamento' => [
+            'tam_1' => $tam_1,
+            'tam_2' => $tam_2,
+            'tam_3' => $tam_3,
+            'tam_4' => $tam_4,
+            'tam_5' => $tam_5,
+            'zip'   => $zip
+         ]
     ]);
 
     break;
