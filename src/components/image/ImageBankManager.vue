@@ -837,9 +837,24 @@ export default {
   },
   
   mounted() {
+    if (window.electronAPI?.getLocalIP) {
+      window.electronAPI.getLocalIP().then(ip => {
+        console.log('Banco de imagem: IP', ip)
+      })
+    }
     this.fetchCities()
   },
   methods: {
+    async getLocalIp() {
+      try {
+        if (typeof window !== 'undefined' && window.electronAPI?.getLocalIP) {
+          return await window.electronAPI.getLocalIP()
+        }
+      } catch (error) {
+        return ''
+      }
+      return ''
+    },
     showMessage(text, color) {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
@@ -1240,6 +1255,13 @@ export default {
         }
         if (this.createForm.destino_tipo === 'hotel' && this.createForm.hotel?.mneu_for) {
           formData.append('mneu_for', this.createForm.hotel.mneu_for)
+        }
+        if (this.createForm.destino_tipo === 'hotel') {
+          const userIp = await this.getLocalIp()
+          
+          if (userIp) {
+            formData.append('user_ip', userIp)
+          }
         }
         const response = await api.post(`${API_BASE}?action=${action}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }

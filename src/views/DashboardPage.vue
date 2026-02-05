@@ -253,9 +253,9 @@ export default {
         }
       ],
       profile: {
-        name: 'Renata Gomes',
-        role: 'Coordenacao Operacional',
-        email: 'rogerneves@blumar.com.br',
+        name: '',
+        role: '',
+        email: '',
         avatar: 'https://i.pravatar.cc/100?img=32'
       }
     }
@@ -272,6 +272,23 @@ export default {
     toggleTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
     },
+    loadProfile() {
+      const raw = localStorage.getItem('auth_user')
+      if (!raw) {
+        return
+      }
+      try {
+        const user = JSON.parse(raw) || {}
+        this.profile = {
+          ...this.profile,
+          name: user.nome || user.apelido || user.cod_sis || 'Usuario',
+          role: user.nivel || user.departamento || 'Usuario',
+          email: user.email || ''
+        }
+      } catch (error) {
+        // mantem fallback atual
+      }
+    },
     logout() {
       this.$emit('logout')
     },
@@ -287,6 +304,9 @@ export default {
         })
       })
     }
+  },
+  mounted() {    
+    this.loadProfile()
   }
 }
 </script>

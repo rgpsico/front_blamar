@@ -1343,6 +1343,7 @@ switch ($action) {
         $hotel_nome   = isset($_POST['hotel_nome'])   ? trim($_POST['hotel_nome'])                     : '';
         $mneu_for     = isset($_POST['mneu_for'])     ? pg_escape_string(trim($_POST['mneu_for']))     : '';
         $fk_cidcod    = isset($_POST['fk_cidcod'])    ? (int)$_POST['fk_cidcod']                       : 0;
+        $user_ip      = isset($_POST['user_ip'])      ? trim($_POST['user_ip'])                        : '';
 
         if ($titulo === '') {
             http_response_code(400);
@@ -1368,6 +1369,7 @@ switch ($action) {
         $post = [
             'cidade_nome' => $cidade_nome,
             'hotel_nome'  => $hotel_nome,
+            'user_ip'     => $user_ip,
             'file'        => new CURLFile(
                 $_FILES['arquivo']['tmp_name'],
                 $_FILES['arquivo']['type'] ?? 'application/octet-stream',
