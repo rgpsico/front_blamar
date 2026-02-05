@@ -44,6 +44,18 @@ ipcMain.handle('get-local-ip', () => {
   return ''
 })
 
+
+const win = new BrowserWindow({
+  width: 1400,
+  height: 900,
+  icon: path.join(__dirname, '../build/icon.ico'),
+  webPreferences: {
+    contextIsolation: true,
+    preload: path.join(__dirname, 'preload.js')
+  }
+})
+
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
