@@ -1210,6 +1210,58 @@ switch ($action) {
         }
         break;
 
+    case 'delete_image':
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Metodo nao permitido']);
+            exit;
+        }
+
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+
+        if (empty($data['pk_bco_img'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'pk_bco_img obrigatorio']);
+            exit;
+        }
+
+        $pk = (int)$data['pk_bco_img'];
+
+        $sql = "UPDATE banco_imagem.bco_img
+                SET excluido = TRUE, data_exclusao = NOW()
+                WHERE pk_bco_img = $1
+                  AND COALESCE(excluido, false) = false";
+
+        $res = pg_query_params($conn, $sql, [$pk]);
+
+        if ($res === false) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Erro ao excluir: ' . pg_last_error($conn)
+            ]);
+            exit;
+        }
+
+        if (pg_affected_rows($res) === 0) {
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Imagem nao encontrada ou ja excluida'
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'pk_bco_img' => $pk,
+            'message' => 'Imagem excluida com sucesso'
+        ]);
+        break;
+
     // ================================================
     // BUSCAR IMAGENS POR NOME DO ARQUIVO/LEGENDA/AUTOR
     // Ex: ?action=search_by_name&termo=praia

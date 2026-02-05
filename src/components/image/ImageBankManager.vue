@@ -126,6 +126,7 @@
               <v-btn text small color="primary" @click="openPreview(image)">Preview</v-btn>
               <v-btn text small @click="copyUrl(image)">Copiar URL</v-btn>
               <v-btn text small color="secondary" @click="openEdit(image)">Editar</v-btn>
+              <v-btn text small color="error" @click="openDelete(image)">Excluir</v-btn>
             </div>
           </div>
         </v-card>
@@ -592,6 +593,7 @@
                 dense
                 outlined
                 :disabled="!createForm.cidade"
+                @change="updateCreateFolder"
               ></v-select>
             </v-col>
             <v-col cols="12" md="6">
@@ -609,37 +611,6 @@
                 dense
                 outlined
               ></v-text-field>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="createForm.pasta"
-                :items="folderOptions"
-                item-text="label"
-                item-value="value"
-                label="Pasta de destino"
-                dense
-                outlined
-              ></v-select>
-            </v-col>
-            <v-col cols="12" md="6">
-              <div class="image-bank__folder-create">
-                <v-text-field
-                  v-model="createForm.nova_pasta"
-                  label="Nova pasta"
-                  dense
-                  outlined
-                  @blur="normalizeNovaPasta"
-                ></v-text-field>
-                <v-btn
-                  class="image-bank__folder-create-btn"
-                  color="secondary"
-                  :loading="createFolderLoading"
-                  :disabled="!createForm.nova_pasta"
-                  @click="createFolder"
-                >
-                  Criar pasta
-                </v-btn>
-              </div>
             </v-col>
             <v-col cols="12">
               <v-file-input
@@ -664,6 +635,26 @@
           >
             Salvar
           </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteDialog" max-width="520px">
+      <v-card>
+        <v-card-title class="image-bank__dialog-title">
+          <span>Excluir imagem</span>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="deleteDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          Tem certeza que deseja excluir esta imagem?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="deleteDialog = false">Cancelar</v-btn>
+          <v-btn color="error" :loading="deleteLoading" @click="confirmDelete">Excluir</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -699,10 +690,11 @@ export default {
       previewImage: null,
       editDialog: false,
       editLoading: false,
+      deleteDialog: false,
+      deleteLoading: false,
+      deleteTarget: null,
       createDialog: false,
       createLoading: false,
-      createFolderLoading: false,
-      folderOptions: [],
       createHotelOptions: [],
       createForm: {
         destino_tipo: 'hotel',
@@ -711,8 +703,7 @@ export default {
         titulo: '',
         descricao: '',
         arquivo: null,
-        pasta: '',
-        nova_pasta: ''
+        pasta: ''
       },
       editForm: {
         pk_bco_img: null,
@@ -862,7 +853,6 @@ export default {
     },
     openCreate() {
       this.createDialog = true
-      this.loadFolders()
     },
     async fetchCities() {
       try {
@@ -939,10 +929,6 @@ export default {
         this.createForm.pasta = `hotel/${slug}`
         return
       }
-    },
-    normalizeNovaPasta() {
-      if (!this.createForm.nova_pasta) return
-      this.createForm.nova_pasta = this.normalizeFolderName(this.createForm.nova_pasta)
     },
     normalizeFolderName(value) {
       if (!value) return ''
@@ -1281,8 +1267,7 @@ export default {
             titulo: '',
             descricao: '',
             arquivo: null,
-            pasta: '',
-            nova_pasta: ''
+            pasta: ''
           }
           return
         }
@@ -1294,39 +1279,6 @@ export default {
         this.createLoading = false
       }
     },
-    async loadFolders() {
-      try {
-        const response = await api.get(`${API_BASE}?action=list_upload_folders`)
-        const folders = Array.isArray(response.data?.folders) ? response.data.folders : []
-        this.folderOptions = folders.map(name => ({ label: name, value: name }))
-      } catch (error) {
-        this.folderOptions = []
-      }
-    },
-    async createFolder() {
-      if (!this.createForm.nova_pasta) {
-        return
-      }
-      this.createFolderLoading = true
-      try {
-        const normalized = this.normalizeFolderName(this.createForm.nova_pasta)
-        const response = await api.post(`${API_BASE}?action=create_upload_folder`, {
-          name: normalized
-        })
-        if (response.data?.success) {
-          await this.loadFolders()
-          this.createForm.pasta = response.data?.folder || normalized
-          this.createForm.nova_pasta = ''
-          this.showMessage('Pasta criada com sucesso.')
-          return
-        }
-        this.showMessage(response.data?.error || 'Erro ao criar pasta.', 'error')
-      } catch (error) {
-        this.showMessage(`Erro ao criar pasta: ${error.message}`, 'error')
-      } finally {
-        this.createFolderLoading = false
-      }
-    },
     async copyUrl(image) {
       const url = this.imagePreview(image)
       try {
@@ -1334,6 +1286,33 @@ export default {
         this.showMessage('URL copiada.')
       } catch (error) {
         this.showMessage('Nao foi possivel copiar.', 'error')
+      }
+    },
+    openDelete(image) {
+      this.deleteTarget = image || null
+      this.deleteDialog = true
+    },
+    async confirmDelete() {
+      if (!this.deleteTarget?.pk_bco_img) {
+        return
+      }
+      this.deleteLoading = true
+      try {
+        const response = await api.post(`${API_BASE}?action=delete_image`, {
+          pk_bco_img: this.deleteTarget.pk_bco_img
+        })
+        if (response.data?.success) {
+          this.images = this.images.filter(img => img.pk_bco_img !== this.deleteTarget.pk_bco_img)
+          this.showMessage('Imagem excluida com sucesso.')
+          this.deleteDialog = false
+          this.deleteTarget = null
+          return
+        }
+        this.showMessage(response.data?.error || 'Erro ao excluir.', 'error')
+      } catch (error) {
+        this.showMessage(`Erro ao excluir: ${error.message}`, 'error')
+      } finally {
+        this.deleteLoading = false
       }
     }
   }
@@ -1426,7 +1405,15 @@ export default {
 .image-bank__actions {
   display: flex;
   gap: 8px;
+  row-gap: 4px;
   margin-top: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+::v-deep .image-bank__actions .v-btn {
+  min-width: 0;
+  padding: 0 6px;
 }
 
 .image-bank__empty {
@@ -1539,15 +1526,4 @@ export default {
   word-break: break-word;
 }
 
-.image-bank__folder-create {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.image-bank__folder-create-btn {
-  height: 40px;
-  margin-top: 4px;
-}
 </style>
