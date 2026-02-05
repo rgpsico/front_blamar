@@ -299,8 +299,9 @@
 
 <script>
 import axios from 'axios'
+import api from '@/services/api'
 
-const API_BASE = '/api/'
+const API_BASE = `${api.defaults.baseURL}/`
 
 export default {
   name: 'ClientsManager',

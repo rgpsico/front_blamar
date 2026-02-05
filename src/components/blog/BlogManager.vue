@@ -576,8 +576,9 @@
 
 <script>
 import TinyEditor from '@/components/shared/TinyEditor.vue'
+import api from '@/services/api'
 
-const API_BASE = '/api/'
+const API_BASE = `${api.defaults.baseURL}/`
 const IMAGE_BASE = 'https://www.blumar.com.br/blog/'
 
 export default {

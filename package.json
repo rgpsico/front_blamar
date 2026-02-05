@@ -2,11 +2,18 @@
   "name": "blumar-erp",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
+
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
+
+    "electron": "electron .",
+    "electron:build": "npm run build && electron-builder",
+
     "lint": "vue-cli-service lint"
   },
+
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "axios": "^1.13.3",
@@ -14,33 +21,35 @@
     "vue": "^2.6.14",
     "vuetify": "^2.6.14"
   },
+
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
+
+    "electron": "^40.1.0",
+    "electron-builder": "^26.7.0",
+
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "vue-template-compiler": "^2.6.14"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
+
+  "build": {
+    "appId": "com.blumar.erp",
+    "productName": "Blumar ERP",
+    "directories": {
+      "output": "release"
     },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
     ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
-  ]
+    "win": {
+      "target": "nsis"
+    }
+  }
 }

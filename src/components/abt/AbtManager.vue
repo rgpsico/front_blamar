@@ -165,7 +165,9 @@
 </template>
 
 <script>
-const API_BASE = '/api/'
+import api from '@/services/api'
+
+const API_BASE = 'abt.php'
 
 export default {
   name: 'AbtManager',
@@ -258,10 +260,10 @@ export default {
     async fetchAbts() {
       this.loading = true
       try {
-        const response = await fetch(`${API_BASE}abt.php?${this.buildQuery()}`, {
+        const response = await api.get(`${API_BASE}?${this.buildQuery()}`, {
           headers: this.authHeaders()
         })
-        const data = await response.json()
+        const data = response.data
         this.items = Array.isArray(data) ? data : data.data || []
       } catch (error) {
         this.showMessage(`Erro ao carregar: ${error.message}`, 'error')
@@ -271,10 +273,10 @@ export default {
     },
     async fetchCidades() {
       try {
-        const response = await fetch(`${API_BASE}abt.php?request=listar_cidades`, {
+        const response = await api.get(`${API_BASE}?request=listar_cidades`, {
           headers: this.authHeaders()
         })
-        const data = await response.json()
+        const data = response.data
         this.cidades = Array.isArray(data) ? data : []
       } catch (error) {
         this.showMessage(`Erro ao carregar cidades: ${error.message}`, 'error')
@@ -348,15 +350,16 @@ export default {
           ativo: this.editedItem.ativo ? 't' : 'f'
         }
 
-        const response = await fetch(url, {
+        const response = await api.request({
+          url,
           method,
           headers: {
             'Content-Type': 'application/json',
             ...this.authHeaders()
           },
-          body: JSON.stringify(payload)
+          data: payload
         })
-        const result = await response.json()
+        const result = response.data
         if (result.error || result.success === false) {
           throw new Error(result.error || result.message || 'Erro ao salvar')
         }
@@ -375,11 +378,11 @@ export default {
       }
       this.saving = true
       try {
-        const response = await fetch(
-          `${API_BASE}abt.php?request=excluir_abt&id=${this.editedItem.pk_abt}`,
-          { method: 'DELETE', headers: this.authHeaders() }
+        const response = await api.delete(
+          `${API_BASE}?request=excluir_abt&id=${this.editedItem.pk_abt}`,
+          { headers: this.authHeaders() }
         )
-        const result = await response.json()
+        const result = response.data
         if (result.error) {
           throw new Error(result.error)
         }

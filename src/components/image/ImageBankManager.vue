@@ -678,9 +678,9 @@
 </template>
 
 <script>
-import axios from 'axios'
+import api from '@/services/api'
 
-const API_BASE = 'api/api_banco_de_imagem.php'
+const API_BASE = 'api_banco_de_imagem.php'
 
 export default {
   name: 'ImageBankManager',
@@ -851,7 +851,7 @@ export default {
     },
     async fetchCities() {
       try {
-        const response = await axios.get(`${API_BASE}?action=list_cities`)
+        const response = await api.get(`${API_BASE}?action=list_cities`)
         const data = response.data
         this.cityOptions = Array.isArray(data?.cities) ? data.cities : []
       } catch (error) {
@@ -867,7 +867,7 @@ export default {
           return
         }
         const cityName = this.selectedCity?.nome_en || ''
-        const response = await axios.get(
+        const response = await api.get(
           `${API_BASE}?action=hotels_by_city&city=${encodeURIComponent(cityName)}`
         )
         const data = response.data
@@ -886,7 +886,7 @@ export default {
           return
         }
         const cityName = this.createForm.cidade?.nome_en || ''
-        const response = await axios.get(
+        const response = await api.get(
           `${API_BASE}?action=hotels_by_city&city=${encodeURIComponent(cityName)}`
         )
         const data = response.data
@@ -947,7 +947,7 @@ export default {
         const hasCity = !!this.selectedCity
 
         if (hasSearch) {
-          const response = await axios.get(
+          const response = await api.get(
             `${API_BASE}?action=search_by_name&termo=${encodeURIComponent(this.searchTerm)}`
           )
           let results = Array.isArray(response.data?.images) ? response.data.images : []
@@ -989,7 +989,7 @@ export default {
       }
       this.loading = true
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${API_BASE}?action=hotel_images&hotel_id=${encodeURIComponent(this.selectedHotel.mneu_for)}`
         )
         this.images = Array.isArray(response.data?.images) ? response.data.images : []
@@ -1006,7 +1006,7 @@ export default {
       }
       this.loading = true
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${API_BASE}?action=city_generic_images&cidade_cod=${encodeURIComponent(
             this.selectedCity.cidade_cod
           )}`
@@ -1052,7 +1052,7 @@ export default {
         return
       }
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${API_BASE}?action=get_image_data&pk_bco_img=${encodeURIComponent(image.pk_bco_img)}`
         )
         if (response.data?.success && response.data?.data) {
@@ -1072,7 +1072,7 @@ export default {
       this.editDialog = true
       this.editLoading = true
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${API_BASE}?action=get_image_data&pk_bco_img=${encodeURIComponent(image.pk_bco_img)}`
         )
         const data = response.data?.data || {}
@@ -1162,7 +1162,7 @@ export default {
           zip: this.editForm.zip,
           novo_caminho: this.editForm.novo_caminho || undefined
         }
-        const response = await axios.post(`${API_BASE}?action=update_metadata`, payload)
+        const response = await api.post(`${API_BASE}?action=update_metadata`, payload)
         if (response.data?.success) {
           this.showMessage('Imagem atualizada com sucesso.')
           this.editDialog = false
@@ -1241,7 +1241,7 @@ export default {
         if (this.createForm.destino_tipo === 'hotel' && this.createForm.hotel?.mneu_for) {
           formData.append('mneu_for', this.createForm.hotel.mneu_for)
         }
-        const response = await axios.post(`${API_BASE}?action=${action}`, formData, {
+        const response = await api.post(`${API_BASE}?action=${action}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
 
@@ -1274,7 +1274,7 @@ export default {
     },
     async loadFolders() {
       try {
-        const response = await axios.get(`${API_BASE}?action=list_upload_folders`)
+        const response = await api.get(`${API_BASE}?action=list_upload_folders`)
         const folders = Array.isArray(response.data?.folders) ? response.data.folders : []
         this.folderOptions = folders.map(name => ({ label: name, value: name }))
       } catch (error) {
@@ -1288,7 +1288,7 @@ export default {
       this.createFolderLoading = true
       try {
         const normalized = this.normalizeFolderName(this.createForm.nova_pasta)
-        const response = await axios.post(`${API_BASE}?action=create_upload_folder`, {
+        const response = await api.post(`${API_BASE}?action=create_upload_folder`, {
           name: normalized
         })
         if (response.data?.success) {

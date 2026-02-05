@@ -199,7 +199,8 @@
 </template>
 
 <script>
-const API_BASE = '/api/'
+import api from '@/services/api'
+const API_BASE = `${api.defaults.baseURL}/`
 const IMAGE_BASE = 'https://www.blumar.com.br/'
 
 export default {

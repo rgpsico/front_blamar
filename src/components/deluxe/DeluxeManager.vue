@@ -190,7 +190,8 @@
 </template>
 
 <script>
-const API_BASE = '/api/'
+import api from '@/services/api'
+const API_BASE = `${api.defaults.baseURL}/`
 
 const blankItem = () => ({
   pk_deluxe: null,

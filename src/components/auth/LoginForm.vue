@@ -62,6 +62,8 @@
 </template>
 
 <script>
+import api from '@/services/api'
+
 export default {
   name: 'LoginForm',
   data() {
@@ -77,31 +79,26 @@ export default {
   methods: {
     async handleSubmit() {
       if (!this.login || !this.password) {
-        this.error = 'Informe login e senha.'
+        this.error = 'Informe login e senha 10.'
         return
       }
 
       this.loading = true
       this.error = ''
       try {
-        const response = await fetch('/api/auth.php?request=autenticar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            login: this.login,
-            senha: this.password
-          })
+        const { data } = await api.post('auth.php?request=autenticar', {
+          login: this.login,
+          senha: this.password
         })
-        const result = await response.json()
-        if (!response.ok || result.error || result.success === false) {
-          throw new Error(result.error || 'Credenciais invalidas.')
+        if (!data || data.error || data.success === false) {
+          throw new Error(data?.error || 'Credenciais invalidas.')
         }
 
-        localStorage.setItem('auth_token', result.token)
-        localStorage.setItem('auth_user', JSON.stringify(result.user || {}))
+        localStorage.setItem('auth_token', data.token)
+        localStorage.setItem('auth_user', JSON.stringify(data.user || {}))
         this.$emit('authenticated')
       } catch (error) {
-        this.error = error.message
+        this.error = error?.response?.data?.error || error.message
       } finally {
         this.loading = false
       }
