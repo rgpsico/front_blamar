@@ -1036,7 +1036,7 @@ switch ($action) {
         // Busca todas as imagens da cidade com tp_produto = 10
         $sql = "SELECT pk_bco_img, tam_1, tam_2, tam_3, tam_4, legenda, palavras_chave
             FROM banco_imagem.bco_img
-            WHERE 
+            WHERE fk_cidcod = '$cidade_cod'
               AND tp_produto = '10'
             ORDER BY pk_bco_img DESC";
 
@@ -1322,278 +1322,397 @@ switch ($action) {
         ]);
         break;
 
+    case 'upload_image_hotel':
+    header('Content-Type: application/json; charset=utf-8');
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'Método não permitido']);
+        exit;
+    }
+
+    if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório']);
+        exit;
+    }
+
+    $titulo       = isset($_POST['titulo'])       ? pg_escape_string(trim($_POST['titulo']))       : '';
+    $descricao    = isset($_POST['descricao'])    ? pg_escape_string(trim($_POST['descricao']))    : '';
+    $cidade_nome  = isset($_POST['cidade_nome'])  ? trim($_POST['cidade_nome'])                    : '';
+    $hotel_nome   = isset($_POST['hotel_nome'])   ? trim($_POST['hotel_nome'])                     : '';
+    $mneu_for     = isset($_POST['mneu_for'])     ? pg_escape_string(trim($_POST['mneu_for']))     : '';
+    $fk_cidcod    = isset($_POST['fk_cidcod'])    ? (int)$_POST['fk_cidcod']                       : 0;   // ← Código da cidade
+
+    if ($titulo === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
+        exit;
+    }
+
+    if ($cidade_nome === '' || $hotel_nome === '' || $mneu_for === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'cidade_nome, hotel_nome e mneu_for são obrigatórios']);
+        exit;
+    }
+
+    if ($fk_cidcod <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Código da cidade (fk_cidcod) é obrigatório e deve ser um número válido']);
+        exit;
+    }
+
+    // Envia diretamente o arquivo para o Flask (sem salvar localmente)
+    $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_hotel");
+
+    $post = [
+        'cidade_nome' => $cidade_nome,
+        'hotel_nome'  => $hotel_nome,
+        'file'        => new CURLFile(
+            $_FILES['arquivo']['tmp_name'],
+            $_FILES['arquivo']['type'] ?? 'application/octet-stream',
+            $_FILES['arquivo']['name']
+        ),
+    ];
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $post,
+        CURLOPT_HTTPHEADER     => [
+            "Authorization: Bearer 123456"
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 90,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        error_log("Erro CURL upload hotel (HTTP $httpCode): $curlError - Resposta: $response");
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Falha ao enviar para o servidor de imagens'
+        ]);
+        exit;
+    }
+
+    $data = json_decode($response, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("JSON inválido do Flask (hotel): " . $response);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Resposta inválida do servidor de imagens'
+        ]);
+        exit;
+    }
+
+    if (empty($data['success']) || empty($data['original'])) {
+        error_log("Falha no upload Flask hotel: " . $response);
+        echo json_encode([
+            'success' => false,
+            'error'   => $data['error'] ?? 'Upload falhou no servidor'
+        ]);
+        exit;
+    }
+
+    // Coleta os caminhos retornados
+    $enviados = [];
+
+    // Caminho principal
+    $path = trim($data['original'] ?? '', '/');
+    $enviados[] = $path;
+
+    // Se houver variações (sizes)
+    if (!empty($data['sizes']) && is_array($data['sizes'])) {
+        foreach ($data['sizes'] as $sizePath) {
+            $enviados[] = trim($sizePath, '/');
+        }
+    }
+
+    if (empty($enviados)) {
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Nenhum caminho retornado pelo servidor'
+        ]);
+        exit;
+    }
+
+    // Salva no banco com o fk_cidcod
+    // ================================================
+// Salva no banco PostgreSQL
+// ================================================
+$tam_1 = $enviados[0] ?? null;
+$tam_2 = $enviados[1] ?? null;
+$tam_3 = $enviados[2] ?? null;
+$tam_4 = $enviados[3] ?? null;
+$tam_5 = $enviados[4] ?? null;
+$zip   = $enviados[0] ?? null;
+
+$sql = "INSERT INTO banco_imagem.bco_img
+    (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto, mneu_for, fk_cidcod)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    RETURNING pk_bco_img";
+
+$params = [
+    $tam_1,
+    $tam_2,
+    $tam_3,
+    $tam_4,
+    $tam_5,
+    $zip,
+    $titulo,
+    $descricao,
+    10,             // tp_produto = 1 (ou 10, conforme sua necessidade)
+    $mneu_for,
+    $fk_cidcod
+];
+
+$res = pg_query_params($conn, $sql, $params);
+
+if ($res === false) {
+    $pg_error = pg_last_error($conn);
+    error_log("Erro ao inserir imagem hotel no banco: " . $pg_error);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Falha ao registrar imagem no banco de dados',
+        'detalhe' => $pg_error   // opcional: ajuda no debug
+    ]);
+    exit;
+}
+
+$row = pg_fetch_assoc($res);
+
+if (!$row || empty($row['pk_bco_img'])) {
+    error_log("Insert executado mas RETURNING não retornou pk_bco_img");
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Erro ao recuperar ID da imagem inserida'
+    ]);
+    exit;
+}
+
+echo json_encode([
+    'success'    => true,
+    'pk_bco_img' => $row['pk_bco_img'],
+    'paths'      => $enviados,
+    'original'   => $tam_1
+]);
+    break;
     // ================================================
     // UPLOAD DE IMAGEM
     // Ex: POST ?action=upload_image (multipart/form-data)
     // Campos: titulo, descricao, arquivo
     // ================================================
-    case 'upload_image':
-        header('Content-Type: application/json; charset=utf-8');
+   case 'upload_image':
+    header('Content-Type: application/json; charset=utf-8');
 
-    
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'error' => 'Método não permitido']);
-            exit;
-        }
-
-        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório']);
-            exit;
-        }
-
-        $titulo = isset($_POST['titulo']) ? pg_escape_string(trim($_POST['titulo'])) : '';
-        $descricao = isset($_POST['descricao']) ? pg_escape_string(trim($_POST['descricao'])) : '';
-        $pasta = isset($_POST['pasta']) ? trim($_POST['pasta']) : '';
-        $fk_cidcod = isset($_POST['fk_cidcod']) ? pg_escape_string(trim($_POST['fk_cidcod'])) : '';
-
-        if ($titulo === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
-            exit;
-        }
-
-        // === SALVA LOCALMENTE ===
-        $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
-        if (!is_dir($baseDir)) mkdir($baseDir, 0775, true);
-
-        $safeFolder = preg_replace('/[^a-zA-Z0-9_\/-]/', '_', $pasta);
-        $uploadDir = $safeFolder ? ($baseDir . '/' . $safeFolder) : $baseDir;
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
-
-        $originalName = $_FILES['arquivo']['name'];
-        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-        $fileName = $safeName . '_' . time() . '.' . $ext;
-        $destPath = $uploadDir . '/' . $fileName;
-
-        if (!move_uploaded_file($_FILES['arquivo']['tmp_name'], $destPath)) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Falha ao salvar local']);
-            exit;
-        }
-
-        // === PEGA TODAS AS VARIAÇÕES ===
-        $baseSemExt = pathinfo($destPath, PATHINFO_FILENAME);
-        $dir = dirname($destPath);
-        $arquivos = glob($dir . '/' . $baseSemExt . '*');
-
-        // === ENVIA TODAS AO FLASK ===
-        $enviados = [];
-
-        foreach ($arquivos as $arquivoLocal) {
-
-        $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_cidade");
-
-        $post = [       
-            'cidade_nome' => $_POST['cidade_nome'] ?? '',
-            'file'        => new CURLFile(realpath($arquivoLocal)),
-        ];
-
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $post,
-            CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer 123456"
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 30
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if ($response === false || $httpCode !== 200) {
-            error_log("Erro CURL (HTTP $httpCode): " . curl_error($ch) . " - Resposta: " . $response);
-        } else {
-            $data = json_decode($response, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                error_log("JSON inválido do Flask: " . $response);
-                } elseif (!empty($data['success'])) {
-                    $path = $data['original'] ?? '';
-                    if ($path && strpos($path, 'bancoimagemfotos/') !== 0) {
-                        $path = 'bancoimagemfotos/' . ltrim($path, '/');
-                    }
-                    $enviados[] = $path;
-                } else {
-                    error_log("Falha no upload Flask: " . $response);
-                }
-        }
-
-        curl_close($ch);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'Método não permitido']);
+        exit;
     }
 
+    // Verifica se o arquivo foi enviado corretamente
+    if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório ou upload com erro']);
+        exit;
+    }
 
-        if (count($enviados) === 0) {
-            echo json_encode(['success'=>false,'error'=>'Nenhuma imagem foi enviada ao banco']);
-            exit;
-        }
+    // Dados enviados pelo formulário
+    $titulo     = isset($_POST['titulo'])     ? trim($_POST['titulo'])     : '';
+    $descricao  = isset($_POST['descricao'])  ? trim($_POST['descricao'])  : '';
+    $pasta      = isset($_POST['pasta'])      ? trim($_POST['pasta'])      : '';
+    $fk_cidcod  = isset($_POST['fk_cidcod'])  ? trim($_POST['fk_cidcod'])  : '';
+    $cidade_nome = isset($_POST['cidade_nome']) ? trim($_POST['cidade_nome']) : '';
 
-        // === SALVA NO BANCO USANDO CAMINHOS REAIS ===
-        $tam_1 = $enviados[0] ?? null;
-        $tam_2 = $enviados[1] ?? null;
-        $tam_3 = $enviados[2] ?? null;
-        $tam_4 = $enviados[3] ?? null;
-        $tam_5 = $enviados[4] ?? null;
-        $zip   = $enviados[0] ?? null;
+    // Se não veio título, usa o nome original do arquivo
+    if ($titulo === '') {
+        $titulo = pathinfo($_FILES['arquivo']['name'], PATHINFO_FILENAME);
+        // Remove caracteres perigosos / indesejados do nome do arquivo
+        $titulo = preg_replace('/[^a-zA-Z0-9À-ú\s_-]/', '', $titulo);
+        $titulo = trim($titulo);
+    }
 
-        $sql = "INSERT INTO banco_imagem.bco_img
-            (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto, fk_cidcod)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,10,$9)
-            RETURNING pk_bco_img";
+    // Validações obrigatórias
+    if ($titulo === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
+        exit;
+    }
 
-        $res = pg_query_params($conn, $sql, [
-            $tam_1, $tam_2, $tam_3, $tam_4, $tam_5, $zip,
-            $titulo, $descricao, $fk_cidcod
-        ]);
+    if ($fk_cidcod === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'fk_cidcod obrigatório']);
+        exit;
+    }
 
-        $row = pg_fetch_assoc($res);
+    // =============================================
+    // Envia DIRETAMENTE para o Flask
+    // =============================================
 
+    $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_cidade");
+
+    $postFields = [
+        'cidade_nome' => $cidade_nome,
+        'pasta'       => $pasta,
+        'file'        => new CURLFile(
+            $_FILES['arquivo']['tmp_name'],
+            $_FILES['arquivo']['type'] ?: 'application/octet-stream',
+            $_FILES['arquivo']['name']
+        ),
+    ];
+
+    // Opcional: se quiser que o Flask receba também título e descrição
+    // $postFields['titulo']    = $titulo;
+    // $postFields['descricao'] = $descricao;
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST            => true,
+        CURLOPT_POSTFIELDS      => $postFields,
+        CURLOPT_HTTPHEADER      => [
+            "Authorization: Bearer 123456"
+        ],
+        CURLOPT_RETURNTRANSFER  => true,
+        CURLOPT_TIMEOUT         => 180,
+        CURLOPT_FOLLOWLOCATION  => true,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        error_log("Falha ao enviar para Flask | HTTP: $httpCode | Erro cURL: $curlError | Resposta: $response");
+        http_response_code(502);
         echo json_encode([
-            'success' => true,
-            'pk_bco_img' => $row['pk_bco_img'],
-            'paths' => $enviados
+            'success' => false,
+            'error'   => 'Falha ao enviar imagem para o serviço de processamento'
         ]);
-        break;
+        exit;
+    }
 
+    $data = json_decode($response, true);
 
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($data) || empty($data['success'])) {
+        error_log("Resposta inválida do Flask: " . $response);
+        http_response_code(502);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Resposta inválida do serviço de imagens'
+        ]);
+        exit;
+    }
 
-        case 'upload_image_hotel':
-        header('Content-Type: application/json; charset=utf-8');
+    // =============================================
+    // Extrai caminhos de forma flexível
+    // =============================================
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'error' => 'Método não permitido']);
-            exit;
-        }
+        // =============================================
+    // Extrai caminhos de forma compatível com o que o Flask devolve HOJE
+    // =============================================
 
-        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Arquivo obrigatório']);
-            exit;
-        }
+    $tamanhos = [];
+    $zip      = null;
 
-        $titulo = isset($_POST['titulo']) ? pg_escape_string(trim($_POST['titulo'])) : '';
-        $descricao = isset($_POST['descricao']) ? pg_escape_string(trim($_POST['descricao'])) : '';
-        $cidade_nome = isset($_POST['cidade_nome']) ? trim($_POST['cidade_nome']) : '';
-        $hotel_nome = isset($_POST['hotel_nome']) ? trim($_POST['hotel_nome']) : '';
-        $mneu_for = isset($_POST['mneu_for']) ? pg_escape_string(trim($_POST['mneu_for'])) : '';
+    // Prioridade 1: tenta pegar do campo "sizes" (que o Flask está usando)
+    if (!empty($data['sizes']) && is_array($data['sizes'])) {
+        // Ordem que vamos mapear para tam_1 até tam_5
+        $ordem_desejada = ['grd', 'med', 'small', 'thumb', 'outra'];  // ajuste a ordem se quiser
 
-        if ($titulo === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
-            exit;
-        }
+        foreach ($ordem_desejada as $chave) {
+            if (isset($data['sizes'][$chave])) {
+                $caminho = $data['sizes'][$chave];
 
-        if ($cidade_nome === '' || $hotel_nome === '' || $mneu_for === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'cidade_nome, hotel_nome e mneu_for são obrigatórios']);
-            exit;
-        }
-
-        // === SALVA LOCALMENTE ===
-        $baseDir = dirname(__DIR__) . '/bancoimagemfotos/uploads';
-        if (!is_dir($baseDir)) mkdir($baseDir, 0775, true);
-
-        $safeFolder = preg_replace('/[^a-zA-Z0-9_\/-]/', '_', "hotel/$cidade_nome/$hotel_nome");
-        $uploadDir = $safeFolder ? ($baseDir . '/' . $safeFolder) : $baseDir;
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
-
-        $originalName = $_FILES['arquivo']['name'];
-        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-        $fileName = $safeName . '_' . time() . '.' . $ext;
-        $destPath = $uploadDir . '/' . $fileName;
-
-        if (!move_uploaded_file($_FILES['arquivo']['tmp_name'], $destPath)) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Falha ao salvar local']);
-            exit;
-        }
-
-        // === PEGA TODAS AS VARIAÇÕES ===
-        $baseSemExt = pathinfo($destPath, PATHINFO_FILENAME);
-        $dir = dirname($destPath);
-        $arquivos = glob($dir . '/' . $baseSemExt . '*');
-
-        // === ENVIA TODAS AO FLASK ===
-        $enviados = [];
-
-        foreach ($arquivos as $arquivoLocal) {
-
-            $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_hotel");
-
-            $post = [
-                'cidade_nome' => $cidade_nome,
-                'hotel_nome'  => $hotel_nome,
-                'file'        => new CURLFile(realpath($arquivoLocal)),
-            ];
-
-            curl_setopt_array($ch, [
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $post,
-                CURLOPT_HTTPHEADER => [
-                    "Authorization: Bearer 123456"
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            if ($response === false || $httpCode !== 200) {
-                error_log("Erro CURL (HTTP $httpCode): " . curl_error($ch) . " - Resposta: " . $response);
-            } else {
-                $data = json_decode($response, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    error_log("JSON inválido do Flask: " . $response);
-                } elseif (!empty($data['success'])) {
-                    $path = $data['original'] ?? '';
-                    if ($path && strpos($path, 'bancoimagemfotos/') !== 0) {
-                        $path = 'bancoimagemfotos/' . ltrim($path, '/');
-                    }
-                    $enviados[] = $path;
-                } else {
-                    error_log("Falha no upload Flask: " . $response);
+                // CORRIGE o bug de duplicação da cidade no Flask
+                // Remove a cidade duplicada do início, se existir
+                if (strpos($caminho, $data['cidade'] . '/' . $data['cidade'] . '/') === 0) {
+                    $caminho = substr($caminho, strlen($data['cidade'] . '/'));
                 }
+
+                $tamanhos[] = $caminho;
             }
-
-            curl_close($ch);
         }
+    }
 
-        if (count($enviados) === 0) {
-            echo json_encode(['success'=>false,'error'=>'Nenhuma imagem foi enviada ao banco']);
-            exit;
-        }
+    // Se não achou nada em sizes → fallback para original
+    if (empty($tamanhos) && !empty($data['original'])) {
+        $tamanhos[] = $data['original'];
+    }
 
-        // === SALVA NO BANCO USANDO CAMINHOS REAIS ===
-        $tam_1 = $enviados[0] ?? null;
-        $tam_2 = $enviados[1] ?? null;
-        $tam_3 = $enviados[2] ?? null;
-        $tam_4 = $enviados[3] ?? null;
-        $tam_5 = $enviados[4] ?? null;
-        $zip   = $enviados[0] ?? null;
+    // Ainda sem zip? Usa o original como fallback (ou deixe null se preferir)
+    $zip = !empty($data['zip']) ? $data['zip'] : ($tamanhos[0] ?? null);
 
-        $sql = "INSERT INTO banco_imagem.bco_img
-            (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto, mneu_for)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1,$9)
-            RETURNING pk_bco_img";
+    // Agora mapeia para os 5 campos da tabela
+    $tam_1 = isset($tamanhos[0]) ? $tamanhos[0] : null;
+    $tam_2 = isset($tamanhos[1]) ? $tamanhos[1] : null;
+    $tam_3 = isset($tamanhos[2]) ? $tamanhos[2] : null;
+    $tam_4 = isset($tamanhos[3]) ? $tamanhos[3] : null;
+    $tam_5 = isset($tamanhos[4]) ? $tamanhos[4] : null;
 
-        $res = pg_query_params($conn, $sql, [
-            $tam_1, $tam_2, $tam_3, $tam_4, $tam_5, $zip,
-            $titulo, $descricao, $mneu_for
-        ]);
+    // =============================================
+    // Monta o INSERT
+    // =============================================
 
-        $row = pg_fetch_assoc($res);
+    $sql = "
+        INSERT INTO banco_imagem.bco_img
+               (tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, palavras_chave, tp_produto, fk_cidcod)
+        VALUES ($1,     $2,     $3,     $4,     $5,    $6,   $7,         $8,           10,        $9)
+        RETURNING pk_bco_img
+    ";
 
+    $params = [
+        $tam_1,
+        $tam_2,
+        $tam_3,
+        $tam_4,
+        $tam_5,
+        $zip,
+        $titulo,
+        $descricao,
+        $fk_cidcod
+    ];
+
+    $res = pg_query_params($conn, $sql, $params);
+
+    if (!$res) {
+        error_log("Erro PostgreSQL ao inserir imagem: " . pg_last_error($conn));
+        http_response_code(500);
         echo json_encode([
-            'success' => true,
-            'pk_bco_img' => $row['pk_bco_img'],
-            'paths' => $enviados
+            'success' => false,
+            'error'   => 'Falha ao salvar no banco de dados'
         ]);
-        break;
+        exit;
+    }
+
+    $row = pg_fetch_assoc($res);
+
+    // Resposta de sucesso + debug temporário
+    echo json_encode([
+        'success'     => true,
+        'pk_bco_img'  => $row['pk_bco_img'],
+        'titulo'      => $titulo,
+        'paths'       => array_filter($tamanhos),
+        'zip'         => $zip,
+        // Descomente temporariamente para ver o que foi mapeado
+        // 'debug_mapeamento' => [
+        //     'tam_1' => $tam_1,
+        //     'tam_2' => $tam_2,
+        //     'tam_3' => $tam_3,
+        //     'tam_4' => $tam_4,
+        //     'tam_5' => $tam_5,
+        //     'zip'   => $zip
+        // ]
+    ]);
+
+    break;
 
 
     // ================================================

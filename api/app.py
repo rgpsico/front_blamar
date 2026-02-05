@@ -135,27 +135,27 @@ def upload_from_erp_enviar_para_cidade():
         return jsonify({"success": False, "error": "Token inválido"}), 401
 
     file = request.files.get("file")
-    pasta = request.form.get("cidade_nome", "").strip()
-    cidade_nome = request.form.get("cidade_nome", "")
+    cidade_nome = request.form.get("cidade_nome", "").strip()
 
     print("Cidade recebida:", cidade_nome)
-    print("Pasta recebida:", pasta)
 
     if not file:
         return jsonify({"success": False, "error": "Arquivo não enviado"}), 400
 
+    if not cidade_nome:
+        return jsonify({"success": False, "error": "cidade_nome é obrigatório"}), 400
+
     # sanitiza
-    safe_pasta = sanitize_rel_path(pasta)
     safe_cidade = sanitize_rel_path(cidade_nome)
 
-    if not safe_pasta or not safe_cidade:
-        return jsonify({"success": False, "error": "Pasta ou cidade inválida"}), 400
+    if not safe_cidade:
+        return jsonify({"success": False, "error": "Nome da cidade inválido"}), 400
 
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in EXTENSOES_IMAGEM:
         return jsonify({"success": False, "error": "Extensão não permitida"}), 400
 
-    # caminho final: BASE/cidade/pasta
+    # caminho final: BASE/cidade
     destino_dir = os.path.join(
         BASE_PATH_CIDADE,
         safe_cidade.replace("/", os.sep)
@@ -174,22 +174,22 @@ def upload_from_erp_enviar_para_cidade():
         # salva original
         file.save(caminho_final)
 
-        # gera tamanhos
+        # gera tamanhos (mantém dentro da pasta da cidade)
         sizes = gerar_tamanhos(caminho_final, destino_dir, nome, ext)
 
+        # registra log com caminho correto (sem duplicação)
         registrar_log_movimentacao(
             "ERP",
-            f"{safe_cidade}/{safe_pasta}/{filename}",
+            f"{safe_cidade}/{filename}",
             sucesso=True
         )
 
         return jsonify({
             "success": True,
             "cidade": safe_cidade,
-            "pasta": safe_pasta,
-            "original": f"{safe_cidade}/{safe_pasta}/{filename}",
+            "original": f"{safe_cidade}/{filename}",          # ← AQUI ESTÁ A CORREÇÃO PRINCIPAL
             "sizes": {
-                k: f"{safe_cidade}/{safe_pasta}/{Path(v).name}"
+                k: f"{safe_cidade}/{Path(v).name}"            # ← só cidade + nome do arquivo
                 for k, v in sizes.items()
             },
             "full_path": caminho_final
