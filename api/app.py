@@ -15,9 +15,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-BASE_PATH = os.getenv("BASE_PATH", "Z:\\wwwinternet\\bancodeimagemfotosteste")
-BASE_PATH_CIDADE = os.getenv("BASE_PATH_CIDADE", "Z:\\wwwinternet\\bancoimagemfotosteste\\cidade")
-BASE_PATH_HOTEL = os.getenv("BASE_PATH_HOTEL", "Z:\\wwwinternet\\bancoimagemfotosteste\\hotel")
+BASE_PATH = os.getenv("BASE_PATH", "Z:\\wwwinternet\\bancodeimagemfotos")
+BASE_PATH_CIDADE = os.getenv("BASE_PATH_CIDADE", "Z:\\wwwinternet\\bancoimagemfotos\\cidade")
+BASE_PATH_HOTEL = os.getenv("BASE_PATH_HOTEL", "Z:\\wwwinternet\\bancoimagemfotos\\hotel")
 
 TOKEN = os.getenv("API_TOKEN")
 
@@ -343,12 +343,12 @@ def upload_from_erp_enviar_para_cidade():
         return jsonify({
             "success": True,
             "cidade": safe_cidade,
-            "original": f"bancoimagemfotos/{safe_cidade}/{filename}",
+            "original": f"bancoimagemfotos/cidade/{safe_cidade}/{filename}",
             "sizes": {
-                k: f"bancoimagemfotos/{safe_cidade}/{os.path.basename(v)}"
+                k: f"bancoimagemfotos/cidade/{safe_cidade}/{os.path.basename(v)}"
                 for k, v in sizes.items()
             },
-            "zip": zip_rel_path,
+            "zip": f"bancoimagemfotos/cidade/{zip_rel_path}",
             "full_path": caminho_final
         })
 
