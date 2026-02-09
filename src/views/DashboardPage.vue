@@ -165,6 +165,7 @@
         <UsersManager v-else-if="activePage === 'usuarios'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
         <IncentivosManager v-else-if="activePage === 'incentivos'" />
+        <NewslettersManager v-else-if="activePage === 'newsletters'" />
       </v-container>
     </v-main>
   </div>
@@ -183,6 +184,7 @@ import ImageBankManager from '@/components/image/ImageBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
 import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
+import NewslettersManager from '@/components/newsletters/NewslettersManager.vue'
 
 export default {
   name: 'DashboardPage',
@@ -198,7 +200,8 @@ export default {
     ImageBankManager,
     HotelsManager,
     IncentivosManager,
-    UsersManager
+    UsersManager,
+    NewslettersManager
   },
   data() {
     return {
@@ -223,7 +226,8 @@ export default {
             // { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase', page: '' },
             { title: 'Beach House', icon: 'mdi-beach', page: 'beach-house' }, 
             { title: 'Blog Receptivo', icon: 'mdi-post-outline', page: 'blog' },
-            { title: 'Brazilian Experts', icon: 'mdi-map', page: 'experts' }
+            { title: 'Brazilian Experts', icon: 'mdi-map', page: 'experts' },
+            { title: 'Newsletters', icon: 'mdi-newspaper-variant-outline', page: 'newsletters' }
           ]
         },
         {
