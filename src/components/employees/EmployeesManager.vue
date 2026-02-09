@@ -73,7 +73,16 @@
             {{ item.ativo ? 'Ativo' : 'Inativo' }}
           </v-chip>
         </template>
+        <template slot="item.perfil_id" slot-scope="{ item }">
+          <v-chip v-if="item.perfil_id" small color="primary" text-color="white">
+            {{ profileName(item.perfil_id) || `#${item.perfil_id}` }}
+          </v-chip>
+          <span v-else>-</span>
+        </template>
         <template slot="item.actions" slot-scope="{ item }">
+          <v-btn icon small color="info" @click="openProfileAssign(item)">
+            <v-icon>mdi-shield-account</v-icon>
+          </v-btn>
           <v-btn icon small color="primary" @click="openEdit(item)">
             <v-icon>mdi-pencil</v-icon>
           </v-btn>
@@ -110,6 +119,18 @@
               </v-col>
               <v-col cols="12" md="3" class="d-flex align-center">
                 <v-switch v-model="editedItem.ativo" label="Ativo" inset></v-switch>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="editedItem.perfil_id"
+                  :items="profiles"
+                  item-text="name"
+                  item-value="id"
+                  label="Perfil"
+                  outlined
+                  dense
+                  clearable
+                ></v-select>
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
@@ -157,6 +178,39 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="dialogProfile" max-width="520px">
+      <v-card>
+        <v-card-title>
+          Associar perfil ao funcionario
+          <v-spacer></v-spacer>
+          <v-btn icon @click="dialogProfile = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-alert type="info" border="left" colored-border>
+            Funcionario: <strong>{{ profileAssign.nome || '-' }}</strong>
+            <span v-if="profileAssign.cod_sis"> ({{ profileAssign.cod_sis }})</span>
+          </v-alert>
+          <v-select
+            v-model="profileAssign.perfil_id"
+            :items="profiles"
+            item-text="name"
+            item-value="id"
+            label="Perfil"
+            outlined
+            dense
+            clearable
+          ></v-select>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="dialogProfile = false">Cancelar</v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveProfileAssign">Salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="4000">
       {{ snackbar.text }}
       <template v-slot:action="{ attrs }">
@@ -195,8 +249,16 @@ export default {
       },
       dialog: false,
       dialogDelete: false,
+      dialogProfile: false,
       editedIndex: -1,
       editedItem: {},
+      profiles: [],
+      profileAssign: {
+        id: null,
+        cod_sis: '',
+        nome: '',
+        perfil_id: null
+      },
       snackbar: {
         show: false,
         text: '',
@@ -210,12 +272,14 @@ export default {
       headers: [
         { text: 'ID', value: 'id', width: 70 },
         { text: 'Nome', value: 'nome' },
+        { text: 'Cod SIS', value: 'cod_sis', width: 110 },
         { text: 'Login', value: 'login' },
         { text: 'Email', value: 'email', sortable: false },
         { text: 'Cargo', value: 'fk_cargo', width: 90 },
+        { text: 'Perfil', value: 'perfil_id', width: 140, sortable: false },
         { text: 'Admissao', value: 'data_admissao', width: 120 },
         { text: 'Ativo', value: 'ativo', width: 90, sortable: false },
-        { text: 'Acoes', value: 'actions', sortable: false, align: 'end', width: 120 }
+        { text: 'Acoes', value: 'actions', sortable: false, align: 'end', width: 160 }
       ]
     }
   },
@@ -234,6 +298,7 @@ export default {
   },
   mounted() {
     this.editedItem = this.defaultEmployee()
+    this.fetchProfiles()
     this.fetchEmployees()
   },
   methods: {
@@ -244,13 +309,30 @@ export default {
     defaultEmployee() {
       return {
         id: null,
+        cod_sis: '',
         nome: '',
         login: '',
         email: '',
         fk_cargo: null,
+        perfil_id: null,
         data_admissao: '',
         ativo: true,
         senha: ''
+      }
+    },
+    profileName(id) {
+      const profile = this.profiles.find(item => item.id === id)
+      return profile ? profile.name : ''
+    },
+    async fetchProfiles() {
+      try {
+        const response = await fetch(`${API_BASE}perfil_role.php?request=listar_profiles&limit=500`, {
+          headers: this.authHeaders()
+        })
+        const data = await response.json()
+        this.profiles = Array.isArray(data) ? data : data.data || []
+      } catch (error) {
+        this.showMessage(`Erro ao carregar perfis: ${error.message}`, 'error')
       }
     },
     showMessage(text, color) {
@@ -328,6 +410,24 @@ export default {
       }
       this.dialog = true
     },
+    openProfileAssign(item) {
+      if (!item.cod_sis) {
+        this.showMessage('Funcionario sem cod_sis. Nao e possivel associar perfil.', 'warning')
+        return
+      }
+      this.editedItem = {
+        ...this.defaultEmployee(),
+        ...item,
+        senha: ''
+      }
+      this.profileAssign = {
+        id: item.id,
+        cod_sis: item.cod_sis,
+        nome: item.nome,
+        perfil_id: item.perfil_id || null
+      }
+      this.dialogProfile = true
+    },
     openDelete(item) {
       this.editedItem = {
         id: item.id,
@@ -345,9 +445,43 @@ export default {
         login: this.editedItem.login,
         email: this.editedItem.email || null,
         fk_cargo: this.editedItem.fk_cargo,
+        perfil_id: this.editedItem.perfil_id,
         data_admissao: this.editedItem.data_admissao || null,
         ativo: this.editedItem.ativo,
         senha: this.editedItem.senha || undefined
+      }
+    },
+    async saveProfileAssign() {
+      if (!this.profileAssign.cod_sis) {
+        this.showMessage('cod_sis obrigatorio para associar perfil.', 'warning')
+        return
+      }
+      this.saving = true
+      try {
+        const url = `${API_BASE}perfil_role.php?request=associar_profile_funcionario`
+        const payload = {
+          cod_sis: this.profileAssign.cod_sis,
+          profile_id: this.profileAssign.perfil_id || null
+        }
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...this.authHeaders()
+          },
+          body: JSON.stringify(payload)
+        })
+        const result = await response.json()
+        if (result.error || result.success === false) {
+          throw new Error(result.error || result.message || 'Erro ao salvar')
+        }
+        this.showMessage('Perfil associado ao funcionario.')
+        this.dialogProfile = false
+        await this.fetchEmployees()
+      } catch (error) {
+        this.showMessage(`Erro ao salvar perfil: ${error.message}`, 'error')
+      } finally {
+        this.saving = false
       }
     },
     async save() {

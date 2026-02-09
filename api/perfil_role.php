@@ -399,6 +399,55 @@ try {
             }
             break;
 
+        // ------------------------------------------------
+        // ASSOCIAR PERFIL AO FUNCIONARIO (perfil_id)
+        // ------------------------------------------------
+        case 'associar_profile_funcionario':
+            if ($method !== 'PUT' && $method !== 'POST') response(["error" => "Use PUT ou POST"], 405);
+            if (empty($input)) response(["error" => "Body JSON obrigat?rio"], 400);
+
+            $cod_sis = trim($input['cod_sis'] ?? '');
+            $profile_id = isset($input['profile_id']) ? (int)$input['profile_id'] : null;
+
+            if ($cod_sis === '') response(["error" => "cod_sis obrigat?rio"], 400);
+
+            // validar profile se enviado
+            if ($profile_id !== null && $profile_id > 0) {
+                $check_profile = pg_query_params($conn, "SELECT 1 FROM auth.auth_profiles WHERE id = $1", [$profile_id]);
+                if (!$check_profile || pg_num_rows($check_profile) === 0) {
+                    response(["error" => "Perfil n?o encontrado"], 404);
+                }
+            }
+
+            // substitui??o completa: remove perfis atuais e insere o novo (se informado)
+            pg_query($conn, "BEGIN");
+            $delete = pg_query_params($conn, "DELETE FROM auth.auth_user_profiles WHERE cod_sis = $1", [$cod_sis]);
+            if ($delete === false) {
+                pg_query($conn, "ROLLBACK");
+                response(["error" => "Erro ao limpar perfis: " . pg_last_error($conn)], 500);
+            }
+
+            if ($profile_id !== null && $profile_id > 0) {
+                $insert = pg_query_params(
+                    $conn,
+                    "INSERT INTO auth.auth_user_profiles (cod_sis, profile_id) VALUES ($1, $2)",
+                    [$cod_sis, $profile_id]
+                );
+                if ($insert === false) {
+                    pg_query($conn, "ROLLBACK");
+                    response(["error" => "Erro ao associar perfil: " . pg_last_error($conn)], 500);
+                }
+            }
+            pg_query($conn, "COMMIT");
+
+            response([
+                'success' => true,
+                'message' => 'Perfil associado ao usu?rio',
+                'cod_sis' => $cod_sis,
+                'profile_id' => $profile_id
+            ]);
+            break;
+
         // ────────────────────────────────────────────────
         // Outros endpoints (permissions) seguem padrão similar
         // Você pode replicar a lógica acima para:
