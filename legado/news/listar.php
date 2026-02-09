@@ -24,107 +24,117 @@ if (!isset($_SESSION['consulta']) || $_SESSION['consulta'] != 't') {
                 <form id="newsEditForm">
                     <input type="hidden" id="editNewsId">
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <!-- Coluna 1 -->
-                        <div>
-                            <label class="news-label"><i class="fas fa-tag"></i> Nome da Newsletter *</label>
-                            <input type="text" id="editNome" class="news-input" required>
+                    <div class="news-tabs">
+                        <div class="news-tab-header">
+                            <button type="button" class="news-tab-button is-active" data-tab="edit-tab-geral">Geral</button>
+                            <button type="button" class="news-tab-button" data-tab="edit-tab-imagens">Imagens</button>
+                            <button type="button" class="news-tab-button" data-tab="edit-tab-conteudo">Conte??do</button>
+                            <button type="button" class="news-tab-button" data-tab="edit-tab-destaques">Destaques</button>
+                        </div>
 
-                            <label class="news-label"><i class="fas fa-calendar"></i> Data Extenso</label>
-                            <input type="text" id="editDataExtenso" class="news-input">
+                        <div class="news-tab-panel is-active" id="edit-tab-geral">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <!-- Coluna 1 -->
+                                <div>
+                                    <label class="news-label"><i class="fas fa-tag"></i> Nome da Newsletter *</label>
+                                    <input type="text" id="editNome" class="news-input" required>
 
-                            <label class="news-label"><i class="fas fa-heading"></i> Título</label>
-                            <input type="text" id="editTitulo" class="news-input">
+                                    <label class="news-label"><i class="fas fa-calendar"></i> Data Extenso</label>
+                                    <input type="text" id="editDataExtenso" class="news-input">
 
-                            <label class="news-label"><i class="fas fa-file-pdf"></i> PDF <small style="color: #9ca3af;">(salvo em: /novo_site/admin/news/pdf)</small></label>
-                            <input type="text" id="editPdf" class="news-input" placeholder="nome_arquivo.pdf">
+                                    <label class="news-label"><i class="fas fa-heading"></i> T??tulo</label>
+                                    <input type="text" id="editTitulo" class="news-input">
 
-                            <label class="news-label"><i class="fas fa-building"></i> Empresa</label>
-                            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px;">
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="editEmpresa" id="editEmpresa1" value="1" checked>
-                                    <span>Blumar</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="editEmpresa" id="editEmpresa2" value="2">
-                                    <span>Rio Life</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="editEmpresa" id="editEmpresa3" value="3">
-                                    <span>Eventos</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="editEmpresa" id="editEmpresa4" value="4">
-                                    <span>BeBrazil</span>
-                                </label>
+                                    <label class="news-label"><i class="fas fa-file-pdf"></i> PDF <small style="color: #9ca3af;">(salvo em: /novo_site/admin/news/pdf)</small></label>
+                                    <input type="text" id="editPdf" class="news-input" placeholder="nome_arquivo.pdf">
+
+                                    <label class="news-label"><i class="fas fa-building"></i> Empresa</label>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="editEmpresa" id="editEmpresa1" value="1" checked>
+                                            <span>Blumar</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="editEmpresa" id="editEmpresa2" value="2">
+                                            <span>Rio Life</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="editEmpresa" id="editEmpresa3" value="3">
+                                            <span>Eventos</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="editEmpresa" id="editEmpresa4" value="4">
+                                            <span>BeBrazil</span>
+                                        </label>
+                                    </div>
+
+                                    <label class="news-label"><i class="fas fa-palette"></i> Cor PE (hex sem #)</label>
+                                    <input type="text" id="editCorPe" class="news-input" placeholder="F9020E">
+                                </div>
+
+                                <!-- Coluna 2 - Status -->
+                                <div>
+                                    <label class="news-label"><i class="fas fa-toggle-on"></i> Status de Exibi????o</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                        <label><input type="checkbox" id="editAtivoWeb"> Ativo Web</label>
+                                        <label><input type="checkbox" id="editAtivoHome"> Ativo Home</label>
+                                        <label><input type="checkbox" id="editAtivoPassion"> Ativo Passion</label>
+                                        <label><input type="checkbox" id="editAtivoBe"> Ativo BE</label>
+                                        <label><input type="checkbox" id="editTituloAtivo"> T??tulo Ativo</label>
+                                        <label><input type="checkbox" id="editRecep"> Recep</label>
+                                        <label><input type="checkbox" id="editHeaderItaliano"> Topo Italiano</label>
+                                        <label><input type="checkbox" id="editNovoLayout"> Novo Layout</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="news-tab-panel" id="edit-tab-imagens">
+                            <h4 style="margin: 0 0 15px; color: #5a67d8;"><i class="fas fa-images"></i> Imagens</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                                <div>
+                                    <label class="news-label">Imagem Topo</label>
+                                    <input type="text" id="editImgTopo" class="news-input" placeholder="caminho/relativo.jpg">
+                                    <small style="color: #9ca3af;">Alt: <input type="text" id="editAltTopo" style="width: 100%; margin-top: 5px;"></small>
+                                </div>
+                                <div>
+                                    <label class="news-label">Foto Bloco Livre</label>
+                                    <input type="text" id="editFotoBloco" class="news-input" placeholder="caminho/relativo.jpg">
+                                    <small style="color: #9ca3af;">Alt: <input type="text" id="editAltLivre" style="width: 100%; margin-top: 5px;"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="news-tab-panel" id="edit-tab-conteudo">
+                            <h4 style="margin: 0 0 15px; color: #5a67d8;"><i class="fas fa-align-left"></i> Conte??do</h4>
+
+                            <label class="news-label"><i class="fas fa-file-alt"></i> Campo Livre <small style="color: #9ca3af;">(obrigat??rio para o novo layout)</small></label>
+                            <textarea id="editBlocoLivre" class="news-input" rows="15" placeholder="Conte??do HTML do campo livre..."></textarea>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                                <div>
+                                    <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 1?? Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
+                                    <input type="text" id="editChamada1Bloco" class="news-input" placeholder="T??tulo do primeiro bloco">
+                                </div>
+                                <div>
+                                    <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 2?? Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
+                                    <input type="text" id="editChamadaBloco" class="news-input" placeholder="T??tulo do segundo bloco">
+                                </div>
                             </div>
 
-                            <label class="news-label"><i class="fas fa-palette"></i> Cor PE (hex sem #)</label>
-                            <input type="text" id="editCorPe" class="news-input" placeholder="F9020E">
+                            <label class="news-label" style="margin-top: 20px;"><i class="fas fa-box-open"></i> Campo "MORE PRODUCTS" <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
+                            <input type="text" id="editMoreProducts" class="news-input" placeholder="HTML do campo MORE PRODUCTS">
                         </div>
 
-                        <!-- Coluna 2 - Status -->
-                        <div>
-                            <label class="news-label"><i class="fas fa-toggle-on"></i> Status de Exibição</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                <label><input type="checkbox" id="editAtivoWeb"> Ativo Web</label>
-                                <label><input type="checkbox" id="editAtivoHome"> Ativo Home</label>
-                                <label><input type="checkbox" id="editAtivoPassion"> Ativo Passion</label>
-                                <label><input type="checkbox" id="editAtivoBe"> Ativo BE</label>
-                                <label><input type="checkbox" id="editTituloAtivo"> Título Ativo</label>
-                                <label><input type="checkbox" id="editRecep"> Recep</label>
-                                <label><input type="checkbox" id="editHeaderItaliano"> Topo Italiano</label>
-                                <label><input type="checkbox" id="editNovoLayout"> Novo Layout</label>
+                        <div class="news-tab-panel" id="edit-tab-destaques">
+                            <h4 style="margin: 0 0 15px; color: #5a67d8;"><i class="fas fa-star"></i> Destaques</h4>
+                            <div id="newsDestaquesContainer"></div>
+                            <div style="margin-top: 15px; text-align: center;">
+                                <button type="button" onclick="newsAdicionarDestaque()" class="news-btn-modern news-btn-info-modern" style="font-size: 0.9rem; padding: 8px 16px;">
+                                    <i class="fas fa-plus"></i> Adicionar Destaque
+                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    <hr style="margin: 30px 0; border-color: var(--news-border-color);">
-
-                    <!-- Imagens -->
-                    <h4 style="margin: 20px 0 15px; color: #5a67d8;"><i class="fas fa-images"></i> Imagens</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                        <div>
-                            <label class="news-label">Imagem Topo</label>
-                            <input type="text" id="editImgTopo" class="news-input" placeholder="caminho/relativo.jpg">
-                            <small style="color: #9ca3af;">Alt: <input type="text" id="editAltTopo" style="width: 100%; margin-top: 5px;"></small>
-                        </div>
-                        <div>
-                            <label class="news-label">Foto Bloco Livre</label>
-                            <input type="text" id="editFotoBloco" class="news-input" placeholder="caminho/relativo.jpg">
-                            <small style="color: #9ca3af;">Alt: <input type="text" id="editAltLivre" style="width: 100%; margin-top: 5px;"></small>
-                        </div>
-                    </div>
-
-                    <hr style="margin: 30px 0; border-color: var(--news-border-color);">
-
-                    <!-- Conteúdo -->
-                    <h4 style="margin: 20px 0 15px; color: #5a67d8;"><i class="fas fa-align-left"></i> Conteúdo</h4>
-
-                    <label class="news-label"><i class="fas fa-file-alt"></i> Campo Livre <small style="color: #9ca3af;">(obrigatório para o novo layout)</small></label>
-                    <textarea id="editBlocoLivre" class="news-input" rows="15" placeholder="Conteúdo HTML do campo livre..."></textarea>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-                        <div>
-                            <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 1º Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
-                            <input type="text" id="editChamada1Bloco" class="news-input" placeholder="Título do primeiro bloco">
-                        </div>
-                        <div>
-                            <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 2º Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
-                            <input type="text" id="editChamadaBloco" class="news-input" placeholder="Título do segundo bloco">
-                        </div>
-                    </div>
-
-                    <label class="news-label" style="margin-top: 20px;"><i class="fas fa-box-open"></i> Campo "MORE PRODUCTS" <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
-                    <input type="text" id="editMoreProducts" class="news-input" placeholder="HTML do campo MORE PRODUCTS">
-
-                    <!-- Destaques -->
-                    <h4 style="margin: 30px 0 15px; color: #5a67d8;"><i class="fas fa-star"></i> Destaques</h4>
-                    <div id="newsDestaquesContainer"></div>
-                    <div style="margin-top: 15px; text-align: center;">
-                        <button type="button" onclick="newsAdicionarDestaque()" class="news-btn-modern news-btn-info-modern" style="font-size: 0.9rem; padding: 8px 16px;">
-                            <i class="fas fa-plus"></i> Adicionar Destaque
-                        </button>
                     </div>
                 </form>
             </div>
@@ -298,99 +308,107 @@ if (!isset($_SESSION['consulta']) || $_SESSION['consulta'] != 't') {
             </div>
             <div id="newsInsertContent" style="padding-right: 10px;">
                 <form id="newsInsertForm">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <!-- Coluna 1 -->
-                        <div>
-                            <label class="news-label"><i class="fas fa-tag"></i> Nome da Newsletter *</label>
-                            <input type="text" id="insertNome" class="news-input" required>
+                    <div class="news-tabs">
+                        <div class="news-tab-header">
+                            <button type="button" class="news-tab-button is-active" data-tab="insert-tab-geral">Geral</button>
+                            <button type="button" class="news-tab-button" data-tab="insert-tab-imagens">Imagens</button>
+                            <button type="button" class="news-tab-button" data-tab="insert-tab-conteudo">Conte??do</button>
+                        </div>
 
-                            <label class="news-label"><i class="fas fa-calendar"></i> Data Extenso</label>
-                            <input type="text" id="insertDataExtenso" class="news-input" placeholder="Ex: Janeiro 2025">
+                        <div class="news-tab-panel is-active" id="insert-tab-geral">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <!-- Coluna 1 -->
+                                <div>
+                                    <label class="news-label"><i class="fas fa-tag"></i> Nome da Newsletter *</label>
+                                    <input type="text" id="insertNome" class="news-input" required>
 
-                            <label class="news-label"><i class="fas fa-heading"></i> Título</label>
-                            <input type="text" id="insertTitulo" class="news-input">
+                                    <label class="news-label"><i class="fas fa-calendar"></i> Data Extenso</label>
+                                    <input type="text" id="insertDataExtenso" class="news-input" placeholder="Ex: Janeiro 2025">
 
-                            <label class="news-label"><i class="fas fa-file-pdf"></i> PDF <small style="color: #9ca3af;">(salvo em: /novo_site/admin/news/pdf)</small></label>
-                            <input type="text" id="insertPdf" class="news-input" placeholder="nome_arquivo.pdf">
+                                    <label class="news-label"><i class="fas fa-heading"></i> T??tulo</label>
+                                    <input type="text" id="insertTitulo" class="news-input">
 
-                            <label class="news-label"><i class="fas fa-building"></i> Empresa</label>
-                            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px;">
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="insertEmpresa" id="insertEmpresa1" value="1" checked>
-                                    <span>Blumar</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="insertEmpresa" id="insertEmpresa2" value="2">
-                                    <span>Rio Life</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="insertEmpresa" id="insertEmpresa3" value="3">
-                                    <span>Eventos</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="radio" name="insertEmpresa" id="insertEmpresa4" value="4">
-                                    <span>BeBrazil</span>
-                                </label>
+                                    <label class="news-label"><i class="fas fa-file-pdf"></i> PDF <small style="color: #9ca3af;">(salvo em: /novo_site/admin/news/pdf)</small></label>
+                                    <input type="text" id="insertPdf" class="news-input" placeholder="nome_arquivo.pdf">
+
+                                    <label class="news-label"><i class="fas fa-building"></i> Empresa</label>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="insertEmpresa" id="insertEmpresa1" value="1" checked>
+                                            <span>Blumar</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="insertEmpresa" id="insertEmpresa2" value="2">
+                                            <span>Rio Life</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="insertEmpresa" id="insertEmpresa3" value="3">
+                                            <span>Eventos</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="radio" name="insertEmpresa" id="insertEmpresa4" value="4">
+                                            <span>BeBrazil</span>
+                                        </label>
+                                    </div>
+
+                                    <label class="news-label"><i class="fas fa-palette"></i> Cor PE (hex sem #)</label>
+                                    <input type="text" id="insertCorPe" class="news-input" placeholder="F9020E" value="F9020E">
+                                </div>
+
+                                <!-- Coluna 2 - Status -->
+                                <div>
+                                    <label class="news-label"><i class="fas fa-toggle-on"></i> Status de Exibi????o</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                        <label><input type="checkbox" id="insertAtivoWeb" checked> Ativo Web</label>
+                                        <label><input type="checkbox" id="insertAtivoHome"> Ativo Home</label>
+                                        <label><input type="checkbox" id="insertAtivoPassion"> Ativo Passion</label>
+                                        <label><input type="checkbox" id="insertAtivoBe"> Ativo BE</label>
+                                        <label><input type="checkbox" id="insertTituloAtivo"> T??tulo Ativo</label>
+                                        <label><input type="checkbox" id="insertRecep"> Recep</label>
+                                        <label><input type="checkbox" id="insertHeaderItaliano"> Topo Italiano</label>
+                                        <label><input type="checkbox" id="insertNovoLayout" checked> Novo Layout</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="news-tab-panel" id="insert-tab-imagens">
+                            <h4 style="margin: 0 0 15px; color: #5a67d8;"><i class="fas fa-images"></i> Imagens</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                                <div>
+                                    <label class="news-label">Imagem Topo</label>
+                                    <input type="text" id="insertImgTopo" class="news-input" placeholder="caminho/relativo.jpg">
+                                    <small style="color: #9ca3af;">Alt: <input type="text" id="insertAltTopo" style="width: 100%; margin-top: 5px;"></small>
+                                </div>
+                                <div>
+                                    <label class="news-label">Foto Bloco Livre</label>
+                                    <input type="text" id="insertFotoBloco" class="news-input" placeholder="caminho/relativo.jpg">
+                                    <small style="color: #9ca3af;">Alt: <input type="text" id="insertAltLivre" style="width: 100%; margin-top: 5px;"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="news-tab-panel" id="insert-tab-conteudo">
+                            <h4 style="margin: 0 0 15px; color: #5a67d8;"><i class="fas fa-align-left"></i> Conte??do</h4>
+
+                            <label class="news-label"><i class="fas fa-file-alt"></i> Campo Livre <small style="color: #9ca3af;">(obrigat??rio para o novo layout)</small></label>
+                            <textarea id="insertBlocoLivre" class="news-input" rows="15" placeholder="Conte??do HTML do campo livre..."></textarea>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                                <div>
+                                    <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 1?? Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
+                                    <input type="text" id="insertChamada1Bloco" class="news-input" placeholder="T??tulo do primeiro bloco">
+                                </div>
+                                <div>
+                                    <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 2?? Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
+                                    <input type="text" id="insertChamadaBloco" class="news-input" placeholder="T??tulo do segundo bloco">
+                                </div>
                             </div>
 
-                            <label class="news-label"><i class="fas fa-palette"></i> Cor PE (hex sem #)</label>
-                            <input type="text" id="insertCorPe" class="news-input" placeholder="F9020E" value="F9020E">
-                        </div>
-
-                        <!-- Coluna 2 - Status -->
-                        <div>
-                            <label class="news-label"><i class="fas fa-toggle-on"></i> Status de Exibição</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                <label><input type="checkbox" id="insertAtivoWeb" checked> Ativo Web</label>
-                                <label><input type="checkbox" id="insertAtivoHome"> Ativo Home</label>
-                                <label><input type="checkbox" id="insertAtivoPassion"> Ativo Passion</label>
-                                <label><input type="checkbox" id="insertAtivoBe"> Ativo BE</label>
-                                <label><input type="checkbox" id="insertTituloAtivo"> Título Ativo</label>
-                                <label><input type="checkbox" id="insertRecep"> Recep</label>
-                                <label><input type="checkbox" id="insertHeaderItaliano"> Topo Italiano</label>
-                                <label><input type="checkbox" id="insertNovoLayout" checked> Novo Layout</label>
-                            </div>
+                            <label class="news-label" style="margin-top: 20px;"><i class="fas fa-box-open"></i> Campo "MORE PRODUCTS" <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
+                            <input type="text" id="insertMoreProducts" class="news-input" placeholder="HTML do campo MORE PRODUCTS" value='MORE <b>PRODUCTS</b><br><font size=1>Follow below some other products that might interest you!</font>'>
                         </div>
                     </div>
-
-                    <hr style="margin: 30px 0; border-color: var(--news-border-color);">
-
-                    <!-- Imagens -->
-                    <h4 style="margin: 20px 0 15px; color: #5a67d8;"><i class="fas fa-images"></i> Imagens</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                        <div>
-                            <label class="news-label">Imagem Topo</label>
-                            <input type="text" id="insertImgTopo" class="news-input" placeholder="caminho/relativo.jpg">
-                            <small style="color: #9ca3af;">Alt: <input type="text" id="insertAltTopo" style="width: 100%; margin-top: 5px;"></small>
-                        </div>
-                        <div>
-                            <label class="news-label">Foto Bloco Livre</label>
-                            <input type="text" id="insertFotoBloco" class="news-input" placeholder="caminho/relativo.jpg">
-                            <small style="color: #9ca3af;">Alt: <input type="text" id="insertAltLivre" style="width: 100%; margin-top: 5px;"></small>
-                        </div>
-                    </div>
-
-                    <hr style="margin: 30px 0; border-color: var(--news-border-color);">
-
-                    <!-- Conteúdo -->
-                    <h4 style="margin: 20px 0 15px; color: #5a67d8;"><i class="fas fa-align-left"></i> Conteúdo</h4>
-
-                    <label class="news-label"><i class="fas fa-file-alt"></i> Campo Livre <small style="color: #9ca3af;">(obrigatório para o novo layout)</small></label>
-                    <textarea id="insertBlocoLivre" class="news-input" rows="15" placeholder="Conteúdo HTML do campo livre..."></textarea>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-                        <div>
-                            <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 1º Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
-                            <input type="text" id="insertChamada1Bloco" class="news-input" placeholder="Título do primeiro bloco">
-                        </div>
-                        <div>
-                            <label class="news-label"><i class="fas fa-bullhorn"></i> Chamada 2º Bloco <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
-                            <input type="text" id="insertChamadaBloco" class="news-input" placeholder="Título do segundo bloco">
-                        </div>
-                    </div>
-
-                    <label class="news-label" style="margin-top: 20px;"><i class="fas fa-box-open"></i> Campo "MORE PRODUCTS" <small style="color: #9ca3af;">(somente para o novo layout)</small></label>
-                    <input type="text" id="insertMoreProducts" class="news-input" placeholder="HTML do campo MORE PRODUCTS" value='MORE <b>PRODUCTS</b><br><font size=1>Follow below some other products that might interest you!</font>'>
                 </form>
             </div>
 

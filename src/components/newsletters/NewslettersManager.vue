@@ -144,155 +144,183 @@
         </v-card-title>
         <v-card-text>
           <v-form>
-            <v-row>
-              <v-col cols="12" md="8">
-                <v-text-field v-model="editedItem.nome" label="Nome" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field v-model="editedItem.titulo" label="Titulo" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  v-model="editedItem.data_extenso"
-                  label="Data extenso"
-                  outlined
-                  dense
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field v-model.number="editedItem.empresa" label="Empresa" type="number" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field v-model.number="editedItem.lingua" label="Lingua" type="number" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field v-model="editedItem.cor_pe" label="Cor pe" outlined dense></v-text-field>
-              </v-col>
+            <v-tabs v-model="formTab" background-color="transparent" grow>
+              <v-tab>Geral</v-tab>
+              <v-tab>Imagens</v-tab>
+              <v-tab>Conteudo</v-tab>
+              <v-tab>Status</v-tab>
+              <v-tab>Destaques</v-tab>
+            </v-tabs>
 
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.img_topo" label="Imagem topo" outlined dense></v-text-field>
-                <div class="newsletters-manager__image-preview" v-if="editedItem.img_topo">
-                  <img :src="resolveImage(editedItem.img_topo)" alt="Topo" @error="onImageError" />
-                </div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.alt_topo" label="Alt topo" outlined dense></v-text-field>
-              </v-col>
+            <v-tabs-items v-model="formTab" class="mt-4">
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12" md="8">
+                    <v-text-field v-model="editedItem.nome" label="Nome" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model="editedItem.titulo" label="Titulo" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="editedItem.data_extenso"
+                      label="Data extenso"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model.number="editedItem.empresa" label="Empresa" type="number" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model.number="editedItem.lingua" label="Lingua" type="number" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model="editedItem.cor_pe" label="Cor pe" outlined dense></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
 
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.foto_bloco" label="Foto bloco" outlined dense></v-text-field>
-                <div class="newsletters-manager__image-preview" v-if="editedItem.foto_bloco">
-                  <img :src="resolveImage(editedItem.foto_bloco)" alt="Foto bloco" @error="onImageError" />
-                </div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.alt_livre" label="Alt bloco" outlined dense></v-text-field>
-              </v-col>
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.img_topo" label="Imagem topo" outlined dense></v-text-field>
+                    <div class="newsletters-manager__image-preview" v-if="editedItem.img_topo">
+                      <img :src="resolveImage(editedItem.img_topo)" alt="Topo" @error="onImageError" />
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.alt_topo" label="Alt topo" outlined dense></v-text-field>
+                  </v-col>
 
-              <v-col cols="12">
-                <div class="newsletters-manager__editor-label">Bloco livre</div>
-                <TinyEditor v-model="editedItem.bloco_livre" :init="editorInit" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.chamada1_bloco" label="Chamada 1" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.chamada_bloco" label="Chamada 2" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.pdf" label="PDF" outlined dense></v-text-field>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="editedItem.more_poducts" label="More products" outlined dense></v-text-field>
-              </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.foto_bloco" label="Foto bloco" outlined dense></v-text-field>
+                    <div class="newsletters-manager__image-preview" v-if="editedItem.foto_bloco">
+                      <img :src="resolveImage(editedItem.foto_bloco)" alt="Foto bloco" @error="onImageError" />
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.alt_livre" label="Alt bloco" outlined dense></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
 
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.ativo_web" label="Ativo Web" inset></v-switch>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.ativo_home" label="Ativo Home" inset></v-switch>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.ativo_passion" label="Ativo Passion" inset></v-switch>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.ativo_be" label="Ativo BE" inset></v-switch>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-radio-group v-model="editedItem.is_header_italiano" row>
-                  <v-radio :value="true" label="Header Italiano: Sim"></v-radio>
-                  <v-radio :value="false" label="Header Italiano: Nao"></v-radio>
-                </v-radio-group>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.titulo_ativo" label="Titulo ativo" inset></v-switch>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.recep" label="Recep" inset></v-switch>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-switch v-model="editedItem.novo_layout" label="Novo layout" inset></v-switch>
-              </v-col>
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12">
+                    <div class="newsletters-manager__editor-label">Bloco livre</div>
+                    <TinyEditor v-model="editedItem.bloco_livre" :init="editorInit" />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.chamada1_bloco" label="Chamada 1" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.chamada_bloco" label="Chamada 2" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.pdf" label="PDF" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="editedItem.more_poducts" label="More products" outlined dense></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
 
-              <v-col cols="12">
-                <div class="newsletters-manager__section-title">Destaques</div>
-                <v-card outlined class="pa-3">
-                  <v-row v-for="(destaque, index) in editedItem.destaques" :key="index" class="mb-4">
-                    <v-col cols="12" md="2">
-                      <v-text-field v-model.number="destaque.ordem" label="Ordem" type="number" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="5">
-                      <v-text-field v-model="destaque.titulo" label="Titulo" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="5">
-                      <v-text-field v-model="destaque.subtitulo" label="Subtitulo" outlined dense />
-                    </v-col>
-                    <v-col cols="12">
-                      <v-textarea v-model="destaque.descricao" label="Descricao" outlined dense rows="2" />
-                    </v-col>
-                    <v-col cols="12" md="6">
-                      <v-text-field v-model="destaque.imagem" label="Imagem" outlined dense />
-                      <div class="newsletters-manager__image-preview" v-if="destaque.imagem">
-                        <img :src="resolveImage(destaque.imagem)" alt="Destaque" @error="onImageError" />
-                      </div>
-                    </v-col>
-                    <v-col cols="12" md="6">
-                      <v-text-field v-model="destaque.imagem_reduzida" label="Imagem reduzida" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="4">
-                      <v-text-field v-model="destaque.alt" label="Alt" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="8">
-                      <v-text-field v-model="destaque.link_endereco" label="Link" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="4">
-                      <v-text-field v-model="destaque.img_link" label="Imagem link" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="4">
-                      <v-text-field v-model="destaque.layout" label="Layout" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="4">
-                      <v-text-field v-model="destaque.especialista" label="Especialista" outlined dense />
-                    </v-col>
-                    <v-col cols="12" md="3">
-                      <v-switch v-model="destaque.link_ativo" label="Link ativo" inset></v-switch>
-                    </v-col>
-                    <v-col cols="12" md="3">
-                      <v-switch v-model="destaque.exibir" label="Exibir" inset></v-switch>
-                    </v-col>
-                    <v-col cols="12" class="d-flex justify-end">
-                      <v-btn icon color="error" @click="removeDestaque(index)">
-                        <v-icon>mdi-delete</v-icon>
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.ativo_web" label="Ativo Web" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.ativo_home" label="Ativo Home" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.ativo_passion" label="Ativo Passion" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.ativo_be" label="Ativo BE" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-radio-group v-model="editedItem.is_header_italiano" row>
+                      <v-radio :value="true" label="Header Italiano: Sim"></v-radio>
+                      <v-radio :value="false" label="Header Italiano: Nao"></v-radio>
+                    </v-radio-group>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.titulo_ativo" label="Titulo ativo" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.recep" label="Recep" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.novo_layout" label="Novo layout" inset></v-switch>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12">
+                    <div class="newsletters-manager__section-title">Destaques</div>
+                    <v-card outlined class="pa-3">
+                      <v-row v-for="(destaque, index) in editedItem.destaques" :key="index" class="mb-4">
+                        <v-col cols="12" md="2">
+                          <v-text-field v-model.number="destaque.ordem" label="Ordem" type="number" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="5">
+                          <v-text-field v-model="destaque.titulo" label="Titulo" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="5">
+                          <v-text-field v-model="destaque.subtitulo" label="Subtitulo" outlined dense />
+                        </v-col>
+                        <v-col cols="12">
+                          <v-textarea v-model="destaque.descricao" label="Descricao" outlined dense rows="2" />
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-text-field v-model="destaque.imagem" label="Imagem" outlined dense />
+                          <div class="newsletters-manager__image-preview" v-if="destaque.imagem">
+                            <img :src="resolveImage(destaque.imagem)" alt="Destaque" @error="onImageError" />
+                          </div>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-text-field v-model="destaque.imagem_reduzida" label="Imagem reduzida" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="4">
+                          <v-text-field v-model="destaque.alt" label="Alt" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="8">
+                          <v-text-field v-model="destaque.link_endereco" label="Link" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="4">
+                          <v-text-field v-model="destaque.img_link" label="Imagem link" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="4">
+                          <v-text-field v-model="destaque.layout" label="Layout" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="4">
+                          <v-text-field v-model="destaque.especialista" label="Especialista" outlined dense />
+                        </v-col>
+                        <v-col cols="12" md="3">
+                          <v-switch v-model="destaque.link_ativo" label="Link ativo" inset></v-switch>
+                        </v-col>
+                        <v-col cols="12" md="3">
+                          <v-switch v-model="destaque.exibir" label="Exibir" inset></v-switch>
+                        </v-col>
+                        <v-col cols="12" class="d-flex justify-end">
+                          <v-btn icon color="error" @click="removeDestaque(index)">
+                            <v-icon>mdi-delete</v-icon>
+                          </v-btn>
+                        </v-col>
+                        <v-divider class="my-2"></v-divider>
+                      </v-row>
+                      <v-btn outlined color="primary" @click="addDestaque">
+                        Adicionar destaque
                       </v-btn>
-                    </v-col>
-                    <v-divider class="my-2"></v-divider>
-                  </v-row>
-                  <v-btn outlined color="primary" @click="addDestaque">
-                    Adicionar destaque
-                  </v-btn>
-                </v-card>
-              </v-col>
-            </v-row>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+            </v-tabs-items>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -387,6 +415,7 @@ export default {
         text: '',
         color: 'success'
       },
+      formTab: 0,
       headers: [
         { text: 'Topo', value: 'img_topo', sortable: false },
         { text: 'Nome', value: 'nome' },

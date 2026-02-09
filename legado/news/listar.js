@@ -229,6 +229,31 @@
             `Mostrando ${start} - ${end} de ${newsTotalItems} registros`;
     }
 
+    function newsInitTabs(modalEl) {
+        if (!modalEl) return;
+        const buttons = modalEl.querySelectorAll('.news-tab-button');
+        const panels = modalEl.querySelectorAll('.news-tab-panel');
+        if (!buttons.length || !panels.length) return;
+
+        const activateTab = (button) => {
+            buttons.forEach(btn => btn.classList.toggle('is-active', btn === button));
+            panels.forEach(panel => panel.classList.toggle('is-active', panel.id === button.dataset.tab));
+        };
+
+        if (!modalEl.dataset.tabsBound) {
+            buttons.forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    activateTab(button);
+                });
+            });
+            modalEl.dataset.tabsBound = 'true';
+        }
+
+        activateTab(buttons[0]);
+    }
+    window.newsInitTabs = newsInitTabs;
+
     // Novo item
     window.newsNovoItem = function () {
         // Limpar todos os campos do formulário
@@ -260,7 +285,9 @@
         document.getElementById('insertNovoLayout').checked = true;
 
         // Abrir modal
-        document.getElementById('newsModalInsert').style.display = 'block';
+        const modalInsert = document.getElementById('newsModalInsert');
+        modalInsert.style.display = 'block';
+        newsInitTabs(modalInsert);
     };
 
     // Editar item
@@ -506,7 +533,11 @@ window.newsEditarItem = function (id) {
                 container.innerHTML = '<p style="color: #9ca3af; text-align:center; padding: 30px;">Nenhum destaque cadastrado</p>';
             }
 
-            document.getElementById('newsModalEdit').style.display = 'block';
+            const modalEdit = document.getElementById('newsModalEdit');
+            modalEdit.style.display = 'block';
+            if (typeof window.newsInitTabs === 'function') {
+                window.newsInitTabs(modalEdit);
+            }
         },
         error: function (xhr, status, error) {
             console.error('Erro ao carregar dados:', xhr.responseText);
