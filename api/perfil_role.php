@@ -212,6 +212,21 @@ function buscarPermissoesDoPerfil($conn, $profile_id) {
     return $perms;
 }
 
+function buscarPerfilDoUsuario($conn, $cod_sis) {
+    $sql = "
+        SELECT ap.id, ap.name, ap.description
+        FROM auth.auth_user_profiles aup
+        INNER JOIN auth.auth_profiles ap ON ap.id = aup.profile_id
+        WHERE aup.cod_sis = $1
+        LIMIT 1
+    ";
+    $result = pg_query_params($conn, $sql, [$cod_sis]);
+    if ($result && pg_num_rows($result) > 0) {
+        return pg_fetch_assoc($result);
+    }
+    return null;
+}
+
 // ========================================
 // 🔧 LÓGICA PRINCIPAL
 // ========================================
@@ -445,6 +460,49 @@ try {
                 'message' => 'Perfil associado ao usu?rio',
                 'cod_sis' => $cod_sis,
                 'profile_id' => $profile_id
+            ]);
+            break;
+
+        // ------------------------------------------------
+        // BUSCAR PERMISSOES DO USUARIO (por cod_sis ou funcionario_id)
+        // ------------------------------------------------
+        case 'buscar_permissoes_usuario':
+            if ($method !== 'GET') response(["error" => "Use GET"], 405);
+
+            $cod_sis = trim($_GET['cod_sis'] ?? '');
+            $funcionario_id = isset($_GET['funcionario_id']) ? (int)$_GET['funcionario_id'] : 0;
+
+            if ($cod_sis === '' && $funcionario_id <= 0) {
+                response(["error" => "cod_sis ou funcionario_id obrigatorio"], 400);
+            }
+
+            if ($cod_sis === '' && $funcionario_id > 0) {
+                $res_cod = pg_query_params(
+                    $conn,
+                    "SELECT cod_sis FROM conteudo_internet.usuario WHERE pk_usuario = $1",
+                    [$funcionario_id]
+                );
+                if (!$res_cod || pg_num_rows($res_cod) === 0) {
+                    response(["error" => "Funcionario nao encontrado"], 404);
+                }
+                $cod_sis = trim(pg_fetch_result($res_cod, 0, 0));
+            }
+
+            $profile = buscarPerfilDoUsuario($conn, $cod_sis);
+            if (!$profile) {
+                response([
+                    'cod_sis' => $cod_sis,
+                    'profile' => null,
+                    'permissions' => []
+                ]);
+            }
+
+            $permissions = buscarPermissoesDoPerfil($conn, $profile['id']);
+
+            response([
+                'cod_sis' => $cod_sis,
+                'profile' => $profile,
+                'permissions' => $permissions
             ]);
             break;
 

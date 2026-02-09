@@ -73,9 +73,9 @@
             {{ item.ativo ? 'Ativo' : 'Inativo' }}
           </v-chip>
         </template>
-        <template slot="item.perfil_id" slot-scope="{ item }">
-          <v-chip v-if="item.perfil_id" small color="primary" text-color="white">
-            {{ profileName(item.perfil_id) || `#${item.perfil_id}` }}
+        <template slot="item.profile_name" slot-scope="{ item }">
+          <v-chip v-if="item.profile_name || item.perfil_id" small color="primary" text-color="white">
+            {{ item.profile_name || profileName(item.perfil_id) || `#${item.perfil_id}` }}
           </v-chip>
           <span v-else>-</span>
         </template>
@@ -276,7 +276,7 @@ export default {
         { text: 'Login', value: 'login' },
         { text: 'Email', value: 'email', sortable: false },
         { text: 'Cargo', value: 'fk_cargo', width: 90 },
-        { text: 'Perfil', value: 'perfil_id', width: 140, sortable: false },
+        { text: 'Perfil', value: 'profile_name', sortable: false },
         { text: 'Admissao', value: 'data_admissao', width: 120 },
         { text: 'Ativo', value: 'ativo', width: 90, sortable: false },
         { text: 'Acoes', value: 'actions', sortable: false, align: 'end', width: 160 }

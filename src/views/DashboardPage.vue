@@ -22,7 +22,7 @@
       <v-divider></v-divider>
       <v-list nav dense class="dashboard__menu-list">
         <v-list-group
-          v-for="group in menu"
+          v-for="group in filteredMenu"
           :key="group.title"
           v-model="group.open"
           :prepend-icon="group.icon"
@@ -260,6 +260,8 @@ export default {
     return {
       drawer: true,
       activePage: 'dashboard',
+      authPermissions: [],
+      authProfile: null,
       menu: [
         {
           title: 'Geral',
@@ -333,6 +335,22 @@ export default {
     },
     isDark() {
       return this.$vuetify.theme.dark
+    },
+    filteredMenu() {
+      if (!this.authPermissions || this.authPermissions.length === 0) {
+        return this.menu
+      }
+      return this.menu
+        .map(group => {
+          const items = (group.items || []).filter(item => {
+            if (!item.permissions || item.permissions.length === 0) {
+              return true
+            }
+            return item.permissions.some(perm => this.authPermissions.includes(perm))
+          })
+          return { ...group, items }
+        })
+        .filter(group => group.items && group.items.length > 0)
     }
   },
   methods: {
@@ -388,6 +406,20 @@ export default {
         // mantem fallback atual
       }
     },
+    loadAccessControl() {
+      try {
+        const permsRaw = localStorage.getItem('auth_permissions')
+        this.authPermissions = permsRaw ? JSON.parse(permsRaw) : []
+      } catch (error) {
+        this.authPermissions = []
+      }
+      try {
+        const profileRaw = localStorage.getItem('auth_profile')
+        this.authProfile = profileRaw ? JSON.parse(profileRaw) : null
+      } catch (error) {
+        this.authProfile = null
+      }
+    },
     logout() {
       this.$emit('logout')
     },
@@ -406,6 +438,7 @@ export default {
   },
   mounted() {    
     this.loadProfile()
+    this.loadAccessControl()
   }
 }
 </script>

@@ -27,6 +27,8 @@ export default {
     onLogout() {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_permissions')
+      localStorage.removeItem('auth_profile')
       this.authenticated = false
     }
   }

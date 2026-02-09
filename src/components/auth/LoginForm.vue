@@ -94,8 +94,32 @@ export default {
           throw new Error(data?.error || 'Credenciais invalidas.')
         }
 
+        const user = data.user || {}
         localStorage.setItem('auth_token', data.token)
-        localStorage.setItem('auth_user', JSON.stringify(data.user || {}))
+        localStorage.setItem('auth_user', JSON.stringify(user))
+
+        // buscar perfil e permissoes do usuario logado
+        try {
+          const codSis =
+            user.cod_sis || user.cod_sistema || user.codSis || ''
+          const funcionarioId = user.id || user.pk_usuario || ''
+          let query = 'perfil_role.php?request=buscar_permissoes_usuario'
+          if (codSis) {
+            query += `&cod_sis=${encodeURIComponent(codSis)}`
+          } else if (funcionarioId) {
+            query += `&funcionario_id=${encodeURIComponent(funcionarioId)}`
+          }
+          const accessResp = await api.get(query)
+          const accessData = accessResp?.data || {}
+          const permissions = Array.isArray(accessData.permissions)
+            ? accessData.permissions.map(item => item.name)
+            : []
+          localStorage.setItem('auth_permissions', JSON.stringify(permissions))
+          localStorage.setItem('auth_profile', JSON.stringify(accessData.profile || null))
+        } catch (permError) {
+          localStorage.setItem('auth_permissions', JSON.stringify([]))
+          localStorage.setItem('auth_profile', JSON.stringify(null))
+        }
         this.$emit('authenticated')
       } catch (error) {
         this.error = error?.response?.data?.error || error.message
