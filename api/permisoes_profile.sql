@@ -59,3 +59,51 @@ CREATE INDEX idx_user_profiles_cod_sis
 
 CREATE INDEX idx_user_profiles_profile
   ON auth.auth_user_profiles (profile_id);
+
+CREATE TABLE auth.auth_api_user_profiles (
+  api_user_id BIGINT NOT NULL,
+  profile_id BIGINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+  PRIMARY KEY (api_user_id, profile_id),
+
+  CONSTRAINT fk_api_user_profiles_user
+    FOREIGN KEY (api_user_id)
+    REFERENCES sbd95.api_admins(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_api_user_profiles_profile
+    FOREIGN KEY (profile_id)
+    REFERENCES auth.auth_profiles(id)
+    ON DELETE CASCADE
+);
+CREATE INDEX idx_api_user_profiles_user
+  ON auth.auth_api_user_profiles (api_user_id);
+
+CREATE INDEX idx_api_user_profiles_profile
+  ON auth.auth_api_user_profiles (profile_id);
+
+
+CREATE TABLE auth.auth_api_user_profiles (
+  api_user_id BIGINT NOT NULL,
+  profile_id  BIGINT NOT NULL,
+  created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+
+  PRIMARY KEY (api_user_id, profile_id),
+
+  CONSTRAINT fk_api_user_profiles_user
+    FOREIGN KEY (api_user_id)
+    REFERENCES sbd95.api_admins(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_api_user_profiles_profile
+    FOREIGN KEY (profile_id)
+    REFERENCES auth.auth_profiles(id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX idx_api_user_profiles_user
+  ON auth.auth_api_user_profiles (api_user_id);
+
+CREATE INDEX idx_api_user_profiles_profile
+  ON auth.auth_api_user_profiles (profile_id);

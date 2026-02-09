@@ -227,6 +227,21 @@ function buscarPerfilDoUsuario($conn, $cod_sis) {
     return null;
 }
 
+function buscarPerfilDoApiUser($conn, $api_user_id) {
+    $sql = "
+        SELECT ap.id, ap.name, ap.description
+        FROM auth.auth_api_user_profiles aup
+        INNER JOIN auth.auth_profiles ap ON ap.id = aup.profile_id
+        WHERE aup.api_user_id = $1
+        LIMIT 1
+    ";
+    $result = pg_query_params($conn, $sql, [$api_user_id]);
+    if ($result && pg_num_rows($result) > 0) {
+        return pg_fetch_assoc($result);
+    }
+    return null;
+}
+
 // ========================================
 // 🔧 LÓGICA PRINCIPAL
 // ========================================
@@ -464,6 +479,58 @@ try {
             break;
 
         // ------------------------------------------------
+        // ASSOCIAR PERFIL AO USUARIO API (api_admins.id)
+        // ------------------------------------------------
+        case 'associar_profile_api_user':
+            if ($method !== 'PUT' && $method !== 'POST') response(["error" => "Use PUT ou POST"], 405);
+            if (empty($input)) response(["error" => "Body JSON obrigatorio"], 400);
+
+            $api_user_id = isset($input['api_user_id']) ? (int)$input['api_user_id'] : 0;
+            $profile_id = isset($input['profile_id']) ? (int)$input['profile_id'] : null;
+
+            if ($api_user_id <= 0) response(["error" => "api_user_id obrigatorio"], 400);
+
+            $check_user = pg_query_params($conn, "SELECT 1 FROM sbd95.api_admins WHERE id = $1", [$api_user_id]);
+            if (!$check_user || pg_num_rows($check_user) === 0) {
+                response(["error" => "Usuario API nao encontrado"], 404);
+            }
+
+            if ($profile_id !== null && $profile_id > 0) {
+                $check_profile = pg_query_params($conn, "SELECT 1 FROM auth.auth_profiles WHERE id = $1", [$profile_id]);
+                if (!$check_profile || pg_num_rows($check_profile) === 0) {
+                    response(["error" => "Perfil nao encontrado"], 404);
+                }
+            }
+
+            pg_query($conn, "BEGIN");
+            $delete = pg_query_params($conn, "DELETE FROM auth.auth_api_user_profiles WHERE api_user_id = $1", [$api_user_id]);
+            if ($delete === false) {
+                pg_query($conn, "ROLLBACK");
+                response(["error" => "Erro ao limpar perfis: " . pg_last_error($conn)], 500);
+            }
+
+            if ($profile_id !== null && $profile_id > 0) {
+                $insert = pg_query_params(
+                    $conn,
+                    "INSERT INTO auth.auth_api_user_profiles (api_user_id, profile_id) VALUES ($1, $2)",
+                    [$api_user_id, $profile_id]
+                );
+                if ($insert === false) {
+                    pg_query($conn, "ROLLBACK");
+                    response(["error" => "Erro ao associar perfil: " . pg_last_error($conn)], 500);
+                }
+            }
+            pg_query($conn, "COMMIT");
+
+            response([
+                'success' => true,
+                'message' => 'Perfil associado ao usuario API',
+                'api_user_id' => $api_user_id,
+                'profile_id' => $profile_id
+            ]);
+            break;
+
+        // ------------------------------------------------
         // BUSCAR PERMISSOES DO USUARIO (por cod_sis ou funcionario_id)
         // ------------------------------------------------
         case 'buscar_permissoes_usuario':
@@ -501,6 +568,35 @@ try {
 
             response([
                 'cod_sis' => $cod_sis,
+                'profile' => $profile,
+                'permissions' => $permissions
+            ]);
+            break;
+
+        // ------------------------------------------------
+        // BUSCAR PERMISSOES DO USUARIO API (api_admins.id)
+        // ------------------------------------------------
+        case 'buscar_permissoes_api_user':
+            if ($method !== 'GET') response(["error" => "Use GET"], 405);
+
+            $api_user_id = isset($_GET['api_user_id']) ? (int)$_GET['api_user_id'] : 0;
+            if ($api_user_id <= 0) {
+                response(["error" => "api_user_id obrigatorio"], 400);
+            }
+
+            $profile = buscarPerfilDoApiUser($conn, $api_user_id);
+            if (!$profile) {
+                response([
+                    'api_user_id' => $api_user_id,
+                    'profile' => null,
+                    'permissions' => []
+                ]);
+            }
+
+            $permissions = buscarPermissoesDoPerfil($conn, $profile['id']);
+
+            response([
+                'api_user_id' => $api_user_id,
                 'profile' => $profile,
                 'permissions' => $permissions
             ]);

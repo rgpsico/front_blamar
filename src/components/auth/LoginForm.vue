@@ -98,27 +98,30 @@ export default {
         localStorage.setItem('auth_token', data.token)
         localStorage.setItem('auth_user', JSON.stringify(user))
 
-        // buscar perfil e permissoes do usuario logado
-        try {
-          const codSis =
-            user.cod_sis || user.cod_sistema || user.codSis || ''
-          const funcionarioId = user.id || user.pk_usuario || ''
-          let query = 'perfil_role.php?request=buscar_permissoes_usuario'
-          if (codSis) {
-            query += `&cod_sis=${encodeURIComponent(codSis)}`
-          } else if (funcionarioId) {
-            query += `&funcionario_id=${encodeURIComponent(funcionarioId)}`
+        // usar permissoes retornadas no login (se houver)
+        const directPermissions = Array.isArray(data.permissions)
+          ? data.permissions.map(item => item.name)
+          : []
+        if (directPermissions.length || data.profile) {
+          localStorage.setItem('auth_permissions', JSON.stringify(directPermissions))
+          localStorage.setItem('auth_profile', JSON.stringify(data.profile || null))
+        } else {
+          // fallback: buscar perfil e permissoes do usuario logado
+          try {
+            const apiUserId = user.api_user_id || user.id || ''
+            if (!apiUserId) throw new Error('api_user_id ausente')
+            const query = `perfil_role.php?request=buscar_permissoes_api_user&api_user_id=${encodeURIComponent(apiUserId)}`
+            const accessResp = await api.get(query)
+            const accessData = accessResp?.data || {}
+            const permissions = Array.isArray(accessData.permissions)
+              ? accessData.permissions.map(item => item.name)
+              : []
+            localStorage.setItem('auth_permissions', JSON.stringify(permissions))
+            localStorage.setItem('auth_profile', JSON.stringify(accessData.profile || null))
+          } catch (permError) {
+            localStorage.setItem('auth_permissions', JSON.stringify([]))
+            localStorage.setItem('auth_profile', JSON.stringify(null))
           }
-          const accessResp = await api.get(query)
-          const accessData = accessResp?.data || {}
-          const permissions = Array.isArray(accessData.permissions)
-            ? accessData.permissions.map(item => item.name)
-            : []
-          localStorage.setItem('auth_permissions', JSON.stringify(permissions))
-          localStorage.setItem('auth_profile', JSON.stringify(accessData.profile || null))
-        } catch (permError) {
-          localStorage.setItem('auth_permissions', JSON.stringify([]))
-          localStorage.setItem('auth_profile', JSON.stringify(null))
         }
         this.$emit('authenticated')
       } catch (error) {

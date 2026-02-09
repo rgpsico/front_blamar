@@ -159,6 +159,42 @@
               </v-col>
             </v-row>
           </v-card>
+
+          <v-card outlined class="pa-4 mt-4">
+            <div class="profile-permissions__section-title">Associar perfil ao usuario API</div>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="selectedApiUserId"
+                  :items="apiUsers"
+                  item-text="label"
+                  item-value="id"
+                  label="Selecione o usuario"
+                  outlined
+                  dense
+                  @change="loadApiUserProfile"
+                ></v-select>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="selectedApiProfileId"
+                  :items="profiles"
+                  item-text="name"
+                  item-value="id"
+                  label="Selecione o perfil"
+                  outlined
+                  dense
+                ></v-select>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="12" class="d-flex justify-end">
+                <v-btn color="primary" :loading="saving" @click="saveApiUserProfile">
+                  Salvar associacao
+                </v-btn>
+              </v-col>
+            </v-row>
+          </v-card>
         </v-tab-item>
       </v-tabs-items>
     </v-card>
@@ -230,6 +266,7 @@ import api from '@/services/api'
 
 const PROFILE_API = `${api.defaults.baseURL}/perfil_role.php`
 const PERMISSION_API = `${api.defaults.baseURL}/permissao_role.php`
+const AUTH_API = `${api.defaults.baseURL}/auth.php`
 
 export default {
   name: 'ProfilePermissionsManager',
@@ -240,9 +277,12 @@ export default {
       saving: false,
       profiles: [],
       permissions: [],
+      apiUsers: [],
       selectedProfileId: null,
       selectedPermissionIds: [],
       permissionFilter: '',
+      selectedApiUserId: null,
+      selectedApiProfileId: null,
       profileDialog: false,
       permissionDialog: false,
       newProfile: {
@@ -320,12 +360,25 @@ export default {
     async refreshAll() {
       this.loading = true
       try {
-        await Promise.all([this.fetchProfiles(), this.fetchPermissions()])
+        await Promise.all([this.fetchProfiles(), this.fetchPermissions(), this.fetchApiUsers()])
       } catch (error) {
         this.showMessage(`Erro ao carregar: ${error.message}`, 'error')
       } finally {
         this.loading = false
       }
+    },
+    async fetchApiUsers() {
+      const response = await fetch(`${AUTH_API}?request=listar_api_admins&limit=500`, {
+        headers: this.authHeaders()
+      })
+      const data = await this.parseResponse(response)
+      const list = Array.isArray(data) ? data : data.data || []
+      this.apiUsers = list.map(item => ({
+        id: Number(item.id),
+        username: item.username,
+        email: item.email,
+        label: `${item.username} (${item.email || 'sem email'})`
+      }))
     },
     async fetchProfiles() {
       const response = await fetch(`${PROFILE_API}?request=listar_profiles&limit=200`, {
@@ -359,6 +412,52 @@ export default {
         }
       } catch (error) {
         this.showMessage(`Erro ao carregar permissoes: ${error.message}`, 'error')
+      }
+    },
+    async loadApiUserProfile() {
+      if (!this.selectedApiUserId) {
+        this.selectedApiProfileId = null
+        return
+      }
+      try {
+        const response = await fetch(
+          `${PROFILE_API}?request=buscar_permissoes_api_user&api_user_id=${this.selectedApiUserId}`,
+          { headers: this.authHeaders() }
+        )
+        const data = await this.parseResponse(response)
+        this.selectedApiProfileId = data?.profile?.id || null
+      } catch (error) {
+        this.showMessage(`Erro ao carregar perfil do usuario: ${error.message}`, 'error')
+      }
+    },
+    async saveApiUserProfile() {
+      if (!this.selectedApiUserId) {
+        this.showMessage('Selecione um usuario.', 'warning')
+        return
+      }
+      this.saving = true
+      try {
+        const payload = {
+          api_user_id: this.selectedApiUserId,
+          profile_id: this.selectedApiProfileId || null
+        }
+        const response = await fetch(
+          `${PROFILE_API}?request=associar_profile_api_user`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
+            body: JSON.stringify(payload)
+          }
+        )
+        const result = await this.parseResponse(response)
+        if (result.error || result.success === false) {
+          throw new Error(result.error || result.message || 'Erro ao salvar')
+        }
+        this.showMessage('Associacao salva com sucesso.')
+      } catch (error) {
+        this.showMessage(`Erro ao salvar associacao: ${error.message}`, 'error')
+      } finally {
+        this.saving = false
       }
     },
     async createProfile() {
