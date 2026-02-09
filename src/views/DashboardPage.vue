@@ -163,6 +163,7 @@
         <ClientsManager v-else-if="activePage === 'clientes'" />
         <EmployeesManager v-else-if="activePage === 'funcionarios'" />
         <UsersManager v-else-if="activePage === 'usuarios'" />
+        <ProfilePermissionsManager v-else-if="activePage === 'perfis'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
         <IncentivosManager v-else-if="activePage === 'incentivos'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
@@ -234,6 +235,7 @@ import ImageBankManager from '@/components/image/ImageBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
 import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
+import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
 import NewslettersManager from '@/components/newsletters/NewslettersManager.vue'
 
 export default {
@@ -251,6 +253,7 @@ export default {
     HotelsManager,
     IncentivosManager,
     UsersManager,
+    ProfilePermissionsManager,
     NewslettersManager
   },
   data() {
@@ -287,6 +290,7 @@ export default {
           items: [
             { title: 'Funcionarios', icon: 'mdi-account-tie', page: 'funcionarios' },
             { title: 'Usuarios', icon: 'mdi-account', page: 'usuarios' },
+            { title: 'Perfis e Permissoes', icon: 'mdi-shield-account', page: 'perfis' },
             { title: 'Cidades', icon: 'mdi-city', page: 'cidades' },
             { title: 'Clientes', icon: 'mdi-account-multiple-outline', page: 'clientes' },
             { title: 'Contatos', icon: 'mdi-card-account-phone-outline' }
