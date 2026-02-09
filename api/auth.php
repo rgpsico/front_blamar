@@ -164,39 +164,6 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
 try {
     switch ($request) {
-        case 'listar_api_admins':
-            if ($method !== 'GET') response(["error" => "Método não permitido. Use GET."], 405);
-
-            $limit = max(1, min(500, (int)($_GET['limit'] ?? 200)));
-            $filtro = trim($_GET['filtro'] ?? '');
-
-            $params = [];
-            $where = [];
-            $idx = 1;
-
-            if ($filtro !== '') {
-                $where[] = "(LOWER(username) LIKE $" . $idx . " OR LOWER(email) LIKE $" . $idx . ")";
-                $params[] = '%' . strtolower($filtro) . '%';
-                $idx++;
-            }
-
-            $where_sql = $where ? "WHERE " . implode(" AND ", $where) : "";
-            $params[] = $limit;
-
-            $sql = "
-                SELECT id, username, email, role, is_active, created_at
-                FROM sbd95.api_admins
-                $where_sql
-                ORDER BY username
-                LIMIT $$idx
-            ";
-            $result = pg_query_params($conn, $sql, $params);
-            if (!$result) {
-                response(["error" => "Erro ao listar usuarios: " . pg_last_error($conn)], 500);
-            }
-            $users = pg_fetch_all($result) ?: [];
-            response($users);
-            break;
 
         // =========================================================
         // 🔹 ROTA: Login Admin API (POST) - Autenticação de Admins
@@ -324,7 +291,8 @@ try {
                     permissions, 
                     is_active,
                     created_at
-                FROM sbd95.api_admins 
+                FROM sbd95.api_admins ,
+                
                 WHERE username = $1
                 LIMIT 1
             ";
@@ -380,36 +348,6 @@ try {
                 throw new Exception("Erro ao armazenar token: " . pg_last_error($conn));
             }
 
-            // Buscar perfil e permissoes do usuario API (auth.auth_api_user_profiles)
-            $profile = null;
-            $profile_permissions = [];
-            $res_profile = pg_query_params(
-                $conn,
-                "SELECT ap.id, ap.name, ap.description
-                 FROM auth.auth_api_user_profiles aup
-                 INNER JOIN auth.auth_profiles ap ON ap.id = aup.profile_id
-                 WHERE aup.api_user_id = $1
-                 LIMIT 1",
-                [$user['id']]
-            );
-            if ($res_profile && pg_num_rows($res_profile) > 0) {
-                $profile = pg_fetch_assoc($res_profile);
-                $res_perms = pg_query_params(
-                    $conn,
-                    "SELECT p.id, p.name, p.description
-                     FROM auth.auth_permissions p
-                     INNER JOIN auth.auth_profile_permissions pp ON pp.permission_id = p.id
-                     WHERE pp.profile_id = $1
-                     ORDER BY p.name",
-                    [$profile['id']]
-                );
-                if ($res_perms) {
-                    while ($row_perm = pg_fetch_assoc($res_perms)) {
-                        $profile_permissions[] = $row_perm;
-                    }
-                }
-            }
-
             // Tenta resolver cod_sis e pk_usuario no legado (conteudo_internet.usuario)
             $cod_sis_real = null;
             $pk_usuario_real = null;
@@ -427,7 +365,6 @@ try {
             // Dados do usuário para retornar (compatibilidade legado)
             $user_data = [
                 'id' => (int)$user['id'],
-                'api_user_id' => (int)$user['id'],
                 'pk_usuario' => $pk_usuario_real ? (int)$pk_usuario_real : null,
                 'cod_sis' => $cod_sis_real ?: $user['username'],
                 'nome' => $user['username'],
@@ -441,8 +378,6 @@ try {
                 "success" => true,
                 "token" => $token,
                 "user" => $user_data,
-                "profile" => $profile,
-                "permissions" => $profile_permissions,
                 "auth_type" => "api_user",
                 "expires_in" => 86400,
                 "message" => "Autenticação realizada com sucesso!"
