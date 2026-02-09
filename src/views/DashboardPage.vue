@@ -61,7 +61,7 @@
         Sair
       </v-btn>
       <div class="dashboard__profile">
-        <v-avatar size="36" class="mr-2">
+        <v-avatar size="36" class="mr-2 dashboard__avatar-click" @click="openProfileDialog">
           <img :src="profile.avatar" :alt="profile.name" />
         </v-avatar>
         <div class="dashboard__profile-info">
@@ -168,6 +168,56 @@
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
       </v-container>
     </v-main>
+
+    <v-dialog v-model="profileDialog" max-width="640px">
+      <v-card>
+        <v-card-title>
+          Editar perfil
+          <v-spacer></v-spacer>
+          <v-btn icon @click="profileDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12" md="4">
+              <div class="dashboard__profile-preview">
+                <v-avatar size="96">
+                  <img :src="profileForm.avatarPreview || profile.avatar" :alt="profileForm.name" />
+                </v-avatar>
+              </div>
+              <v-file-input
+                v-model="profileForm.avatarFile"
+                label="Imagem do perfil"
+                accept="image/*"
+                outlined
+                dense
+                show-size
+                @change="onAvatarSelected"
+              ></v-file-input>
+            </v-col>
+            <v-col cols="12" md="8">
+              <v-text-field v-model="profileForm.name" label="Nome" outlined dense></v-text-field>
+              <v-text-field v-model="profileForm.email" label="Email" outlined dense></v-text-field>
+              <v-text-field v-model="profileForm.role" label="Cargo" outlined dense></v-text-field>
+              <v-text-field
+                v-model="profileForm.password"
+                label="Senha"
+                type="password"
+                outlined
+                dense
+                autocomplete="new-password"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="profileDialog = false">Cancelar</v-btn>
+          <v-btn color="primary" @click="saveProfile">Salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -261,6 +311,15 @@ export default {
         role: '',
         email: '',
         avatar: 'https://i.pravatar.cc/100?img=32'
+      },
+      profileDialog: false,
+      profileForm: {
+        name: '',
+        role: '',
+        email: '',
+        password: '',
+        avatarFile: null,
+        avatarPreview: ''
       }
     }
   },
@@ -275,6 +334,38 @@ export default {
   methods: {
     toggleTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+    },
+    openProfileDialog() {
+      this.profileForm = {
+        name: this.profile.name,
+        role: this.profile.role,
+        email: this.profile.email,
+        password: '',
+        avatarFile: null,
+        avatarPreview: this.profile.avatar
+      }
+      this.profileDialog = true
+    },
+    onAvatarSelected(file) {
+      if (!file) {
+        this.profileForm.avatarPreview = this.profile.avatar
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        this.profileForm.avatarPreview = String(reader.result || '')
+      }
+      reader.readAsDataURL(file)
+    },
+    saveProfile() {
+      this.profile = {
+        ...this.profile,
+        name: this.profileForm.name,
+        role: this.profileForm.role,
+        email: this.profileForm.email,
+        avatar: this.profileForm.avatarPreview || this.profile.avatar
+      }
+      this.profileDialog = false
     },
     loadProfile() {
       const raw = localStorage.getItem('auth_user')
@@ -391,6 +482,16 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dashboard__avatar-click {
+  cursor: pointer;
+}
+
+.dashboard__profile-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
 }
 
 .dashboard__logout {
