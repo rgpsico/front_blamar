@@ -154,6 +154,7 @@
           </v-row>
         </div>
         <ImageBankManager v-else-if="activePage === 'image'" />
+        <VideoBankManager v-else-if="activePage === 'video'" />
         <BeachHouseManager v-else-if="activePage === 'beach-house'" />
         <AbtManager v-else-if="activePage === 'abt'" />
         <BlogManager v-else-if="activePage === 'blog'" />
@@ -233,6 +234,7 @@ import DeluxeManager from '@/components/deluxe/DeluxeManager.vue'
 import ClientsManager from '@/components/clients/ClientsManager.vue'
 import EmployeesManager from '@/components/employees/EmployeesManager.vue'
 import ImageBankManager from '@/components/image/ImageBankManager.vue'
+import VideoBankManager from '@/components/video/VideoBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
 import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
@@ -252,6 +254,7 @@ export default {
     ClientsManager,
     EmployeesManager,
     ImageBankManager,
+    VideoBankManager,
     HotelsManager,
     IncentivosManager,
     UsersManager,
@@ -281,6 +284,7 @@ export default {
           items: [
             { title: 'Around Brazil Tours', icon: 'mdi-earth', page: 'abt' },     
             { title: 'Banco de Imagem', icon: 'mdi-image-multiple',  page: 'image', permissions: ['BANCO_IMAGE']},
+            { title: 'Banco de Video', icon: 'mdi-video', page: 'video', permissions: ['BANCO_VIDEO'] },
             
             // { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase', page: '' },
             { title: 'Beach House', icon: 'mdi-beach', page: 'beach-house' }, 
