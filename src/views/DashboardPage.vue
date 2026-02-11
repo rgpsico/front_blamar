@@ -280,7 +280,8 @@ export default {
           open: true,
           items: [
             { title: 'Around Brazil Tours', icon: 'mdi-earth', page: 'abt' },     
-            { title: 'Banco de Imagem', icon: 'mdi-image-multiple',  page: 'image' },
+            { title: 'Banco de Imagem', icon: 'mdi-image-multiple',  page: 'image', permissions: ['BANCO_IMAGE']},
+            
             // { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase', page: '' },
             { title: 'Beach House', icon: 'mdi-beach', page: 'beach-house' }, 
             { title: 'Blog Receptivo', icon: 'mdi-post-outline', page: 'blog', permissions: ['MANAGE_BLOG'] },
@@ -416,7 +417,12 @@ export default {
     loadAccessControl() {
       try {
         const permsRaw = localStorage.getItem('auth_permissions')
-        this.authPermissions = permsRaw ? JSON.parse(permsRaw) : []
+        const perms = permsRaw ? JSON.parse(permsRaw) : []
+        this.authPermissions = Array.isArray(perms)
+          ? perms
+              .map(item => String(item || '').trim().toUpperCase())
+              .filter(Boolean)
+          : []
       } catch (error) {
         this.authPermissions = []
       }

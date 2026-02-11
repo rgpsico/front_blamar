@@ -749,7 +749,7 @@ switch ($action) {
 
         $sql = "SELECT pk_bco_img, tam_1, tam_2, tam_3, tam_4, legenda, tp_produto
             FROM banco_imagem.bco_img
-            WHERE fk_cidcod = '$cod' AND tp_produto = '10'
+            WHERE fk_cidcod = '$cod' AND tp_produto = '10' 
             ORDER BY pk_bco_img DESC";
 
         $res = pg_query($conn, $sql);
@@ -850,11 +850,12 @@ switch ($action) {
 
         $mneu_for = pg_escape_string(trim($_GET['hotel_id']));
 
-        $pega_img_htl = "SELECT pk_bco_img, mneu_for, tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, autor, ordem, nacional, fachada
+     $pega_img_htl = "SELECT pk_bco_img, mneu_for, tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, autor, ordem, nacional, fachada
         FROM banco_imagem.bco_img
-        WHERE mneu_for = '" . $mneu_for . "'
-        AND tp_produto = '1'
-        ORDER BY ordem, legenda";
+        WHERE mneu_for = '" . $mneu_for . "' 
+          AND excluido = '0'
+          AND tp_produto = '1'
+        ORDER BY data_cadastro DESC, ordem ASC, legenda ASC";
 
         $result_img_htl = pg_exec($conn, $pega_img_htl);
 
@@ -1020,6 +1021,135 @@ switch ($action) {
         ]);
         break;
 
+
+         case 'delete_image':
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Metodo nao permitido']);
+            exit;
+        }
+
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+
+        if (empty($data['pk_bco_img'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'pk_bco_img obrigatorio']);
+            exit;
+        }
+
+        $pk = (int)$data['pk_bco_img'];
+
+        $sql = "UPDATE banco_imagem.bco_img
+                SET excluido = TRUE, data_exclusao = NOW()
+                WHERE pk_bco_img = $1
+                  AND COALESCE(excluido, false) = false";
+
+        $res = pg_query_params($conn, $sql, [$pk]);
+
+        if ($res === false) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Erro ao excluir: ' . pg_last_error($conn)
+            ]);
+            exit;
+        }
+
+        if (pg_affected_rows($res) === 0) {
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Imagem nao encontrada ou ja excluida'
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'pk_bco_img' => $pk,
+            'message' => 'Imagem excluida com sucesso'
+        ]);
+        break;
+
+
+        case 'list_deleted_images':
+    header('Content-Type: application/json; charset=utf-8');
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        http_response_code(405);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Metodo nao permitido'
+        ]);
+        exit;
+    }
+
+    // Paginação
+    $page  = isset($_GET['page'])  ? max(1, (int)$_GET['page'])  : 1;
+    $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 20;
+    $offset = ($page - 1) * $limit;
+
+    // Query
+    $sql = "
+        SELECT
+            pk_bco_img,
+            tam_1,
+            tam_2,
+            tam_3,
+            tam_4,
+            tam_5,
+            zip,
+            legenda,
+            palavras_chave,
+            tp_produto,
+            mneu_for,
+            fk_cidcod,
+            data_exclusao
+        FROM banco_imagem.bco_img
+        WHERE excluido = TRUE
+        ORDER BY data_exclusao DESC
+        LIMIT $1 OFFSET $2
+    ";
+
+    $res = pg_query_params($conn, $sql, [$limit, $offset]);
+
+    if ($res === false) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Erro ao listar imagens excluidas',
+            'detalhe' => pg_last_error($conn)
+        ]);
+        exit;
+    }
+
+    $items = [];
+    while ($row = pg_fetch_assoc($res)) {
+        $items[] = $row;
+    }
+
+    // Total de registros excluídos
+    $countRes = pg_query($conn, "
+        SELECT COUNT(*) 
+        FROM banco_imagem.bco_img
+        WHERE excluido = TRUE
+    ");
+
+    $total = (int) pg_fetch_result($countRes, 0, 0);
+
+    echo json_encode([
+        'success' => true,
+        'page'    => $page,
+        'limit'   => $limit,
+        'total'   => $total,
+        'items'   => $items
+    ]);
+    break;
+
+
     // ================================================
     // NOVO: IMAGENS GENÉRICAS DA CIDADE (tp_produto = 10)
     // Ex: ?action=city_generic_images&cidade_cod=50
@@ -1036,8 +1166,8 @@ switch ($action) {
         // Busca todas as imagens da cidade com tp_produto = 10
         $sql = "SELECT pk_bco_img, tam_1, tam_2, tam_3, tam_4, legenda, palavras_chave
             FROM banco_imagem.bco_img
-            WHERE fk_cidcod = '$cidade_cod'
-              AND tp_produto = '10'
+            WHERE fk_cidcod = '$cidade_cod'           
+            AND excluido = FALSE
             ORDER BY pk_bco_img DESC";
 
         $result = pg_query($conn, $sql);
@@ -1210,58 +1340,6 @@ switch ($action) {
         }
         break;
 
-    case 'delete_image':
-        header('Content-Type: application/json; charset=utf-8');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'error' => 'Metodo nao permitido']);
-            exit;
-        }
-
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true);
-
-        if (empty($data['pk_bco_img'])) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'pk_bco_img obrigatorio']);
-            exit;
-        }
-
-        $pk = (int)$data['pk_bco_img'];
-
-        $sql = "UPDATE banco_imagem.bco_img
-                SET excluido = TRUE, data_exclusao = NOW()
-                WHERE pk_bco_img = $1
-                  AND COALESCE(excluido, false) = false";
-
-        $res = pg_query_params($conn, $sql, [$pk]);
-
-        if ($res === false) {
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'error' => 'Erro ao excluir: ' . pg_last_error($conn)
-            ]);
-            exit;
-        }
-
-        if (pg_affected_rows($res) === 0) {
-            http_response_code(404);
-            echo json_encode([
-                'success' => false,
-                'error' => 'Imagem nao encontrada ou ja excluida'
-            ]);
-            exit;
-        }
-
-        echo json_encode([
-            'success' => true,
-            'pk_bco_img' => $pk,
-            'message' => 'Imagem excluida com sucesso'
-        ]);
-        break;
-
     // ================================================
     // BUSCAR IMAGENS POR NOME DO ARQUIVO/LEGENDA/AUTOR
     // Ex: ?action=search_by_name&termo=praia
@@ -1395,8 +1473,8 @@ switch ($action) {
         $hotel_nome   = isset($_POST['hotel_nome'])   ? trim($_POST['hotel_nome'])                     : '';
         $mneu_for     = isset($_POST['mneu_for'])     ? pg_escape_string(trim($_POST['mneu_for']))     : '';
         $fk_cidcod    = isset($_POST['fk_cidcod'])    ? (int)$_POST['fk_cidcod']                       : 0;
-        $user_ip      = isset($_POST['user_ip'])      ? trim($_POST['user_ip'])                        : '';
-
+        $user_ip    = isset($_POST['user_ip'])    ? trim($_POST['user_ip'])                       : '10.3.2.146';
+      
         if ($titulo === '') {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
@@ -1416,12 +1494,11 @@ switch ($action) {
         }
 
         // Envia diretamente para o Flask
-        $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_hotel");
+        $ch = curl_init("http://".$user_ip.":5000/api/upload_from_erp_enviar_para_hotel");
 
         $post = [
             'cidade_nome' => $cidade_nome,
             'hotel_nome'  => $hotel_nome,
-            'user_ip'     => $user_ip,
             'file'        => new CURLFile(
                 $_FILES['arquivo']['tmp_name'],
                 $_FILES['arquivo']['type'] ?? 'application/octet-stream',
@@ -1445,15 +1522,24 @@ switch ($action) {
 
         curl_close($ch);
 
-        if ($response === false || $httpCode !== 200) {
-            error_log("Erro CURL upload hotel (HTTP $httpCode): $curlError - Resposta: $response");
-            http_response_code(502);
-            echo json_encode([
-                'success' => false,
-                'error'   => 'Falha ao enviar para o servidor de imagens'
-            ]);
-            exit;
-        }
+      if ($response === false || $httpCode !== 200) {
+
+        $erroDetalhado = [
+            'http_code'  => $httpCode,
+            'curl_error' => $curlError ?: null,
+            'response'   => $response ?: null
+        ];
+
+        error_log("Erro CURL upload hotel: " . json_encode($erroDetalhado));
+
+        http_response_code(502);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Falha ao enviar para o servidor de imagens',
+            'debug'   => $erroDetalhado   // 👈 aqui exibe o erro real
+        ]);
+        exit;
+    }
 
         $data = json_decode($response, true);
 
@@ -1641,7 +1727,7 @@ switch ($action) {
     // Envia DIRETAMENTE para o Flask
     // =============================================
 
-    $ch = curl_init("http://10.3.2.146:5000/api/upload_from_erp_enviar_para_cidade");
+    $ch = curl_init("http://127.0.0.1:5000/api/upload_from_erp_enviar_para_cidade");
 
     $postFields = [
         'cidade_nome' => $cidade_nome,
@@ -1675,14 +1761,24 @@ switch ($action) {
     curl_close($ch);
 
     if ($response === false || $httpCode !== 200) {
-        error_log("Falha ao enviar para Flask | HTTP: $httpCode | Erro cURL: $curlError | Resposta: $response");
+
+        $erroDetalhado = [
+            'http_code'  => $httpCode,
+            'curl_error' => $curlError ?: null,
+            'response'   => $response ?: null
+        ];
+
+        error_log("Erro CURL upload hotel: " . json_encode($erroDetalhado));
+
         http_response_code(502);
         echo json_encode([
             'success' => false,
-            'error'   => 'Falha ao enviar imagem para o serviço de processamento'
+            'error'   => 'Falha ao enviar para o servidor de imagens',
+            'debug'   => $erroDetalhado   // 👈 aqui exibe o erro real
         ]);
         exit;
     }
+
 
     $data = json_decode($response, true);
 
