@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const os = require('os')
 const path = require('path')
+const { startLocalServer } = require('./local_server')
 
 const isDev = !app.isPackaged
 
@@ -22,7 +23,12 @@ function createWindow () {
   }
 }
 
-app.whenReady().then(createWindow)
+let localServer = null
+
+app.whenReady().then(() => {
+  localServer = startLocalServer()
+  createWindow()
+})
 
 /**
  * IPC → pegar IP local
@@ -58,4 +64,11 @@ const win = new BrowserWindow({
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', () => {
+  if (localServer) {
+    localServer.close()
+    localServer = null
+  }
 })
