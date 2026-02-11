@@ -80,6 +80,9 @@
           <span v-else>-</span>
         </template>
         <template slot="item.actions" slot-scope="{ item }">
+          <v-btn icon small color="secondary" @click="openCodSis(item)">
+            <v-icon>mdi-barcode</v-icon>
+          </v-btn>
           <v-btn icon small color="info" @click="openProfileAssign(item)">
             <v-icon>mdi-shield-account</v-icon>
           </v-btn>
@@ -211,6 +214,35 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="dialogCodSis" max-width="460px">
+      <v-card>
+        <v-card-title>
+          Editar Codigo SIS
+          <v-spacer></v-spacer>
+          <v-btn icon @click="dialogCodSis = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-alert type="info" border="left" colored-border>
+            Funcionario: <strong>{{ codSisForm.nome || '-' }}</strong>
+          </v-alert>
+          <v-text-field
+            v-model="codSisForm.cod_sis"
+            label="Codigo SIS"
+            outlined
+            dense
+            clearable
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="dialogCodSis = false">Cancelar</v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveCodSis">Salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="4000">
       {{ snackbar.text }}
       <template v-slot:action="{ attrs }">
@@ -250,6 +282,7 @@ export default {
       dialog: false,
       dialogDelete: false,
       dialogProfile: false,
+      dialogCodSis: false,
       editedIndex: -1,
       editedItem: {},
       profiles: [],
@@ -258,6 +291,11 @@ export default {
         cod_sis: '',
         nome: '',
         perfil_id: null
+      },
+      codSisForm: {
+        id: null,
+        nome: '',
+        cod_sis: ''
       },
       snackbar: {
         show: false,
@@ -428,6 +466,19 @@ export default {
       }
       this.dialogProfile = true
     },
+    openCodSis(item) {
+      this.editedItem = {
+        ...this.defaultEmployee(),
+        ...item,
+        senha: ''
+      }
+      this.codSisForm = {
+        id: item.id,
+        nome: item.nome,
+        cod_sis: item.cod_sis || ''
+      }
+      this.dialogCodSis = true
+    },
     openDelete(item) {
       this.editedItem = {
         id: item.id,
@@ -441,6 +492,7 @@ export default {
     payloadFromForm() {
       return {
         id: this.editedItem.id,
+        cod_sis: this.editedItem.cod_sis || null,
         nome: this.editedItem.nome,
         login: this.editedItem.login,
         email: this.editedItem.email || null,
@@ -480,6 +532,40 @@ export default {
         await this.fetchEmployees()
       } catch (error) {
         this.showMessage(`Erro ao salvar perfil: ${error.message}`, 'error')
+      } finally {
+        this.saving = false
+      }
+    },
+    async saveCodSis() {
+      if (!this.codSisForm.id) return
+      this.saving = true
+      try {
+        this.editedItem = {
+          ...this.editedItem,
+          cod_sis: this.codSisForm.cod_sis || ''
+        }
+        const url = `${API_BASE}funcionario.php?request=editar_cod_sis`
+        const payload = {
+          id: this.codSisForm.id,
+          cod_sis: this.codSisForm.cod_sis || ''
+        }
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...this.authHeaders()
+          },
+          body: JSON.stringify(payload)
+        })
+        const result = await response.json()
+        if (result.error || result.success === false) {
+          throw new Error(result.error || result.message || 'Erro ao salvar')
+        }
+        this.showMessage('Codigo SIS atualizado.')
+        this.dialogCodSis = false
+        await this.fetchEmployees()
+      } catch (error) {
+        this.showMessage(`Erro ao salvar codigo SIS: ${error.message}`, 'error')
       } finally {
         this.saving = false
       }

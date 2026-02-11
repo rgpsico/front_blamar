@@ -270,167 +270,134 @@ try {
         // =========================================================
         // 🔹 ROTA: Autenticar Usuário da API (POST) - Usa api_admins
         // =========================================================
-        case 'autenticar':
-            if ($method !== 'POST') response(["error" => "Método não permitido. Use POST."], 405);
+     case 'autenticar':
+    if ($method !== 'POST') {
+        response(["error" => "Método não permitido. Use POST."], 405);
+    }
 
-            $username = isset($input['login']) ? trim($input['login']) : null;
-            $password = isset($input['senha']) ? $input['senha'] : null;
+    $login = isset($input['login']) ? trim($input['login']) : null;
+    $senha = isset($input['senha']) ? $input['senha'] : null;
 
-            if (!$username || !$password) {
-                response(["error" => "Login e senha são obrigatórios"], 400);
-            }
+    if (!$login || !$senha) {
+        response(["error" => "Login e senha são obrigatórios"], 400);
+    }
 
-            // Buscar usuário na tabela api_admins (substitui a lógica antiga de func e conteudo_internet)
-            $sql = "
-                SELECT 
-                    id, 
-                    username, 
-                    email, 
-                    password_hash, 
-                    role, 
-                    permissions, 
-                    is_active,
-                    created_at
-                FROM sbd95.api_admins ,
-                
-                WHERE username = $1
-                LIMIT 1
-            ";
-            $result = pg_query_params($conn, $sql, [$username]);
+    // =============================================
+    // 1. Autenticação principal na tabela sbd95.func (legado)
+    // =============================================
+    $sql_func = "
+        SELECT 
+            cod_sis,
+            nome,
+            nome_todo,
+            depto,
+            nivel,
+            desativado,
+            master,
+            senha,
+            senha_md5
+        FROM sbd95.func 
+        WHERE cod_sis = $1
+           OR nome = $1
+           OR nome_todo = $1
+        LIMIT 1
+    ";
 
-            if (!$result || pg_num_rows($result) === 0) {
-                response(["error" => "Credenciais inválidas"], 401);
-            }
+    $res_func = pg_query_params($conn, $sql_func, [$login]);
 
-            $user = pg_fetch_assoc($result);
+    if (!$res_func || pg_num_rows($res_func) === 0) {
+        response(["error" => "Usuário não encontrado"], 401);
+    }
 
-            // Verificar se está ativo
-            if ($user['is_active'] === 'f' || $user['is_active'] === false) {
-                response(["error" => "Usuário inativo. Contate o administrador."], 403);
-            }
+    $func = pg_fetch_assoc($res_func);
 
-            // Verificar senha
-            if (!password_verify($password, $user['password_hash'])) {
-                response(["error" => "Credenciais inválidas"], 401);
-            }
+    // Verifica se está desativado
+    if ($func['desativado'] === 't' || $func['desativado'] === true) {
+        response(["error" => "Usuário desativado"], 403);
+    }
 
-            // Decodificar permissions
-            $permissions = json_decode($user['permissions'], true) ?? [];
+    // Verifica senha (tenta os dois formatos que existem na tabela)
+    $senha_valida = false;
 
-            // Gera token seguro (64 caracteres)
-            $token = bin2hex(random_bytes(32));
+    if ($func['senha'] && $senha === $func['senha']) {
+        $senha_valida = true;
+    } elseif ($func['senha_md5'] && md5($senha) === $func['senha_md5']) {
+        $senha_valida = true;
+    }
 
-            // Armazena token na tabela api_user_tokens (ajustado para colunas existentes)
-            $token_hash = hash('sha256', $token);
-            $expires_at = date('Y-m-d H:i:s', time() + 86400); // 24 horas
-            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    if (!$senha_valida) {
+        response(["error" => "Senha inválida"], 401);
+    }
 
-            // Para usuários da API, usamos o ID como referência
-            $cod_sis_ref = 'API-' . $user['id']; // Prefixo para identificar usuário da API
+    // =============================================
+    // 2. Temos o cod_sis real → usamos ele como referência principal
+    // =============================================
+    $cod_sis = $func['cod_sis'];           // esse é o valor correto e único
+    $nome_usuario = $func['nome_todo'] ?: $func['nome'];
 
-            $sql_insert = "
-                INSERT INTO sbd95.api_user_tokens 
-                    (cod_sis, token_hash, expires_at, user_agent, ip)
-                VALUES ($1, $2, $3, $4, $5)
-            ";
+    // =============================================
+    // 3. (Opcional) Buscar dados complementares em api_admins
+    //    se você quiser usar role/permissions da tabela nova
+    // =============================================
+    $role = 'user';          // default
+    $permissions = [];
+    $admin_id = null;
 
-            $params_insert = [
-                $cod_sis_ref,
-                $token_hash,
-                $expires_at,
-                $user_agent,
-                $ip
-            ];
+    $res_admin = pg_query_params(
+        $conn,
+        "SELECT id, role, permissions FROM sbd95.api_admins WHERE username = $1 OR email = $2 LIMIT 1",
+        [$cod_sis, $func['nome']]   // ou usar email se souber que existe
+    );
 
-            $result_insert = pg_query_params($conn, $sql_insert, $params_insert);
-            if (!$result_insert) {
-                throw new Exception("Erro ao armazenar token: " . pg_last_error($conn));
-            }
+    if ($res_admin && pg_num_rows($res_admin) > 0) {
+        $admin = pg_fetch_assoc($res_admin);
+        $admin_id = $admin['id'];
+        $role = $admin['role'];
+        $permissions = json_decode($admin['permissions'] ?? '[]', true);
+    }
 
-            // Tenta resolver cod_sis e pk_usuario no legado (conteudo_internet.usuario)
-            $cod_sis_real = null;
-            $pk_usuario_real = null;
-            $res_func = pg_query_params(
-                $conn,
-                "SELECT pk_usuario, cod_sis FROM conteudo_internet.usuario WHERE email = $1 OR email_pessoal = $1 OR apelido = $2 OR nome = $2 LIMIT 1",
-                [$user['email'], $user['username']]
-            );
-            if ($res_func && pg_num_rows($res_func) > 0) {
-                $row_func = pg_fetch_assoc($res_func);
-                $pk_usuario_real = $row_func['pk_usuario'];
-                $cod_sis_real = $row_func['cod_sis'];
-            }
+    // =============================================
+    // 4. Gera e armazena o token usando o cod_sis real
+    // =============================================
+    $token = bin2hex(random_bytes(32));
+    $token_hash = hash('sha256', $token);
+    $expires_at = date('Y-m-d H:i:s', time() + 86400); // 24h
+    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
 
-            // Dados do usuário para retornar (compatibilidade legado)
-            $user_data = [
-                'id' => (int)$user['id'],
-                'pk_usuario' => $pk_usuario_real ? (int)$pk_usuario_real : null,
-                'cod_sis' => $cod_sis_real ?: $user['username'],
-                'nome' => $user['username'],
-                'apelido' => $user['username'],
-                'email' => $user['email'],
-                'nivel' => $user['role'],
-                'departamento' => null
-            ];
+    $sql_token = "
+        INSERT INTO sbd95.api_user_tokens 
+            (cod_sis, token_hash, expires_at, user_agent, ip)
+        VALUES ($1, $2, $3, $4, $5)
+    ";
 
-            response([
-                "success" => true,
-                "token" => $token,
-                "user" => $user_data,
-                "auth_type" => "api_user",
-                "expires_in" => 86400,
-                "message" => "Autenticação realizada com sucesso!"
-            ]);
-            break;
+    $params_token = [$cod_sis, $token_hash, $expires_at, $user_agent, $ip];
 
-        case 'gerar_token_email':
-            if ($method !== 'POST') response(["error" => "Método não permitido. Use POST."], 405);
+    if (!pg_query_params($conn, $sql_token, $params_token)) {
+        response(["error" => "Erro ao criar token: " . pg_last_error($conn)], 500);
+    }
 
-            $input = json_decode(file_get_contents('php://input'), true) ?? [];
-            $email = isset($input['email']) ? trim(strtolower($input['email'])) : null;
+    // =============================================
+    // 5. Dados para retornar
+    // =============================================
+    $user_data = [
+        'cod_sis'      => (int) $cod_sis,
+        'nome'         => $nome_usuario,
+        'nivel'        => $func['nivel'],
+        'depto'        => $func['depto'],
+        'role'         => $role,               // da api_admins se existir
+        'admin_id'     => $admin_id ? (int)$admin_id : null,
+        'permissions'  => $permissions
+    ];
 
-            if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                response(["error" => "Email inválido."], 400);
-            }
-
-            // Busca usuário por email em api_admins (ajuste tabela se necessário)
-            $sql = "SELECT id FROM sbd95.api_admins WHERE LOWER(email) = $1 LIMIT 1";
-            $result = pg_query_params($conn, $sql, [$email]);
-            if (!$result || pg_num_rows($result) === 0) {
-                response(["error" => "Usuário com email '$email' não encontrado."], 404);
-            }
-
-            $user_row = pg_fetch_assoc($result);
-            $user_id = (int)$user_row['id'];
-
-            // Gera token genérico (ex: hash simples de email + timestamp + user_id)
-            $token_raw = $email . time() . $user_id . random_bytes(16);  // Aleatório seguro
-            $token = hash('sha256', $token_raw);  // Token fixo de 64 chars
-
-            // Armazena token em api_user_tokens (similar ao auth original)
-            $token_hash = hash('sha256', $token);  // Hash para DB
-            $expires_at = date('Y-m-d H:i:s', time() + 86400 * 30);  // 30 dias para genérico
-            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-            $cod_sis_ref = 'GEN-' . $user_id;  // Prefixo para tokens genéricos
-
-            $sql_insert = "INSERT INTO sbd95.api_user_tokens (cod_sis, token_hash, expires_at, user_agent, ip) VALUES ($1, $2, $3, $4, $5)";
-            $result_insert = pg_query_params($conn, $sql_insert, [$cod_sis_ref, $token_hash, $expires_at, $user_agent, $ip]);
-
-            if (!$result_insert) {
-                response(["error" => "Erro ao salvar token."], 500);
-            }
-
-            response([
-                "success" => true,
-                "token" => $token,  // Retorna o token plano para JS
-                "user_id" => $user_id,
-                "expires_in" => 86400 * 30,  // 30 dias
-                "message" => "Token genérico criado para $email"
-            ]);
-            break;
-
+    response([
+        "success"    => true,
+        "token"      => $token,
+        "user"       => $user_data,
+        "expires_in" => 86400,
+        "message"    => "Autenticação realizada com sucesso"
+    ]);
+    break;
         default:
             response(["error" => "Rota inválida"], 400);
     }
