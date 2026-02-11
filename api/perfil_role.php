@@ -574,14 +574,35 @@ try {
             break;
 
         // ------------------------------------------------
-        // BUSCAR PERMISSOES DO USUARIO API (api_admins.id)
+        // BUSCAR PERMISSOES DO USUARIO API (api_admins.id ou cod_sis)
         // ------------------------------------------------
         case 'buscar_permissoes_api_user':
             if ($method !== 'GET') response(["error" => "Use GET"], 405);
 
+            $cod_sis = trim($_GET['cod_sis'] ?? '');
             $api_user_id = isset($_GET['api_user_id']) ? (int)$_GET['api_user_id'] : 0;
-            if ($api_user_id <= 0) {
-                response(["error" => "api_user_id obrigatorio"], 400);
+
+            if ($cod_sis === '' && $api_user_id <= 0) {
+                response(["error" => "cod_sis ou api_user_id obrigatorio"], 400);
+            }
+
+            if ($cod_sis !== '') {
+                $profile = buscarPerfilDoUsuario($conn, $cod_sis);
+                if (!$profile) {
+                    response([
+                        'cod_sis' => $cod_sis,
+                        'profile' => null,
+                        'permissions' => []
+                    ]);
+                }
+
+                $permissions = buscarPermissoesDoPerfil($conn, $profile['id']);
+
+                response([
+                    'cod_sis' => $cod_sis,
+                    'profile' => $profile,
+                    'permissions' => $permissions
+                ]);
             }
 
             $profile = buscarPerfilDoApiUser($conn, $api_user_id);

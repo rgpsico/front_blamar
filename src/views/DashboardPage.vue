@@ -280,7 +280,7 @@ export default {
             { title: 'Banco de Imagem', icon: 'mdi-image-multiple',  page: 'image' },
             // { title: 'Banco de Imagem Comercial', icon: 'mdi-briefcase', page: '' },
             { title: 'Beach House', icon: 'mdi-beach', page: 'beach-house' }, 
-            { title: 'Blog Receptivo', icon: 'mdi-post-outline', page: 'blog' },
+            { title: 'Blog Receptivo', icon: 'mdi-post-outline', page: 'blog', permissions: ['MANAGE_BLOG'] },
             { title: 'Brazilian Experts', icon: 'mdi-map', page: 'experts' },
             { title: 'Newsletters', icon: 'mdi-newspaper-variant-outline', page: 'newsletters' }
           ]
@@ -343,8 +343,11 @@ export default {
       return this.menu
         .map(group => {
           const items = (group.items || []).filter(item => {
-            if (!item.permissions || item.permissions.length === 0) {
+            if (item.page === 'dashboard') {
               return true
+            }
+            if (!item.permissions || item.permissions.length === 0) {
+              return false
             }
             return item.permissions.some(perm => this.authPermissions.includes(perm))
           })

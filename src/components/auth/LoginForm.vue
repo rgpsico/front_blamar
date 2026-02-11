@@ -99,18 +99,26 @@ export default {
         localStorage.setItem('auth_user', JSON.stringify(user))
 
         // usar permissoes retornadas no login (se houver)
-        const directPermissions = Array.isArray(data.permissions)
-          ? data.permissions.map(item => item.name)
-          : []
+        const directPermissionsSource = Array.isArray(data.permissions)
+          ? data.permissions
+          : Array.isArray(user.permissions)
+            ? user.permissions
+            : []
+        const directPermissions = directPermissionsSource.map(item =>
+          typeof item === 'string' ? item : item?.name
+        ).filter(Boolean)
         if (directPermissions.length || data.profile) {
           localStorage.setItem('auth_permissions', JSON.stringify(directPermissions))
           localStorage.setItem('auth_profile', JSON.stringify(data.profile || null))
         } else {
           // fallback: buscar perfil e permissoes do usuario logado
           try {
+            const codSis = user.cod_sis || ''
             const apiUserId = user.api_user_id || user.id || ''
-            if (!apiUserId) throw new Error('api_user_id ausente')
-            const query = `perfil_role.php?request=buscar_permissoes_api_user&api_user_id=${encodeURIComponent(apiUserId)}`
+            if (!codSis && !apiUserId) throw new Error('cod_sis/api_user_id ausente')
+            const query = codSis
+              ? `perfil_role.php?request=buscar_permissoes_api_user&cod_sis=${encodeURIComponent(codSis)}`
+              : `perfil_role.php?request=buscar_permissoes_api_user&api_user_id=${encodeURIComponent(apiUserId)}`
             const accessResp = await api.get(query)
             const accessData = accessResp?.data || {}
             const permissions = Array.isArray(accessData.permissions)
