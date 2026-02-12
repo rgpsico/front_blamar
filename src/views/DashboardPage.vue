@@ -56,6 +56,14 @@
       <v-btn icon @click="toggleTheme">
         <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </v-btn>
+      <v-btn
+        text
+        class="dashboard__roadmap"
+        @click="openRoadmap"
+      >
+        <v-icon left small>mdi-rocket-launch</v-icon>
+        Atualizacoes
+      </v-btn>
       <v-btn class="dashboard__logout" text color="primary" @click="logout">
         <v-icon left>mdi-logout</v-icon>
         Sair
@@ -155,6 +163,7 @@
         </div>
         <ImageBankManager v-else-if="activePage === 'image'" />
         <VideoBankManager v-else-if="activePage === 'video'" />
+        <AtualizacoesSistema v-else-if="activePage === 'atualizacoes'" />
         <BeachHouseManager v-else-if="activePage === 'beach-house'" />
         <AbtManager v-else-if="activePage === 'abt'" />
         <BlogManager v-else-if="activePage === 'blog'" />
@@ -221,6 +230,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <RoadmapModal
+      ref="roadmapModal"
+      v-model="roadmapDialog"
+      @error="onRoadmapError"
+    />
   </div>
 </template>
 
@@ -241,6 +256,8 @@ import UsersManager from '@/components/users/UsersManager.vue'
 import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
 import NewslettersManager from '@/components/newsletters/NewslettersManager.vue'
 import ApiUsersManager from '@/components/users/ApiUsersManager.vue'
+import AtualizacoesSistema from '@/components/system/AtualizacoesSistema.vue'
+import RoadmapModal from '@/components/system/RoadmapModal.vue'
 
 export default {
   name: 'DashboardPage',
@@ -255,6 +272,8 @@ export default {
     EmployeesManager,
     ImageBankManager,
     VideoBankManager,
+    AtualizacoesSistema,
+    RoadmapModal,
     HotelsManager,
     IncentivosManager,
     UsersManager,
@@ -319,6 +338,14 @@ export default {
             { title: 'Incentivos', icon: 'mdi-gift', page: 'incentivos' }
          
           ]
+        },
+        {
+          title: 'Sistema',
+          icon: 'mdi-cog',
+          open: false,
+          items: [
+            { title: 'Atualizacoes', icon: 'mdi-history', page: 'atualizacoes' }
+          ]
         }
       ],
       profile: {
@@ -328,6 +355,7 @@ export default {
         avatar: 'https://i.pravatar.cc/100?img=32'
       },
       profileDialog: false,
+      roadmapDialog: false,
       profileForm: {
         name: '',
         role: '',
@@ -440,6 +468,21 @@ export default {
     logout() {
       this.$emit('logout')
     },
+    openRoadmap() {
+      this.roadmapDialog = true
+      this.loadAtualizacoes()
+    },
+    loadAtualizacoes() {
+      this.$nextTick(() => {
+        if (this.$refs.roadmapModal && this.$refs.roadmapModal.loadAtualizacoes) {
+          this.$refs.roadmapModal.loadAtualizacoes()
+        }
+      })
+    },
+    onRoadmapError(error) {
+      // Evita quebrar o header caso a API falhe
+      console.error('Erro ao carregar atualizacoes:', error)
+    },
     setPage(page) {
       if (!page) {
         return
@@ -550,6 +593,16 @@ export default {
 
 .dashboard__logout {
   margin-right: 12px;
+}
+
+.dashboard__roadmap {
+  margin-right: 8px;
+  text-transform: none;
+  color: #0f172a;
+}
+
+.dashboard__roadmap:hover {
+  background: rgba(249, 2, 14, 0.08);
 }
 
 .dashboard__profile-info {
