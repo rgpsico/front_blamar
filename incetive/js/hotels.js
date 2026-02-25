@@ -5,6 +5,228 @@ $(document).ready(function () {
     const DEFAULT_IMAGE = 'img/hotel_01.png';
     const DEFAULT_CITY = 'Rio de Janeiro';  // Cidade que será selecionada por padrão
 console.log('AQUI ESTÁ HOTELS.JS');
+    const MOCK_HOTELS = [
+        {
+            frncod: 101,
+            nome: 'Copacabana Palace',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '240',
+            capacidade: '480',
+            descricao_ingles: 'Classic beachfront property with elegant rooms and historic charm.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 102,
+            nome: 'Fasano Rio',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '89',
+            capacidade: '178',
+            descricao_ingles: 'Boutique luxury on Ipanema with refined design and rooftop pool.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 103,
+            nome: 'Fairmont Rio de Janeiro',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '375',
+            capacidade: '750',
+            descricao_ingles: 'Oceanfront views and contemporary comfort in Copacabana.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 104,
+            nome: 'Hilton Copacabana',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '545',
+            capacidade: '1090',
+            descricao_ingles: 'Full service beachfront hotel with pools and event spaces.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 105,
+            nome: 'Windsor Atlantica',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '545',
+            capacidade: '1090',
+            descricao_ingles: 'Modern rooms with panoramic ocean views on Copacabana.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 106,
+            nome: 'Windsor Excelsior',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '233',
+            capacidade: '466',
+            descricao_ingles: 'Business friendly hotel with easy beach access.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 107,
+            nome: 'Miramar by Windsor',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '200',
+            capacidade: '400',
+            descricao_ingles: 'Refined suites and rooftop pool on Avenida Atlantica.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 108,
+            nome: 'Hotel Nacional',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '413',
+            capacidade: '826',
+            descricao_ingles: 'Iconic architecture with broad leisure and event areas.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 109,
+            nome: 'Grand Hyatt Rio',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '436',
+            capacidade: '872',
+            descricao_ingles: 'Upscale resort style stay in Barra da Tijuca.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 110,
+            nome: 'Marriott Copacabana',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '245',
+            capacidade: '490',
+            descricao_ingles: 'Classic beach hotel with solid meeting infrastructure.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 111,
+            nome: 'JW Marriott Rio',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '245',
+            capacidade: '490',
+            descricao_ingles: 'Elegant service and upgraded suites near the beach.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 112,
+            nome: 'Emiliano Rio',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '90',
+            capacidade: '180',
+            descricao_ingles: 'Sophisticated boutique stay with spa and rooftop pool.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 113,
+            nome: 'Arena Copacabana',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '135',
+            capacidade: '270',
+            descricao_ingles: 'Mid size hotel with rooftop deck and beach access.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 114,
+            nome: 'Arena Ipanema',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '136',
+            capacidade: '272',
+            descricao_ingles: 'Modern rooms steps away from Ipanema beach.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 115,
+            nome: 'Lagune Barra Hotel',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '306',
+            capacidade: '612',
+            descricao_ingles: 'Convenient Barra location with business facilities.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 116,
+            nome: 'Novotel Rio Leme',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '275',
+            capacidade: '550',
+            descricao_ingles: 'Family friendly stay with practical amenities.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 117,
+            nome: 'Mercure Rio Copacabana',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '142',
+            capacidade: '284',
+            descricao_ingles: 'Comfortable rooms and easy beach access.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 118,
+            nome: 'Ibis Rio de Janeiro',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 3,
+            quartos: '231',
+            capacidade: '462',
+            descricao_ingles: 'Simple and efficient stay close to the beach.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 119,
+            nome: 'Rio Othon Palace',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 4,
+            quartos: '579',
+            capacidade: '1158',
+            descricao_ingles: 'Large hotel with classic service in Copacabana.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop'
+        },
+        {
+            frncod: 120,
+            nome: 'Sheraton Grand Rio',
+            cidade: 'Rio de Janeiro',
+            categoria: 'Hotel',
+            estrelas: 5,
+            quartos: '538',
+            capacidade: '1076',
+            descricao_ingles: 'Resort feel with private beach and extensive leisure.',
+            imagem_fachada: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop'
+        }
+    ];
     // Seletores jQuery
     const $list = $('.hotels-grid');
     const $citySelect = $('.select_hotel, #locationSelect'); // suporta ambos os seletores que você usou
@@ -145,7 +367,11 @@ console.log('AQUI ESTÁ HOTELS.JS');
             });
             renderHotels(hotels);
         }).fail(() => {
-            setLoading('Não foi possível carregar os hotéis. Tente novamente mais tarde.');
+            const fallbackHotels = MOCK_HOTELS.map((hotel) => ({
+                ...hotel,
+                cidade: hotel.cidade || cityName
+            }));
+            renderHotels(fallbackHotels);
         });
     }
 

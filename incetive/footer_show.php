@@ -1,26 +1,66 @@
 <style>
+    .footer-blumar {
+        margin-top: 40px;
+        background: #f7f7f7;
+        color: #3a3a3a;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    .footer-blumar .footer-top {
+        background: #ffffff;
+        border-top: 1px solid #e0e0e0;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 12px 16px;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .footer-blumar .footer-body {
+        background: #f5f5f5;
+        padding: 20px 16px 28px;
+    }
+
+    .footer-blumar .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .logos_rodape_gerais {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px 24px;
+    }
+
     .logos_rodape_gerais img {
-    max-height: 90px;
-    width: auto;
-    opacity: 0.85;
-    transition: all 0.3s ease;
-}
+        max-height: 60px;
+        width: auto;
+        opacity: 0.85;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        display: block;
+    }
 
-.logos_rodape_gerais img:hover {
-    opacity: 1;
-    transform: scale(1.05);
-}
+    .logos_rodape_gerais img:hover {
+        opacity: 1;
+        transform: scale(1.05);
+    }
 
+    @media (max-width: 768px) {
+        .logos_rodape_gerais img {
+            max-height: 50px;
+        }
+    }
 </style>
-<footer class="mt-5">
+<footer class="footer-blumar">
         <div class="footer-top">
             <div class="container text-center">
                 <span class="small">BLUMAR &copy; 2023 - Rio de Janeiro - Brazil</span>
             </div>
         </div>
-    <div class="bg-light py-4">
+    <div class="footer-body">
     <div class="container">
-        <div class="logos_rodape_gerais d-flex justify-content-center flex-wrap align-items-center gap-4">
+        <div class="logos_rodape_gerais">
             
             <img src="https://www.blumar.com.br/main_site_2021/images/logos_rodape/virtuoso.jpg" alt="Virtuoso">
             <img src="https://www.blumar.com.br/main_site_2021/images/logos_rodape/blta.png" alt="BLTA">
@@ -44,9 +84,3 @@
 
 
     </footer>
-    </div>
-
-   
-
-</body>
-</html>

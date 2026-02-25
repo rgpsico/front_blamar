@@ -218,5 +218,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="js/eventos_hotels.js"></script>
     <script src="js/hotels.js"></script>
+    <?php include 'footer_show.php'; ?>
 </body>
 </html>

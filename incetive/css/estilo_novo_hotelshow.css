@@ -153,7 +153,9 @@
         align-items: center;
         gap: 24px;
         justify-content: space-between;
-        position: relative;
+        position: sticky;
+        top: 59px;
+        z-index: 999;
         min-height: 48px;
     }
 
@@ -503,7 +505,9 @@
     align-items: center;
     gap: 16px;
     justify-content: space-between;
-    position: relative;
+    position: sticky;
+    top: 59px;
+    z-index: 999;
 }
 
             .filters-left {
