@@ -1,6 +1,6 @@
 ﻿// incentives_hotels.js
 $(document).ready(function () {
-    const INCENTIVES_API_URL = 'api_incentives.php';
+    const INCENTIVES_API_URL = 'https://webdeveloper.blumar.com.br/desenv/roger/conteudo/api/api_incentives.php';
     const CITIES_API_URL = 'galeria.php';
     const DEFAULT_IMAGE = 'img/hotel_01.png';
     const DEFAULT_CITY = 'Rio de Janeiro';
@@ -157,7 +157,11 @@ $(document).ready(function () {
             incentives.forEach((incentive) => {
                 incentive.city_name = incentive.city_name || cityName;
             });
-            renderIncentives(incentives);
+            
+            setTimeout(() => {
+                renderIncentives(incentives);
+            }, 500); // Simulate loading delay
+           
         }).fail(() => {
             setLoading('Nao foi possivel carregar os incentivos. Tente novamente mais tarde.');
         });
