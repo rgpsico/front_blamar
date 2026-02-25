@@ -177,6 +177,7 @@
         <ProfilePermissionsManager v-else-if="activePage === 'perfis'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
         <IncentivosManager v-else-if="activePage === 'incentivos'" />
+        <IncentivosManager v-else-if="activePage === 'hotel-incentive'" />
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
       </v-container>
@@ -346,6 +347,7 @@ export default {
           open: false,
           items: [
             { title: 'Hotel', icon: 'mdi-bed', page: 'hotel' },
+            { title: 'Hotel Incentive', icon: 'mdi-gift-outline', page: 'hotel-incentive' },
             { title: 'Venues', icon: 'mdi-office-building', page: 'incentivos' },
             { title: 'Restaurantes', icon: 'mdi-silverware-fork-knife', page: 'restaurantes' }
           ]

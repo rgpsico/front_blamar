@@ -1,6 +1,6 @@
 ﻿// incentives_hotels.js
 $(document).ready(function () {
-    const INCENTIVES_API_URL = 'api/Incentive_hotel.php';
+    const INCENTIVES_API_URL = 'api_incentives.php';
     const CITIES_API_URL = 'galeria.php';
     const DEFAULT_IMAGE = 'img/hotel_01.png';
     const DEFAULT_CITY = 'Rio de Janeiro';

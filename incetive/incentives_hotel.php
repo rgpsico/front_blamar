@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLUMAR - Incentives</title>
+    <title>BLUMAR - Hotels</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/estilo_novo_hotelshow.css">
 
@@ -25,8 +25,8 @@
     <!-- Hotels Section -->
     <section class="hotels-section">
         <div class="hotels-title">
-            <h1>Incentives</h1>
-            <span class="hotels-subtitle">Rio de Janeiro's incentives selection</span>
+            <h1>Hotels</h1>
+            <span class="hotels-subtitle">Rio de Janeiro's hotels selection</span>
         </div>
         <div class="header-actions">
             <div class="change-city">Change the city</div>
@@ -42,7 +42,7 @@
     <!-- Breadcrumb -->
     <div class="breadcrumb-section">
         <div class="breadcrumb">
-            <a href="#">Incentive Area</a> › <a href="#">Incentives</a> › <strong>Rio de Janeiro</strong>
+            <a href="#">Incentive Area</a> › <a href="#">Hotels</a> › <strong>Rio de Janeiro</strong>
         </div>
     </div>
 
@@ -110,7 +110,7 @@
                 <p class="hotel-description">
                     Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
                 </p>
-                <a class="read-more-btn" href="incentive_hotel_show.php?nome=Copacabana%20Palace">Read More</a>
+                <a class="read-more-btn" href="show.php?nome=Copacabana%20Palace">Read More</a>
             </div>
         </div>
 
@@ -130,7 +130,7 @@
                 <p class="hotel-description">
                     Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
                 </p>
-                <a class="read-more-btn" href="incentive_hotel_show.php?nome=Fasano%20Rio">Read More</a>
+                <a class="read-more-btn" href="show.php?nome=Fasano%20Rio">Read More</a>
             </div>
         </div>
 
@@ -150,7 +150,7 @@
                 <p class="hotel-description">
                     Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
                 </p>
-                <a class="read-more-btn" href="incentive_hotel_show.php?nome=Fairmont%20Rio%20de%20Janeiro">Read More</a>
+                <a class="read-more-btn" href="show.php?nome=Fairmont%20Rio%20de%20Janeiro">Read More</a>
             </div>
         </div>
 
@@ -170,7 +170,7 @@
                 <p class="hotel-description">
                     Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
                 </p>
-                <a class="read-more-btn" href="incentive_hotel_show.php?nome=Copacabana%20Palace">Read More</a>
+                <a class="read-more-btn" href="show.php?nome=Copacabana%20Palace">Read More</a>
             </div>
         </div>
 
@@ -190,7 +190,7 @@
                 <p class="hotel-description">
                     Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
                 </p>
-                <a class="read-more-btn" href="incentive_hotel_show.php?nome=Fasano%20Rio">Read More</a>
+                <a class="read-more-btn" href="show.php?nome=Fasano%20Rio">Read More</a>
             </div>
         </div>
 
@@ -210,7 +210,7 @@
                 <p class="hotel-description">
                     Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
                 </p>
-                <a class="read-more-btn" href="incentive_hotel_show.php?nome=Fairmont%20Rio%20de%20Janeiro">Read More</a>
+                <a class="read-more-btn" href="show.php?nome=Fairmont%20Rio%20de%20Janeiro">Read More</a>
             </div>
         </div>
     </div>
@@ -218,5 +218,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="js/eventos_hotels.js"></script>
     <script src="js/incentives_hotels.js"></script>
+    <?php include 'footer_show.php'; ?>
 </body>
 </html>
