@@ -92,6 +92,16 @@
             {{ item.ativo ? 'Ativo' : 'Inativo' }}
           </v-chip>
         </template>
+        <template slot="item.endereco" slot-scope="{ item }">
+          <v-btn
+            text
+            small
+            class="restaurants-manager__address"
+            @click="openAddress(item.endereco)"
+          >
+            {{ truncateAddress(item.endereco) }}
+          </v-btn>
+        </template>
         <template slot="item.actions" slot-scope="{ item }">
           <v-btn icon small color="primary" @click="openEdit(item)">
             <v-icon>mdi-pencil</v-icon>
@@ -264,6 +274,21 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="addressDialog" max-width="520px">
+      <v-card>
+        <v-card-title class="restaurants-manager__dialog-title">
+          <span>Endereco completo</span>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="addressDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <div class="restaurants-manager__address-full">{{ addressFull }}</div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="4000">
       {{ snackbar.text }}
       <template v-slot:action="{ attrs }">
@@ -343,11 +368,14 @@ export default {
         text: '',
         color: 'success'
       },
+      addressDialog: false,
+      addressFull: '',
       headers: [
         { text: 'Nome', value: 'nome' },
         { text: 'Especialidade', value: 'especialidade' },
         { text: 'Classificacao', value: 'classif' },
         { text: 'Cidade', value: 'cidade' },
+        { text: 'Endereco', value: 'endereco', sortable: false },
         { text: 'Status', value: 'ativo', sortable: false },
         { text: 'Acoes', value: 'actions', sortable: false, align: 'end' }
       ],
@@ -389,6 +417,22 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
+    },
+    truncateAddress(value) {
+      const text = String(value || '').trim()
+      if (!text) {
+        return '-'
+      }
+      const max = 28
+      return text.length > max ? `${text.slice(0, max)}...` : text
+    },
+    openAddress(value) {
+      const text = String(value || '').trim()
+      if (!text) {
+        return
+      }
+      this.addressFull = text
+      this.addressDialog = true
     },
     cityLabel(code) {
       if (!code) return ''
@@ -711,5 +755,17 @@ export default {
   font-weight: 600;
   margin-bottom: 6px;
   color: #475569;
+}
+
+.restaurants-manager__address {
+  text-transform: none;
+  font-weight: 500;
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.restaurants-manager__address-full {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
