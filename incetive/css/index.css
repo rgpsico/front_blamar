@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+body {
+  font-family: "Roboto", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+p {
+  font-weight: 400;
+  color: #303030;
+  font-size: 1.05vw;
+}
+
+h2 {
+  font-weight: 500;
+  font-size: 2.5vw;
+  color: #303030;
+}
+
+h3 {
+  color: #303030;
+}
+
+section {
+  float: left;
+  width: 100%;
+}
+
+.container{
+    width: 80%;
+    margin-left: 10%;
+}
+.container_max{
+  width: 100%;
+  float: left;
+}
+
+header {
+  width: 100%;
+  background: #103349; 
+}
+header .container{
+  display: flex;
+  padding: 2vw 0 1vw 0;
+}
+.logo_topo{
+  width: 12%;
+}
+.logo_topo img{
+  width: 100%;
+}
+.menu_interno{
+  float: right;
+  width: 20%;
+  margin-left: 68%;
+  text-align: right;
+}
+.menu_interno button{
+  background: #78AAC3;
+  color: #fff;
+  border: none;
+  padding: 0.3vw 1vw;
+  font-size: 0.8vw;
+  border-radius: 0.3vw;
+}
+
+#incentive_area h1{
+  color: #103349;
+  font-size: 2.1vw;
+}
+#incentive_area p{
+    line-height: 1.7vw;
+}
+.box_menu_grid{
+    width: 19.7vw;
+    height: 19.7vw;
+    float: left;
+    margin-right: 0.1vw;
+    margin-bottom: 0.1vw;
+    background-size: cover !important;
+}
+.menu_grid .bmg01, .menu_grid .bmg12{
+  background: #78AAC3;
+}
+.menu_grid .bmg02{
+  background: #fff;
+}
+.menu_grid .bmg03{
+  background: url("../img/venues_bg.jpg");
+}
+.menu_grid .bmg04{
+  background: url("../img/venues_02_bg.jpg");
+}
+.menu_grid .bmg05{
+  background: url("../img/carnaval_bg.jpg");
+}
+.menu_grid .bmg06{
+  background: url("../img/carnaval_02_bg.jpg");
+}
+.menu_grid .bmg07{
+  background: #EBEBEB;
+}
+.menu_grid .bmg08{
+  background: #E89127;
+}
+.menu_grid .bmg09{
+  background: #E89127;
+}
+.menu_grid .bmg10{
+  background: url("../img/galeria_bg.jpg");
+}
+.menu_grid .bmg11{
+  background: url("../img/galeria_02_bg.jpg");
+}
+.menu_grid .bmg12{
+  background: #78AAC3;
+}
+.menu_grid .bmg02 h3, .menu_grid .bmg02 p, .menu_grid .bmg07 h3, .menu_grid .bmg07 p, .menu_grid .bmg11 h3, .menu_grid .bmg11 p{
+  color: #4C4B4B !important;
+}
+.menu_grid .bmg04 h3, .menu_grid .bmg04 p{
+  color: #fff !important;
+}
+.menu_grid .bmg04 .line, .menu_grid .bmg06 .line{
+  background: #fff;
+}
+.box_menu_grid h3{
+  color: #fff;
+  padding: 2vw;
+  font-size: 1.7vw;
+  font-weight: 400;
+}
+.box_menu_grid .line{
+  width: 10%;
+  height: 0.3vw;
+  background: #e89127;
+  margin-left: 2vw;
+}
+.box_menu_grid p{
+  color: #fff;
+  padding: 0vw 2vw 2vw 2vw;
+}
+
+/* HOTELS */
+#header_page{
+  background: #F9F6F6;
+}
+#header_page .container{
+  float: left;
+}
+#header_page .container_max{
+  background: #4a8bbe8f;
+  box-shadow: 0px 0px 0.4vw #0000004f;
+}
+#header_page h2{
+  color: #4C4B4B;
+  font-size: 2vw;
+  float: left;
+}
+#header_page h3{
+  float: left;
+  margin: 2.3vw 0vw 0vw 0vw;
+  padding-left: 1vw;
+}
+#hotels_result{
+  padding-top: 2vw;
+}
+.box_hotels{
+  float: left;
+  width: 30%;
+}
+.box_hotels:nth-child(2) {
+  margin: 0 5%;
+}
+.box_hotels img{
+  width: 100%;
+  border-radius: 0.5vw;
+}
+.box_hotels_conteudo{
+  padding: 1vw;
+}
+.box_hotels .line{
+  width: 10%;
+  height: 0.2vw;
+  background: #e89127;
+}
+.box_hotels h3{
+  margin: 0.7vw 0;
+  font-size: 0.9vw;
+  font-weight: 400;
+}
+.box_hotels span{
+  font-size: 1.1vw;
+}
+.box_hotels h4{
+  color: #4C4B4B;
+  margin-bottom: 0;
+}
+.box_hotels p{
+  font-size: 0.9vw;
+  line-height: 1.4vw;
+}
+.box_hotels .hotels_description{
+
+}
+.box_hotels button{
+  border: 0;
+  background: #e89127;
+  padding: 0.6vw 1.6vw;
+  color: #fff;
+  border-radius: 0.4vw;
+}
+.select_hotel, .select_stars{
+    border: 0;
+    padding: 0.5vw 1vw;
+    border-radius: 0.3vw;
+    font-size: 0.7vw;
+    color: #7e7e7e;
+    font-style: italic;
+}
+.select_stars{
+
+}
