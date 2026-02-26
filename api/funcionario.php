@@ -61,6 +61,7 @@ try {
 
             // Filtros básicos
             $f_nome  = trim(isset($_GET['filtro_nome']) ? $_GET['filtro_nome'] : '');
+            $f_login = trim(isset($_GET['filtro_login']) ? $_GET['filtro_login'] : '');
             $f_cpf   = trim(isset($_GET['filtro_cpf'])  ? $_GET['filtro_cpf']  : '');
             $f_ativo = trim(isset($_GET['filtro_ativo']) ? $_GET['filtro_ativo'] : 'all');
 
@@ -71,6 +72,10 @@ try {
             if ($f_nome !== '') {
                 $where[] = "nome ILIKE $" . $idx++;
                 $params[] = "%$f_nome%";
+            }
+            if ($f_login !== '') {
+                $where[] = "apelido ILIKE $" . $idx++;
+                $params[] = "%$f_login%";
             }
             if ($f_cpf !== '') {
                 $where[] = "cpf ILIKE $" . $idx++;
@@ -112,6 +117,7 @@ try {
                     u.cod_sis,
                     nome,
                     apelido,
+                    apelido AS login,
                     cpf,
                     email_pessoal,
                     email,
@@ -165,6 +171,7 @@ try {
                     u.cod_sis,
                     nome,
                     apelido,
+                    apelido AS login,
                     aniversario,
                     nacionalidade,
                     naturalidade,
@@ -328,62 +335,42 @@ try {
         // ------------------------------------------------------------------
         // EDITAR COD_SIS (somente o codigo do funcionario)
         // ------------------------------------------------------------------
-case 'editar_cod_sis':
-    if ($method !== 'PUT' && $method !== 'POST') {
-        response(array('error' => 'Use PUT'), 405);
-    }
-
-    if (!$id) {
-        response(array('error' => 'id/pk_usuario obrigatorio'), 400);
-    }
-
-    $cod_sis = isset($input['cod_sis']) ? trim($input['cod_sis']) : '';
-    if ($cod_sis === '') {
-        response(array('error' => 'cod_sis obrigatorio'), 400);
-    }
-    if (strlen($cod_sis) > 16) {
-        response(array('error' => 'cod_sis deve ter no maximo 16 caracteres'), 400);
-    }
-
-    // Inicia transação (se ainda não começou)
-    pg_query($conn, 'BEGIN');
-
-    try {
-        // 1. Atualiza a tabela auth_user_profiles (se existir o old_cod_sis)
-        if ($old_cod_sis) {
-            $sql_profile = "UPDATE auth.auth_user_profiles SET cod_sis = $1 WHERE cod_sis = $2";
-            $res_profile = pg_query_params($conn, $sql_profile, array($cod_sis, $old_cod_sis));
-            if (!$res_profile) {
-                throw new Exception(pg_last_error($conn));
+        case 'editar_cod_sis':
+            if ($method !== 'PUT' && $method !== 'POST') {
+                response(array('error' => 'Use PUT'), 405);
             }
-        }
 
-        // 2. Atualiza TODOS os registros na tabela api_user_tokens que usam o old_cod_sis
-        if ($old_cod_sis) {
-            $sql_tokens = "UPDATE sbd95.api_user_tokens SET cod_sis = $1 WHERE cod_sis = $2";
-            $res_tokens = pg_query_params($conn, $sql_tokens, array($cod_sis, $old_cod_sis));
-            if (!$res_tokens) {
-                throw new Exception(pg_last_error($conn));
+            if (!$id) {
+                response(array('error' => 'id/pk_usuario obrigatorio'), 400);
             }
-        }
 
-        // Se chegou até aqui → commit
-        pg_query($conn, 'COMMIT');
+            $cod_sis = isset($input['cod_sis']) ? trim($input['cod_sis']) : '';
+            if ($cod_sis === '') {
+                response(array('error' => 'cod_sis obrigatorio'), 400);
+            }
+            if (strlen($cod_sis) > 16) {
+                response(array('error' => 'cod_sis deve ter no maximo 16 caracteres'), 400);
+            }
 
-        response(array(
-            'success'     => true,
-            'id'          => (int)$id,
-            'cod_sis'     => $cod_sis,
-            'old_cod_sis' => $old_cod_sis
-        ));
+            if ($old_cod_sis) {
+                $sql_profile = "UPDATE auth.auth_user_profiles SET cod_sis = $1 WHERE cod_sis = $2";
+                $res_profile = pg_query_params($conn, $sql_profile, array($cod_sis, $old_cod_sis));
+                if (!$res_profile) {
+                    pg_query($conn, 'ROLLBACK');
+                    response(array('error' => pg_last_error($conn)), 500);
+                }
+            }
 
-    } catch (Exception $e) {
-        pg_query($conn, 'ROLLBACK');
-        response(array('error' => 'Erro ao atualizar cod_sis: ' . $e->getMessage()), 500);
-    }
-    break;
+            pg_query($conn, 'COMMIT');
 
-    
+            response(array(
+                'success' => true,
+                'id' => (int)$id,
+                'cod_sis' => $cod_sis,
+                'old_cod_sis' => $old_cod_sis
+            ));
+            break;
+
         default:
             response(array('error' => "Rota desconhecida: $request"), 404);
     }

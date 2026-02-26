@@ -171,6 +171,7 @@
         <CitiesManager v-else-if="activePage === 'cidades'" />
         <DeluxeManager v-else-if="activePage === 'deluxe'" />
         <ClientsManager v-else-if="activePage === 'clientes'" />
+        <ClientesTarifarioManager v-else-if="activePage === 'clientes-tarifario'" />
         <EmployeesManager v-else-if="activePage === 'funcionarios'" />
         <UsersManager v-else-if="activePage === 'usuarios'" />
         <ApiUsersManager v-else-if="activePage === 'api-usuarios'" />
@@ -249,6 +250,7 @@ import ExpertsManager from '@/components/experts/ExpertsManager.vue'
 import CitiesManager from '@/components/cities/CitiesManager.vue'
 import DeluxeManager from '@/components/deluxe/DeluxeManager.vue'
 import ClientsManager from '@/components/clients/ClientsManager.vue'
+import ClientesTarifarioManager from '@/components/clients/ClientesTarifarioManager.vue'
 import EmployeesManager from '@/components/employees/EmployeesManager.vue'
 import ImageBankManager from '@/components/image/ImageBankManager.vue'
 import VideoBankManager from '@/components/video/VideoBankManager.vue'
@@ -272,6 +274,7 @@ export default {
     CitiesManager,
     DeluxeManager,
     ClientsManager,
+    ClientesTarifarioManager,
     EmployeesManager,
     ImageBankManager,
     VideoBankManager,
@@ -327,6 +330,7 @@ export default {
             { title: 'Perfis e Permissoes', icon: 'mdi-shield-account', page: 'perfis' },
             { title: 'Cidades', icon: 'mdi-city', page: 'cidades' },
             { title: 'Clientes', icon: 'mdi-account-multiple-outline', page: 'clientes' },
+            { title: 'Clientes Tarifario', icon: 'mdi-account-cash-outline', page: 'clientes-tarifario' },
             { title: 'Contatos', icon: 'mdi-card-account-phone-outline' }
           ]
         },
@@ -739,3 +743,5 @@ export default {
   }
 }
 </style>
+
+
