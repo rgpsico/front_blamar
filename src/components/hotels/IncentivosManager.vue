@@ -659,8 +659,14 @@ export default {
         country_code: program.country_code || '',
         inc_status: program.inc_status || 'active',
         inc_is_active: program.inc_is_active !== undefined ? program.inc_is_active : true,
-        star_rating: program.star_rating !== undefined ? program.star_rating : null,
-        total_rooms: program.total_rooms !== undefined ? program.total_rooms : null,
+        star_rating:
+          program.star_rating !== undefined && program.star_rating !== null && `${program.star_rating}` !== ''
+            ? Number(program.star_rating)
+            : null,
+        total_rooms:
+          program.total_rooms !== undefined && program.total_rooms !== null && `${program.total_rooms}` !== ''
+            ? Number(program.total_rooms)
+            : null,
         floor_plan_url: program.floor_plan_url || '',
         hotel_contact: relations.hotel_contact || {
           address: '',

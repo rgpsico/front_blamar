@@ -131,14 +131,14 @@
         <div class="stats-row">
             <div class="stats-item">
                 <i class="fas fa-star text-warning"></i><br>
-                5
+                <span id="sidebarStarRating">--</span>
             </div>
 
             <div class="stats-divider"></div>
 
             <div class="stats-item">
                 <i class="fas fa-bed text-secondary"></i><br>
-                220
+                <span id="sidebarTotalRooms">--</span>
             </div>
         </div>
 
@@ -148,12 +148,13 @@
         <div class="personal-note p-2">
             <strong>Personal note from the team</strong>
             <div class="note-divider" style="border-bottom: 1px solid black;"></div>
-            <p>Copacabana Palace is simply the icon of Rio. Nothing can beat the history and glamour present here. Ideal for high-end groups looking for the classic Rio vibe.</p>
+            <p id="sidebarPersonalNote">No notes available.</p>
         </div>
 
         <!-- Map -->
         <div class="map-container">
             <iframe
+                id="sidebarMapFrame"
                 src="https://www.google.com/maps?q=-22.9068,-43.1729&z=14&output=embed"
                 loading="lazy"
                 allowfullscreen>
@@ -161,7 +162,7 @@
         </div>
 
         <div class="map-link">
-            <a href="#" class="text-decoration-none">View on Google Maps</a>
+            <a id="sidebarMapLink" href="#" class="text-decoration-none" target="_blank" rel="noopener">View on Google Maps</a>
         </div>
 
     </div>

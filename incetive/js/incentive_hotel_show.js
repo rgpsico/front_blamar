@@ -308,12 +308,14 @@ function updateTotalRooms(convention) {
   }
 }
 
-function renderIncentive(data) {
-  if (!data) return;
+function renderIncentive(payload) {
+  if (!payload) return;
+  const program = payload.program || payload;
+  const relations = payload.relations || payload;
 
-  const name = data.inc_name || data.hotel_name_snapshot || `Incentive ${data.inc_id || ''}`.trim();
-  const city = data.city_name || '';
-  const desc = data.inc_description || '';
+  const name = program.inc_name || program.hotel_name_snapshot || `Incentive ${program.inc_id || ''}`.trim();
+  const city = program.city_name || '';
+  const desc = program.inc_description || '';
 
   if (name) {
     document.title = `Blumar - ${name}`;
@@ -330,7 +332,7 @@ function renderIncentive(data) {
     setText('hotelDescription', desc);
   }
 
-  const media = normalizeMedia(data.media || []);
+  const media = normalizeMedia(relations.media || []);
   updateMainMedia(media, name);
 
   const galleryItems = buildGalleryItems(media);
@@ -338,13 +340,13 @@ function renderIncentive(data) {
   updateGalleryCount(galleryItems);
   updateGalleryModal(galleryItems);
 
-  renderRoomCategories(data.room_categories || []);
-  renderFacilities(data.facilities || []);
-  renderRoomFacilities(data.facilities || []);
-  renderDining(data.dining || []);
+  renderRoomCategories(relations.room_categories || []);
+  renderFacilities(relations.facilities || []);
+  renderRoomFacilities(relations.facilities || []);
+  renderDining(relations.dining || []);
   const mapItem = getMediaByType(media, 'map')[0] || null;
-  renderConvention(data.convention || null, mapItem ? mapItem.media_url : null);
-  updateTotalRooms(data.convention || null);
+  renderConvention(relations.convention || null, mapItem ? mapItem.media_url : null);
+  updateTotalRooms(relations.convention || null);
 }
 
 function loadIncentiveById(id) {
