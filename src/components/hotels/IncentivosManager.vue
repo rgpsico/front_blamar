@@ -209,23 +209,27 @@
                   <v-col cols="12" md="8">
                     <v-text-field v-model="editedItem.hotel_contact.google_maps_url" label="Google Maps URL" outlined dense></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field
-                      v-model.number="editedItem.hotel_contact.latitude"
-                      label="Latitude"
-                      type="number"
-                      outlined
-                      dense
-                    ></v-text-field>
+                  <v-col cols="12" md="8" class="pt-0">
+                    <div class="text-caption text--secondary">
+                      Informe um link do Google Maps com latitude e longitude (ex.: https://www.google.com/maps?q=-22.9068,-43.1729).
+                    </div>
                   </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field
-                      v-model.number="editedItem.hotel_contact.longitude"
-                      label="Longitude"
-                      type="number"
-                      outlined
-                      dense
-                    ></v-text-field>
+                  <v-col cols="12" md="8">
+                    <div class="incentivos-manager__map-embed">
+                      <iframe
+                        v-if="mapEmbedUrl"
+                        :src="mapEmbedUrl"
+                        width="100%"
+                        height="160"
+                        frameborder="0"
+                        style="border:0;"
+                        allowfullscreen
+                        loading="lazy"
+                      ></iframe>
+                      <div v-else class="incentivos-manager__map-placeholder">
+                        Mapa nao disponivel
+                      </div>
+                    </div>
                   </v-col>
                 </v-row>
               </v-tab-item>
@@ -624,6 +628,18 @@ export default {
   computed: {
     dialogTitle() {
       return this.editedIndex === -1 ? 'Novo Incentivo' : 'Editar Incentivo'
+    },
+    mapEmbedUrl() {
+      const url = this.editedItem?.hotel_contact?.google_maps_url || ''
+      if (!url) return ''
+      const lower = url.toLowerCase().trim()
+      if (lower.includes('google.com/maps')) {
+        return lower.includes('output=embed') ? url : `${url}${url.includes('?') ? '&' : '?'}output=embed`
+      }
+      if (lower.includes('maps.app.goo.gl')) {
+        return ''
+      }
+      return ''
     }
   },
   mounted() {
@@ -1030,5 +1046,21 @@ export default {
   padding: 8px;
   margin: 0;
   background: #f8fafc;
+}
+
+.incentivos-manager__map-embed {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.incentivos-manager__map-placeholder {
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 12px;
 }
 </style>
