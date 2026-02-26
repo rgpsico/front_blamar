@@ -92,7 +92,7 @@
                         
                         <div class="gallery-trigger position-relative" data-bs-toggle="modal" data-bs-target="#galleryModal">
                             <img id="thumb3" src="img/hotel_01.png" alt="Mais fotos" style="margin-bottom:0;">
-                            <div class="gallery-more-overlay">
+                            <div class="gallery-more-overlay" id="galleryCount">
                                 <i class="fas fa-camera me-2"></i> View 32 photos
                             </div>
                         </div>
@@ -183,11 +183,11 @@
                 </style>
                 <div class="mt-6">
                     <h3 class="section-title"><i class="fas fa-bed section-icon"></i> Room Categories</h3>
-                    <p class="small text-muted" style="margin-left:40px;">Hotel has <strong>239 rooms</strong> and suites total.</p>
+                    <p class="small text-muted" style="margin-left:40px;">Hotel has <strong id="totalRoomsCount">239 rooms</strong> and suites total.</p>
                     
                     <div class="row mt-3"  style="margin-left:20px;">
                         <div class="col-md-8">
-                            <ul class="facility-list">
+                            <ul class="facility-list" id="roomCategoriesList">
                                 <li><i class="fas fa-check"></i> Superior City View (30m²)</li>
                                 <li><i class="fas fa-check"></i> Deluxe Beach View (40m²)</li>
                                 <li><i class="fas fa-check"></i> Pool Ocean View Suite (60m²)</li>
@@ -196,7 +196,7 @@
                         </div>
                         <div class="col-md-4">
                             <h6 class="small fw-bold">the rom catgeories are</h6>
-                            <ul class="facility-list">
+                            <ul class="facility-list" id="roomFacilitiesList">
                                 <li><i class="fas fa-circle" style="font-size:6px; vertical-align:middle;"></i> Air Conditioning</li>
                                 <li><i class="fas fa-circle" style="font-size:6px; vertical-align:middle;"></i> Mini Bar</li>
                                 <li><i class="fas fa-circle" style="font-size:6px; vertical-align:middle;"></i> Safe deposit box</li>
@@ -210,7 +210,7 @@
 
                 <div class="mt-4">
                     <h3 class="section-title"><i class="fas fa-utensils section-icon"></i> Dining Experience</h3>
-                    
+                    <div id="diningList">
                     <div class="dining-item">
                         <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" class="dining-img">
                         <div>
@@ -226,13 +226,14 @@
                             <p class="small text-muted">Pan-Asian cuisine. The restaurant promises a journey through different Asian countries. Michelin Star awarded.</p>
                         </div>
                     </div>
+                    </div>
                 </div>
 
                 <hr class="text-muted opacity-25">
 
                 <div class="mt-4 mb-5">
                     <h5 class="fw-bold fs-6 mb-3">Hotel Facilities</h5>
-                    <div class="row">
+                    <div class="row" id="hotelFacilities">
                         <div class="col-md-3">
                             <ul class="facility-list">
                                 <li><i class="fas fa-check"></i> Pool</li>
@@ -260,7 +261,7 @@
                       
                     </div>
                     <h3 class="section-title mt-2">Convention Center and Event Facilities        <button class="btn btn-sm btn-outline-warning text-dark">View floor plan of the area</button></h3>
-                    <p class="small text-muted mb-4">The hotel offers luxurious and extensive convention areas, featuring 13 meeting rooms that can host a variety of events.</p>
+                    <p class="small text-muted mb-4" id="conventionDescription">The hotel offers luxurious and extensive convention areas, featuring 13 meeting rooms that can host a variety of events.</p>
 
                     <div class="table-responsive" class="table-facilities">
                         <table class="table table-bordered capacity-table table-hover bg-white">
@@ -276,7 +277,7 @@
                                     <th>Cocktail</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="conventionRoomsBody">
                                 <tr>
                                     <td>Golden Room</td>
                                     <td>300</td>
@@ -339,7 +340,7 @@
                         </div>
 
                         <div class="text-center">
-                            <img src="img/planta_hotel.png" 
+                            <img src="img/planta_hotel.png" id="conventionFloorPlan"
                                 class="img-fluid border" 
                                 alt="Floor Plan">
                         </div>
@@ -357,53 +358,4 @@
     <!-- Bootstrap JS + Popper (necessário para modais, dropdowns, etc) -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-// Array com URLs de imagens fake (pode substituir depois pelas reais)
-const fakeHotelImages = [
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800",
-    "https://images.unsplash.com/photo-1578683015146-b644c65263c4?w=800",
-    "https://images.unsplash.com/photo-1611892440504-42a79208a498?w=800",
-    "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800",
-    "https://images.unsplash.com/photo-1561501878-aabd62634533?w=800",
-    "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800",
-    "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800",
-    "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800",
-    "https://images.unsplash.com/photo-1571896349842-077c8d6d1b35?w=800",
-    "https://images.unsplash.com/photo-1590490359680-24829ab9e750?w=800",
-    "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=800",
-    // pode duplicar ou adicionar mais até chegar perto de 32
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800",
-    "https://images.unsplash.com/photo-1578683015146-b644c65263c4?w=800",
-    "https://images.unsplash.com/photo-1611892440504-42a79208a498?w=800",
-];
-
-document.addEventListener('DOMContentLoaded', function () {
-    const galleryGrid = document.querySelector('#galleryModal .gallery-grid');
-    
-    // Só preenche se ainda estiver vazio
-    if (galleryGrid && galleryGrid.children.length === 0) {
-        fakeHotelImages.forEach(src => {
-            const col = document.createElement('div');
-            col.className = 'col-4 col-sm-4 col-md-4';
-            
-            const img = document.createElement('img');
-            img.src = src;
-            img.alt = 'Hotel photo';
-            img.loading = 'lazy';
-            
-            col.appendChild(img);
-            galleryGrid.appendChild(col);
-        });
-    }
-
-    // Opcional: ao abrir o modal, voltar para o topo
-    const modalEl = document.getElementById('galleryModal');
-    modalEl.addEventListener('shown.bs.modal', function () {
-        galleryGrid.scrollTop = 0;
-    });
-});
-</script>
-
        <?php include 'footer_show.php'; ?>

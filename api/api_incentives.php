@@ -1,15 +1,14 @@
 <?php
 /**
- * API RESTful - incentive (CRUD inc_program + leitura com relacionamentos)
+ * API RESTful - incentive (CRUD inc_program + relacionamentos completos)
+ * Versão atualizada com campos novos da migração 2025
  *
  * Endpoints:
  *   GET    ?request=listar_incentives
  *   GET    ?request=buscar_incentive&id=XXX
- *   POST   ?request=criar_incentive
- *   PUT    ?request=atualizar_incentive&id=XXX
- *   DELETE ?request=excluir_incentive&id=XXX
- *
- * Autenticacao (rotas escrita): Bearer Token
+ *   POST   ?request=criar_incentive       (Bearer Token)
+ *   PUT    ?request=atualizar_incentive&id=XXX  (Bearer Token)
+ *   DELETE ?request=excluir_incentive&id=XXX    (Bearer Token)
  */
 
 ini_set('display_errors', 1);
@@ -25,7 +24,7 @@ require_once '../util/connection.php';
 require_once 'middleware.php'; // validarToken($conn, $cod_sis, $token, $user_data)
 
 // =============================================
-// Helpers
+// Helpers de formatação
 // =============================================
 function response($data, $code = 200) {
     http_response_code($code);
@@ -33,309 +32,234 @@ function response($data, $code = 200) {
     exit;
 }
 
-function getParam($name, $default = null) {
-    return isset($_GET[$name]) ? $_GET[$name] : $default;
-}
-
-function getStringParam($name, $default = null) {
-    $v = getParam($name, $default);
-    return ($v !== null) ? trim($v) : null;
-}
-
-function getIntParam($name, $default = null) {
-    $v = getParam($name, $default);
-    return (is_numeric($v)) ? (int)$v : $default;
-}
+function getParam($name, $default = null) { return $_GET[$name] ?? $default; }
+function getStringParam($name, $default = null) { $v = getParam($name, $default); return $v !== null ? trim($v) : null; }
+function getIntParam($name, $default = null) { $v = getParam($name, $default); return is_numeric($v) ? (int)$v : $default; }
 
 function formatString($val)   { return ($val === '' || $val === null) ? null : trim($val); }
 function formatInt($val)      { return is_numeric($val) ? (int)$val : null; }
-function formatBoolean($val)  { return ($val === null) ? null : (filter_var($val, FILTER_VALIDATE_BOOLEAN) ? true : false); }
-
-function formatCountry($val) {
-    $v = formatString($val);
-    if ($v === null) return null;
-    $v = strtoupper($v);
-    return (strlen($v) === 2) ? $v : null;
-}
-
-function formatStatus($val) {
-    $allowed = ['active','inactive','draft','archived'];
-    return in_array($val, $allowed, true) ? $val : 'active';
-}
-
-function formatLanguage($val) {
-    $v = formatString($val);
-    if ($v === null) return null;
-    $v = strtoupper($v);
-    return (strlen($v) === 2) ? $v : null;
-}
-
-function formatNumeric($val) {
-    if ($val === null || $val === '') return null;
-    if (!is_numeric($val)) return null;
-    return $val;
-}
+function formatNumeric($val)  { return ($val === null || $val === '' || !is_numeric($val)) ? null : $val; }
+function formatBoolean($val)  { return $val === null ? null : filter_var($val, FILTER_VALIDATE_BOOLEAN); }
+function formatCountry($val)  { $v = formatString($val); return $v && strlen($v) === 2 ? strtoupper($v) : null; }
+function formatStatus($val)   { $allowed = ['active','inactive','draft','archived']; return in_array($val, $allowed) ? $val : 'active'; }
+function formatLanguage($val) { $v = formatString($val); return $v && strlen($v) === 2 ? strtoupper($v) : null; }
+function formatStarRating($val) { $n = formatInt($val); return ($n >= 1 && $n <= 5) ? $n : null; }
+function formatPosition($val) { $n = formatInt($val); return $n !== null ? max(0, $n) : 0; }
 
 function boolFromPg($v) {
-    // Postgres vem 't'/'f' ou boolean
-    if ($v === true || $v === 't' || $v === 'true' || $v === 1 || $v === '1') return true;
-    return false;
+    return $v === true || $v === 't' || $v === 'true' || $v === 1 || $v === '1';
 }
 
-function requireBearerToken($conn, &$user_data, $cod_sis = null) {
-    $headers = function_exists('getallheaders') ? getallheaders() : [];
-    $auth = $headers['authorization'] ?? $headers['Authorization'] ?? '';
-
+// =============================================
+// Autenticação
+// =============================================
+function requireBearerToken($conn, &$user_data) {
+    $headers = getallheaders() ?: [];
+    $auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     if (strpos($auth, 'Bearer ') !== 0) {
-        response(["error" => "Token Bearer obrigatorio"], 401);
+        response(["error" => "Token Bearer obrigatório"], 401);
     }
-
     $token = trim(substr($auth, 7));
-
-    if (!validarToken($conn, $cod_sis, $token, $user_data)) {
-        response(["error" => "Token invalido ou expirado"], 401);
+    if (!validarToken($conn, null, $token, $user_data)) {
+        response(["error" => "Token inválido ou expirado"], 401);
     }
-
     return $token;
 }
 
 // =============================================
-// Helpers de midia
+// Execução segura de queries
 // =============================================
-function formatMediaType($val) {
-    $v = formatString($val);
-    if ($v === null) return null;
-    $v = strtolower($v);
-
-    $allowed = ['banner','gallery','video','map'];
-    return in_array($v, $allowed, true) ? $v : null;
-}
-
-function formatPosition($val) {
-    if ($val === null || $val === '') return null;
-    if (!is_numeric($val)) return null;
-    $n = (int)$val;
-    return max(0, $n);
-}
-
-function execParams($conn, $sql, $params, $errorMessage) {
+function execParams($conn, $sql, $params, $errorMsg) {
     $res = pg_query_params($conn, $sql, $params);
-    if (!$res) throw new Exception($errorMessage . ': ' . pg_last_error($conn));
+    if (!$res) throw new Exception($errorMsg . ': ' . pg_last_error($conn));
     return $res;
 }
 
+// =============================================
+// Funções de sincronização (upsert/delete + insert)
+// =============================================
+
 function syncMedia($conn, $inc_id, $mediaList) {
-    execParams($conn, "DELETE FROM incentive.inc_media WHERE inc_id = $1", [$inc_id], "Erro ao limpar midias");
+    execParams($conn, "DELETE FROM incentive.inc_media WHERE inc_id = $1", [$inc_id], "Erro limpando mídias");
+    foreach ($mediaList as $i => $m) {
+        $type    = formatString($m['media_type'] ?? null);
+        $url     = formatString($m['media_url'] ?? null);
+        $pos     = formatPosition($m['position'] ?? 0);
+        $active  = formatBoolean($m['is_active'] ?? true);
 
-    foreach ($mediaList as $index => $media) {
-        $media_type = formatMediaType($media['media_type'] ?? null);
-        $media_url  = formatString($media['media_url'] ?? null);
-        $position   = formatPosition($media['position'] ?? 0) ?? 0;
-        $is_active  = formatBoolean($media['is_active'] ?? true);
+        if (!$type || !in_array($type, ['banner','gallery','video','map'])) throw new Exception("Mídia $i: media_type inválido");
+        if (!$url) throw new Exception("Mídia $i: media_url obrigatório");
 
-        if (!$media_type) throw new Exception("Midia {$index}: media_type invalido");
-        if (!$media_url)  throw new Exception("Midia {$index}: media_url obrigatorio");
-
-        execParams(
-            $conn,
-            "INSERT INTO incentive.inc_media (inc_id, media_type, media_url, position, is_active) VALUES ($1, $2, $3, $4, $5)",
-            [$inc_id, $media_type, $media_url, $position, $is_active ?? true],
-            "Erro ao inserir midia"
+        execParams($conn,
+            "INSERT INTO incentive.inc_media (inc_id, media_type, media_url, position, is_active) VALUES ($1,$2,$3,$4,$5)",
+            [$inc_id, $type, $url, $pos, $active], "Erro inserindo mídia"
         );
     }
 }
 
-function syncRoomCategories($conn, $inc_id, $roomCategories) {
-    execParams($conn, "DELETE FROM incentive.inc_room_category WHERE inc_id = $1", [$inc_id], "Erro ao limpar categorias de quartos");
+function syncRoomCategories($conn, $inc_id, $list) {
+    execParams($conn, "DELETE FROM incentive.inc_room_category WHERE inc_id = $1", [$inc_id], "Erro limpando categorias");
+    foreach ($list as $i => $r) {
+        $name     = formatString($r['room_name'] ?? null);
+        $qty      = formatInt($r['quantity'] ?? null);
+        $area     = formatNumeric($r['area_m2'] ?? null);
+        $view     = formatString($r['view_type'] ?? null);
+        $type     = formatString($r['room_type'] ?? null);
+        $notes    = formatString($r['notes'] ?? null);
+        $pos      = formatPosition($r['position'] ?? 0);
+        $active   = formatBoolean($r['is_active'] ?? true);
 
-    foreach ($roomCategories as $index => $room) {
-        $room_name = formatString($room['room_name'] ?? null);
-        $quantity  = formatInt($room['quantity'] ?? null);
-        $notes     = formatString($room['notes'] ?? null);
-        $position  = formatPosition($room['position'] ?? 0) ?? 0;
-        $is_active = formatBoolean($room['is_active'] ?? true);
+        if (!$name) throw new Exception("Categoria $i: room_name obrigatório");
 
-        if (!$room_name) throw new Exception("Quarto {$index}: room_name obrigatorio");
-
-        execParams(
-            $conn,
-            "INSERT INTO incentive.inc_room_category (inc_id, room_name, quantity, notes, position, is_active) VALUES ($1, $2, $3, $4, $5, $6)",
-            [$inc_id, $room_name, $quantity, $notes, $position, $is_active ?? true],
-            "Erro ao inserir categoria de quarto"
+        execParams($conn,
+            "INSERT INTO incentive.inc_room_category 
+             (inc_id, room_name, quantity, area_m2, view_type, room_type, notes, position, is_active)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+            [$inc_id, $name, $qty, $area, $view, $type, $notes, $pos, $active],
+            "Erro inserindo categoria de quarto"
         );
     }
 }
 
-function syncDining($conn, $inc_id, $diningList) {
-    execParams($conn, "DELETE FROM incentive.inc_dining WHERE inc_id = $1", [$inc_id], "Erro ao limpar dining");
+function syncRoomAmenities($conn, $inc_id, $list) {
+    execParams($conn, "DELETE FROM incentive.inc_room_amenity WHERE inc_id = $1", [$inc_id], "Erro limpando amenities");
+    foreach ($list as $i => $a) {
+        $name   = formatString($a['name'] ?? null);
+        $icon   = formatString($a['icon'] ?? null);
+        $active = formatBoolean($a['is_active'] ?? true);
 
-    foreach ($diningList as $index => $dining) {
-        $name            = formatString($dining['name'] ?? null);
-        $description     = formatString($dining['description'] ?? null);
-        $cuisine         = formatString($dining['cuisine'] ?? null);
-        $capacity        = formatInt($dining['capacity'] ?? null);
-        $schedule        = formatString($dining['schedule'] ?? null);
-        $is_michelin     = formatBoolean($dining['is_michelin'] ?? false);
-        $can_be_private  = formatBoolean($dining['can_be_private'] ?? false);
-        $image_url       = formatString($dining['image_url'] ?? null);
-        $position        = formatPosition($dining['position'] ?? 0) ?? 0;
-        $is_active       = formatBoolean($dining['is_active'] ?? true);
+        if (!$name) throw new Exception("Amenity $i: name obrigatório");
 
-        if (!$name) throw new Exception("Dining {$index}: name obrigatorio");
-
-        execParams(
-            $conn,
-            "INSERT INTO incentive.inc_dining (inc_id, name, description, cuisine, capacity, schedule, is_michelin, can_be_private, image_url, position, is_active)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
-            [
-                $inc_id,
-                $name,
-                $description,
-                $cuisine,
-                $capacity,
-                $schedule,
-                $is_michelin ?? false,
-                $can_be_private ?? false,
-                $image_url,
-                $position,
-                $is_active ?? true
-            ],
-            "Erro ao inserir dining"
+        execParams($conn,
+            "INSERT INTO incentive.inc_room_amenity (inc_id, name, icon, is_active) VALUES ($1,$2,$3,$4)",
+            [$inc_id, $name, $icon, $active],
+            "Erro inserindo room amenity"
         );
     }
 }
 
-function syncFacilities($conn, $inc_id, $facilities) {
-    execParams($conn, "DELETE FROM incentive.inc_facility WHERE inc_id = $1", [$inc_id], "Erro ao limpar facilities");
+function syncDining($conn, $inc_id, $list) {
+    execParams($conn, "DELETE FROM incentive.inc_dining WHERE inc_id = $1", [$inc_id], "Erro limpando dining");
+    foreach ($list as $i => $d) {
+        $name      = formatString($d['name'] ?? null);
+        $desc      = formatString($d['description'] ?? null);
+        $cuisine   = formatString($d['cuisine'] ?? null);
+        $cap       = formatInt($d['capacity'] ?? null);
+        $seating   = formatInt($d['seating_capacity'] ?? null);
+        $sched     = formatString($d['schedule'] ?? null);
+        $michelin  = formatBoolean($d['is_michelin'] ?? false);
+        $private   = formatBoolean($d['can_be_private'] ?? false);
+        $img       = formatString($d['image_url'] ?? null);
+        $pos       = formatPosition($d['position'] ?? 0);
+        $active    = formatBoolean($d['is_active'] ?? true);
 
-    foreach ($facilities as $index => $facility) {
-        $name      = formatString($facility['name'] ?? null);
-        $icon      = formatString($facility['icon'] ?? null);
-        $is_active = formatBoolean($facility['is_active'] ?? true);
+        if (!$name) throw new Exception("Dining $i: name obrigatório");
 
-        if (!$name) throw new Exception("Facility {$index}: name obrigatorio");
-
-        execParams(
-            $conn,
-            "INSERT INTO incentive.inc_facility (inc_id, name, icon, is_active) VALUES ($1, $2, $3, $4)",
-            [$inc_id, $name, $icon, $is_active ?? true],
-            "Erro ao inserir facility"
+        execParams($conn,
+            "INSERT INTO incentive.inc_dining 
+             (inc_id, name, description, cuisine, capacity, seating_capacity, schedule, is_michelin, can_be_private, image_url, position, is_active)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+            [$inc_id, $name, $desc, $cuisine, $cap, $seating, $sched, $michelin, $private, $img, $pos, $active],
+            "Erro inserindo dining"
         );
     }
 }
-function upsertConvention($conn, $inc_id, $convention) {
-    if ($convention === null) {
-        execParams($conn, "DELETE FROM incentive.inc_convention WHERE inc_id = $1", [$inc_id], "Erro ao excluir convention");
+
+function syncFacilities($conn, $inc_id, $list) {
+    execParams($conn, "DELETE FROM incentive.inc_facility WHERE inc_id = $1", [$inc_id], "Erro limpando facilities");
+    foreach ($list as $i => $f) {
+        $name   = formatString($f['name'] ?? null);
+        $icon   = formatString($f['icon'] ?? null);
+        $active = formatBoolean($f['is_active'] ?? true);
+        if (!$name) throw new Exception("Facility $i: name obrigatório");
+
+        execParams($conn,
+            "INSERT INTO incentive.inc_facility (inc_id, name, icon, is_active) VALUES ($1,$2,$3,$4)",
+            [$inc_id, $name, $icon, $active],
+            "Erro inserindo facility"
+        );
+    }
+}
+
+function upsertConvention($conn, $inc_id, $data) {
+    if ($data === null) {
+        execParams($conn, "DELETE FROM incentive.inc_convention WHERE inc_id = $1", [$inc_id], "Erro excluindo convention");
         return null;
     }
 
-    $description = formatString($convention['description'] ?? null);
-    $total_rooms = formatInt($convention['total_rooms'] ?? null);
-    $has_360     = formatBoolean($convention['has_360'] ?? false);
+    $desc      = formatString($data['description'] ?? null);
+    $total     = formatInt($data['total_rooms'] ?? null);
+    $has360    = formatBoolean($data['has_360'] ?? false);
 
-    $res = execParams(
-        $conn,
-        "SELECT inc_convention_id FROM incentive.inc_convention WHERE inc_id = $1 LIMIT 1",
-        [$inc_id],
-        "Erro ao buscar convention"
-    );
+    $res = execParams($conn, "SELECT inc_convention_id FROM incentive.inc_convention WHERE inc_id = $1", [$inc_id], "Erro buscando convention");
 
     if (pg_num_rows($res) > 0) {
-        $row = pg_fetch_assoc($res);
-        $conv_id = (int)$row['inc_convention_id'];
-        execParams(
-            $conn,
+        $conv_id = (int) pg_fetch_result($res, 0, 0);
+        execParams($conn,
             "UPDATE incentive.inc_convention SET description = $1, total_rooms = $2, has_360 = $3 WHERE inc_convention_id = $4",
-            [$description, $total_rooms, $has_360 ?? false, $conv_id],
-            "Erro ao atualizar convention"
+            [$desc, $total, $has360, $conv_id], "Erro atualizando convention"
         );
         return $conv_id;
     }
 
-    $resInsert = execParams(
-        $conn,
-        "INSERT INTO incentive.inc_convention (inc_id, description, total_rooms, has_360) VALUES ($1, $2, $3, $4) RETURNING inc_convention_id",
-        [$inc_id, $description, $total_rooms, $has_360 ?? false],
-        "Erro ao inserir convention"
+    $res = execParams($conn,
+        "INSERT INTO incentive.inc_convention (inc_id, description, total_rooms, has_360) VALUES ($1,$2,$3,$4) RETURNING inc_convention_id",
+        [$inc_id, $desc, $total, $has360], "Erro inserindo convention"
     );
-    return (int) pg_fetch_result($resInsert, 0, 0);
+    return (int) pg_fetch_result($res, 0, 0);
 }
 
 function getConventionId($conn, $inc_id) {
-    $res = execParams(
-        $conn,
-        "SELECT inc_convention_id FROM incentive.inc_convention WHERE inc_id = $1 LIMIT 1",
-        [$inc_id],
-        "Erro ao buscar convention"
-    );
-    if (pg_num_rows($res) > 0) {
-        $row = pg_fetch_assoc($res);
-        return (int)$row['inc_convention_id'];
-    }
-    return null;
+    $res = execParams($conn, "SELECT inc_convention_id FROM incentive.inc_convention WHERE inc_id = $1", [$inc_id], "");
+    return pg_num_rows($res) ? (int) pg_fetch_result($res, 0, 0) : null;
 }
 
-function syncConventionRooms($conn, $inc_convention_id, $rooms) {
-    if (!$inc_convention_id) return;
+function syncConventionRooms($conn, $conv_id, $list) {
+    if (!$conv_id) return;
+    execParams($conn, "DELETE FROM incentive.inc_convention_room WHERE inc_convention_id = $1", [$conv_id], "Erro limpando salas");
 
-    execParams(
-        $conn,
-        "DELETE FROM incentive.inc_convention_room WHERE inc_convention_id = $1",
-        [$inc_convention_id],
-        "Erro ao limpar salas"
-    );
+    foreach ($list as $i => $r) {
+        $name     = formatString($r['name'] ?? null);
+        $area     = formatNumeric($r['area_m2'] ?? null);
+        $height   = formatNumeric($r['height_m'] ?? null);
+        $theater  = formatInt($r['capacity_theater'] ?? null);
+        $cocktail = formatInt($r['capacity_cocktail'] ?? null);
+        $aud      = formatInt($r['capacity_auditorium'] ?? null);
+        $banq     = formatInt($r['capacity_banquet'] ?? null);
+        $class    = formatInt($r['capacity_classroom'] ?? null);
+        $u        = formatInt($r['capacity_u_shape'] ?? null);
+        $notes    = formatString($r['notes'] ?? null);
 
-    foreach ($rooms as $index => $room) {
-        $name                = formatString($room['name'] ?? null);
-        $area_m2             = formatNumeric($room['area_m2'] ?? null);
-        $capacity_auditorium = formatInt($room['capacity_auditorium'] ?? null);
-        $capacity_banquet    = formatInt($room['capacity_banquet'] ?? null);
-        $capacity_classroom  = formatInt($room['capacity_classroom'] ?? null);
-        $capacity_u_shape    = formatInt($room['capacity_u_shape'] ?? null);
-        $notes               = formatString($room['notes'] ?? null);
+        if (!$name) throw new Exception("Sala $i: name obrigatório");
 
-        if (!$name) throw new Exception("Sala {$index}: name obrigatorio");
-
-        execParams(
-            $conn,
-            "INSERT INTO incentive.inc_convention_room\n                (inc_convention_id, name, area_m2, capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-            [
-                $inc_convention_id,
-                $name,
-                $area_m2,
-                $capacity_auditorium,
-                $capacity_banquet,
-                $capacity_classroom,
-                $capacity_u_shape,
-                $notes
-            ],
-            "Erro ao inserir sala"
+        execParams($conn,
+            "INSERT INTO incentive.inc_convention_room 
+             (inc_convention_id, name, area_m2, height_m, capacity_theater, capacity_cocktail,
+              capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+            [$conv_id, $name, $area, $height, $theater, $cocktail, $aud, $banq, $class, $u, $notes],
+            "Erro inserindo sala de convenção"
         );
     }
 }
 
-function syncNotes($conn, $inc_id, $notes) {
-    execParams($conn, "DELETE FROM incentive.inc_note WHERE inc_id = $1", [$inc_id], "Erro ao limpar notas");
-
-    foreach ($notes as $index => $note) {
-        $language = formatLanguage($note['language'] ?? null);
-        $text     = formatString($note['note'] ?? null);
-
-        if (!$text) throw new Exception("Nota {$index}: note obrigatorio");
-
-        execParams(
-            $conn,
-            "INSERT INTO incentive.inc_note (inc_id, language, note) VALUES ($1, $2, $3)",
-            [$inc_id, $language, $text],
-            "Erro ao inserir nota"
+function syncNotes($conn, $inc_id, $list) {
+    execParams($conn, "DELETE FROM incentive.inc_note WHERE inc_id = $1", [$inc_id], "Erro limpando notas");
+    foreach ($list as $i => $n) {
+        $lang = formatLanguage($n['language'] ?? null);
+        $text = formatString($n['note'] ?? null);
+        if (!$text) throw new Exception("Nota $i: note obrigatório");
+        execParams($conn, "INSERT INTO incentive.inc_note (inc_id, language, note) VALUES ($1,$2,$3)",
+            [$inc_id, $lang, $text], "Erro inserindo nota"
         );
     }
 }
 
 // =============================================
-// Request parsing
+// Processamento da requisição
 // =============================================
 $request = getParam('request');
-if (!$request) response(["error" => "Parametro 'request' e obrigatorio"], 400);
+if (!$request) response(["error" => "Parâmetro 'request' obrigatório"], 400);
 
 $method = $_SERVER['REQUEST_METHOD'];
 $input = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -343,142 +267,98 @@ $input = json_decode(file_get_contents('php://input'), true) ?: [];
 if ($method === 'OPTIONS') response([], 204);
 
 try {
-
     switch ($request) {
 
-        // ======================================
-        // LISTAR (resumo) - com contagens e 1 banner opcional
-        // ======================================
+        // ────────────────────────────────────────────────
+        // LISTAR (resumo com contagens + banner principal)
+        // ────────────────────────────────────────────────
         case 'listar_incentives':
             if ($method !== 'GET') response(["error" => "Use GET"], 405);
 
-            $filtro_nome   = getStringParam('filtro_nome');
-            $filtro_status = getStringParam('filtro_status');
-            $filtro_cidade = getStringParam('filtro_cidade');
-            $filtro_pais   = getStringParam('filtro_pais');
-            $filtro_ativo  = getParam('filtro_ativo', 'all');
+            $f_nome   = getStringParam('filtro_nome');
+            $f_status = getStringParam('filtro_status');
+            $f_cidade = getStringParam('filtro_cidade');
+            $f_pais   = getStringParam('filtro_pais');
+            $f_ativo  = getParam('filtro_ativo', 'all');
 
             $page     = max(1, getIntParam('page', 1));
             $per_page = max(1, min(100, getIntParam('per_page', 30)));
             $offset   = ($page - 1) * $per_page;
 
-            $where  = [];
-            $params = [];
-            $idx    = 1;
+            $where = $params = [];
+            $idx = 1;
 
-            if ($filtro_nome) {
-                $where[]  = "p.inc_name ILIKE $" . $idx++;
-                $params[] = "%{$filtro_nome}%";
-            }
-            if ($filtro_status) {
-                $where[]  = "p.inc_status = $" . $idx++;
-                $params[] = $filtro_status;
-            }
-            if ($filtro_pais) {
-                $where[]  = "p.country_code = $" . $idx++;
-                $params[] = strtoupper($filtro_pais);
-            }
-            if ($filtro_cidade) {
-                $where[]  = "p.city_name ILIKE $" . $idx++;
-                $params[] = "%{$filtro_cidade}%";
-            }
-            if ($filtro_ativo !== 'all') {
-                $ativo = filter_var($filtro_ativo, FILTER_VALIDATE_BOOLEAN) ? true : false;
-                $where[]  = "p.inc_is_active = $" . $idx++;
+            if ($f_nome)   { $where[] = "p.inc_name ILIKE $" . $idx++; $params[] = "%$f_nome%"; }
+            if ($f_status) { $where[] = "p.inc_status = $" . $idx++;   $params[] = $f_status; }
+            if ($f_pais)   { $where[] = "p.country_code = $" . $idx++; $params[] = strtoupper($f_pais); }
+            if ($f_cidade) { $where[] = "p.city_name ILIKE $" . $idx++; $params[] = "%$f_cidade%"; }
+            if ($f_ativo !== 'all') {
+                $ativo = filter_var($f_ativo, FILTER_VALIDATE_BOOLEAN);
+                $where[] = "p.inc_is_active = $" . $idx++;
                 $params[] = $ativo;
             }
 
-            $where_sql = count($where) ? "WHERE " . implode(" AND ", $where) : "";
+            $where_sql = $where ? "WHERE " . implode(" AND ", $where) : "";
 
-            $sql_count = "SELECT COUNT(*) AS total FROM incentive.inc_program p {$where_sql}";
-            $res_count = pg_query_params($conn, $sql_count, $params);
-            if (!$res_count) throw new Exception(pg_last_error($conn));
-            $total = (int) pg_fetch_result($res_count, 0, 'total');
+            $sql_count = "SELECT COUNT(*) FROM incentive.inc_program p $where_sql";
+            $total = (int) pg_fetch_result(pg_query_params($conn, $sql_count, $params), 0);
 
-            $params_list = $params;
-            $params_list[] = $per_page;
-            $params_list[] = $offset;
-
-            $limitParam  = '$' . ($idx++);
-            $offsetParam = '$' . ($idx++);
+            $params[] = $per_page;
+            $params[] = $offset;
 
             $sql = "
                 SELECT
-                    p.inc_id,
-                    p.inc_name,
-                    p.inc_description,
-                    p.hotel_ref_id,
-                    p.hotel_name_snapshot,
-                    p.city_name,
-                    p.country_code,
-                    p.inc_status,
-                    p.inc_is_active,
-                    p.created_at,
-                    p.updated_at,
-
-                    (SELECT COUNT(*) FROM incentive.inc_media m WHERE m.inc_id = p.inc_id AND m.is_active = TRUE) AS media_count,
-                    (SELECT COUNT(*) FROM incentive.inc_room_category rc WHERE rc.inc_id = p.inc_id AND rc.is_active = TRUE) AS room_category_count,
-                    (SELECT COUNT(*) FROM incentive.inc_dining d WHERE d.inc_id = p.inc_id AND d.is_active = TRUE) AS dining_count,
-                    (SELECT COUNT(*) FROM incentive.inc_facility f WHERE f.inc_id = p.inc_id AND f.is_active = TRUE) AS facility_count,
-                    (SELECT COUNT(*) FROM incentive.inc_note n WHERE n.inc_id = p.inc_id) AS note_count,
-
-                    (
-                        SELECT m.media_url
-                        FROM incentive.inc_media m
-                        WHERE m.inc_id = p.inc_id
-                          AND m.is_active = TRUE
-                          AND m.media_type = 'banner'
-                        ORDER BY m.position ASC, m.inc_media_id ASC
-                        LIMIT 1
-                    ) AS banner_url
-
+                    p.inc_id, p.inc_name, p.city_name, p.country_code, p.inc_status, p.inc_is_active,
+                    p.star_rating, p.total_rooms,
+                    (SELECT media_url FROM incentive.inc_media m 
+                     WHERE m.inc_id = p.inc_id AND m.is_active AND m.media_type = 'banner'
+                     ORDER BY m.position LIMIT 1) AS banner_url,
+                    (SELECT COUNT(*) FROM incentive.inc_media            WHERE inc_id = p.inc_id AND is_active) AS media_count,
+                    (SELECT COUNT(*) FROM incentive.inc_room_category     WHERE inc_id = p.inc_id AND is_active) AS room_count,
+                    (SELECT COUNT(*) FROM incentive.inc_room_amenity      WHERE inc_id = p.inc_id AND is_active) AS amenity_count,
+                    (SELECT COUNT(*) FROM incentive.inc_dining            WHERE inc_id = p.inc_id AND is_active) AS dining_count,
+                    (SELECT COUNT(*) FROM incentive.inc_facility          WHERE inc_id = p.inc_id AND is_active) AS facility_count,
+                    (SELECT COUNT(*) FROM incentive.inc_note              WHERE inc_id = p.inc_id) AS note_count
                 FROM incentive.inc_program p
-                {$where_sql}
-                ORDER BY p.inc_name, p.inc_id
-                LIMIT {$limitParam} OFFSET {$offsetParam}
-            ";
+                $where_sql
+                ORDER BY p.inc_name
+                LIMIT $" . ($idx++) . " OFFSET $" . ($idx++)
+            ;
 
-            $result = pg_query_params($conn, $sql, $params_list);
-            if (!$result) throw new Exception(pg_last_error($conn));
-
-            $rows = pg_fetch_all($result) ?: [];
-            foreach ($rows as &$row) {
-                $row['inc_id']             = (int)$row['inc_id'];
-                $row['hotel_ref_id']       = $row['hotel_ref_id'] !== null ? (int)$row['hotel_ref_id'] : null;
-                $row['inc_is_active']      = boolFromPg($row['inc_is_active']);
-                $row['media_count']        = (int)$row['media_count'];
-                $row['room_category_count']= (int)$row['room_category_count'];
-                $row['dining_count']       = (int)$row['dining_count'];
-                $row['facility_count']     = (int)$row['facility_count'];
-                $row['note_count']         = (int)$row['note_count'];
+            $rows = pg_fetch_all(pg_query_params($conn, $sql, $params)) ?: [];
+            foreach ($rows as &$r) {
+                $r['inc_id']      = (int)$r['inc_id'];
+                $r['star_rating'] = $r['star_rating'] ? (int)$r['star_rating'] : null;
+                $r['total_rooms'] = $r['total_rooms'] ? (int)$r['total_rooms'] : null;
+                $r['inc_is_active'] = boolFromPg($r['inc_is_active']);
+                foreach (['media_count','room_count','amenity_count','dining_count','facility_count','note_count'] as $k) {
+                    $r[$k] = (int)$r[$k];
+                }
             }
 
             response([
                 'data' => $rows,
                 'pagination' => [
-                    'total'        => $total,
-                    'per_page'     => $per_page,
+                    'total' => $total,
+                    'per_page' => $per_page,
                     'current_page' => $page,
-                    'last_page'    => (int) ceil($total / $per_page)
+                    'last_page' => (int)ceil($total / $per_page)
                 ]
             ]);
             break;
 
-        // ======================================
-        // BUSCAR 1 (com relacionamentos)
-        // ======================================
+        // ────────────────────────────────────────────────
+        // BUSCAR DETALHADO (com todos relacionamentos)
+        // ────────────────────────────────────────────────
         case 'buscar_incentive':
             if ($method !== 'GET') response(["error" => "Use GET"], 405);
-
             $id = getIntParam('id');
-            if (!$id) response(["error" => "ID obrigatorio"], 400);
+            if (!$id) response(["error" => "ID obrigatório"], 400);
 
-            $sql_program = "SELECT * FROM incentive.inc_program WHERE inc_id = $1 LIMIT 1";
-            $res_program = pg_query_params($conn, $sql_program, [$id]);
-            if (!$res_program || pg_num_rows($res_program) === 0) {
-                response(["error" => "Programa nao encontrado"], 404);
+            $res = pg_query_params($conn, "SELECT * FROM incentive.inc_program WHERE inc_id = $1", [$id]);
+            if (!$res || !($p = pg_fetch_assoc($res))) {
+                response(["error" => "Não encontrado"], 404);
             }
-            $p = pg_fetch_assoc($res_program);
 
             $program = [
                 'inc_id'              => (int)$p['inc_id'],
@@ -488,233 +368,192 @@ try {
                 'hotel_name_snapshot' => $p['hotel_name_snapshot'],
                 'city_name'           => $p['city_name'],
                 'country_code'        => $p['country_code'],
+                'address'             => $p['address'],
+                'postal_code'         => $p['postal_code'],
+                'state_code'          => $p['state_code'],
+                'phone'               => $p['phone'],
+                'email'               => $p['email'],
+                'website_url'         => $p['website_url'],
+                'google_maps_url'     => $p['google_maps_url'],
+                'latitude'            => $p['latitude'] ? (float)$p['latitude'] : null,
+                'longitude'           => $p['longitude'] ? (float)$p['longitude'] : null,
+                'star_rating'         => $p['star_rating'] ? (int)$p['star_rating'] : null,
+                'total_rooms'         => $p['total_rooms'] ? (int)$p['total_rooms'] : null,
+                'floor_plan_url'      => $p['floor_plan_url'],
                 'inc_status'          => $p['inc_status'],
                 'inc_is_active'       => boolFromPg($p['inc_is_active']),
                 'created_at'          => $p['created_at'],
                 'updated_at'          => $p['updated_at'],
             ];
 
-            $sql_media = "
-                SELECT inc_media_id, media_type, media_url, position, is_active
-                FROM incentive.inc_media
-                WHERE inc_id = $1
-                ORDER BY position ASC, inc_media_id ASC
-            ";
-            $res_media = pg_query_params($conn, $sql_media, [$id]);
-            $media = pg_fetch_all($res_media) ?: [];
+            // Media
+            $media = pg_fetch_all(pg_query_params($conn,
+                "SELECT * FROM incentive.inc_media WHERE inc_id = $1 ORDER BY position, inc_media_id",
+                [$id])) ?: [];
             foreach ($media as &$m) {
                 $m['inc_media_id'] = (int)$m['inc_media_id'];
-                $m['position']     = (int)$m['position'];
-                $m['is_active']    = boolFromPg($m['is_active']);
+                $m['position'] = (int)$m['position'];
+                $m['is_active'] = boolFromPg($m['is_active']);
             }
 
-            $sql_rooms = "
-                SELECT inc_room_id, room_name, quantity, notes, position, is_active
-                FROM incentive.inc_room_category
-                WHERE inc_id = $1
-                ORDER BY position ASC, inc_room_id ASC
-            ";
-            $res_rooms = pg_query_params($conn, $sql_rooms, [$id]);
-            $room_categories = pg_fetch_all($res_rooms) ?: [];
-            foreach ($room_categories as &$r) {
+            // Room Categories
+            $rooms = pg_fetch_all(pg_query_params($conn,
+                "SELECT * FROM incentive.inc_room_category WHERE inc_id = $1 ORDER BY position, inc_room_id",
+                [$id])) ?: [];
+            foreach ($rooms as &$r) {
                 $r['inc_room_id'] = (int)$r['inc_room_id'];
-                $r['quantity']    = $r['quantity'] !== null ? (int)$r['quantity'] : null;
-                $r['position']    = (int)$r['position'];
-                $r['is_active']   = boolFromPg($r['is_active']);
+                $r['quantity'] = $r['quantity'] !== null ? (int)$r['quantity'] : null;
+                $r['area_m2'] = $r['area_m2'] !== null ? (float)$r['area_m2'] : null;
+                $r['position'] = (int)$r['position'];
+                $r['is_active'] = boolFromPg($r['is_active']);
             }
 
-            $sql_dining = "
-                SELECT
-                    inc_dining_id, name, description, cuisine, capacity, schedule,
-                    is_michelin, can_be_private, image_url, position, is_active
-                FROM incentive.inc_dining
-                WHERE inc_id = $1
-                ORDER BY position ASC, inc_dining_id ASC
-            ";
-            $res_dining = pg_query_params($conn, $sql_dining, [$id]);
-            $dining = pg_fetch_all($res_dining) ?: [];
+            // Room Amenities
+            $amenities = pg_fetch_all(pg_query_params($conn,
+                "SELECT * FROM incentive.inc_room_amenity WHERE inc_id = $1 ORDER BY name",
+                [$id])) ?: [];
+            foreach ($amenities as &$a) {
+                $a['inc_room_amenity_id'] = (int)$a['inc_room_amenity_id'];
+                $a['is_active'] = boolFromPg($a['is_active']);
+            }
+
+            // Dining
+            $dining = pg_fetch_all(pg_query_params($conn,
+                "SELECT * FROM incentive.inc_dining WHERE inc_id = $1 ORDER BY position, inc_dining_id",
+                [$id])) ?: [];
             foreach ($dining as &$d) {
-                $d['inc_dining_id']  = (int)$d['inc_dining_id'];
-                $d['capacity']       = $d['capacity'] !== null ? (int)$d['capacity'] : null;
-                $d['is_michelin']    = boolFromPg($d['is_michelin']);
+                $d['inc_dining_id'] = (int)$d['inc_dining_id'];
+                $d['capacity'] = $d['capacity'] !== null ? (int)$d['capacity'] : null;
+                $d['seating_capacity'] = $d['seating_capacity'] !== null ? (int)$d['seating_capacity'] : null;
+                $d['is_michelin'] = boolFromPg($d['is_michelin']);
                 $d['can_be_private'] = boolFromPg($d['can_be_private']);
-                $d['position']       = (int)$d['position'];
-                $d['is_active']      = boolFromPg($d['is_active']);
+                $d['position'] = (int)$d['position'];
+                $d['is_active'] = boolFromPg($d['is_active']);
             }
 
-            $sql_fac = "
-                SELECT inc_facility_id, name, icon, is_active
-                FROM incentive.inc_facility
-                WHERE inc_id = $1
-                ORDER BY inc_facility_id ASC
-            ";
-            $res_fac = pg_query_params($conn, $sql_fac, [$id]);
-            $facilities = pg_fetch_all($res_fac) ?: [];
+            // Facilities
+            $facilities = pg_fetch_all(pg_query_params($conn,
+                "SELECT * FROM incentive.inc_facility WHERE inc_id = $1 ORDER BY name",
+                [$id])) ?: [];
             foreach ($facilities as &$f) {
                 $f['inc_facility_id'] = (int)$f['inc_facility_id'];
-                $f['is_active']       = boolFromPg($f['is_active']);
+                $f['is_active'] = boolFromPg($f['is_active']);
             }
 
-            $sql_conv = "
-                SELECT inc_convention_id, description, total_rooms, has_360
-                FROM incentive.inc_convention
-                WHERE inc_id = $1
-                LIMIT 1
-            ";
-            $res_conv = pg_query_params($conn, $sql_conv, [$id]);
+            // Convention
             $convention = null;
-            $convention_rooms = [];
-
-            if ($res_conv && pg_num_rows($res_conv) > 0) {
-                $c = pg_fetch_assoc($res_conv);
-
+            $conv_rooms = [];
+            $res_conv = pg_query_params($conn, "SELECT * FROM incentive.inc_convention WHERE inc_id = $1", [$id]);
+            if ($res_conv && ($c = pg_fetch_assoc($res_conv))) {
                 $convention = [
                     'inc_convention_id' => (int)$c['inc_convention_id'],
                     'description'       => $c['description'],
-                    'total_rooms'       => $c['total_rooms'] !== null ? (int)$c['total_rooms'] : null,
+                    'total_rooms'       => $c['total_rooms'] ? (int)$c['total_rooms'] : null,
                     'has_360'           => boolFromPg($c['has_360']),
                 ];
 
-                $sql_conv_rooms = "
-                    SELECT
-                        inc_room_id, name, area_m2,
-                        capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape,
-                        notes
-                    FROM incentive.inc_convention_room
-                    WHERE inc_convention_id = $1
-                    ORDER BY inc_room_id ASC
-                ";
-                $res_conv_rooms = pg_query_params($conn, $sql_conv_rooms, [$convention['inc_convention_id']]);
-                $convention_rooms = pg_fetch_all($res_conv_rooms) ?: [];
-                foreach ($convention_rooms as &$cr) {
+                $conv_rooms = pg_fetch_all(pg_query_params($conn,
+                    "SELECT * FROM incentive.inc_convention_room WHERE inc_convention_id = $1 ORDER BY inc_room_id",
+                    [$c['inc_convention_id']])) ?: [];
+                foreach ($conv_rooms as &$cr) {
                     $cr['inc_room_id'] = (int)$cr['inc_room_id'];
-                    $cr['capacity_auditorium'] = $cr['capacity_auditorium'] !== null ? (int)$cr['capacity_auditorium'] : null;
-                    $cr['capacity_banquet']    = $cr['capacity_banquet'] !== null ? (int)$cr['capacity_banquet'] : null;
-                    $cr['capacity_classroom']  = $cr['capacity_classroom'] !== null ? (int)$cr['capacity_classroom'] : null;
-                    $cr['capacity_u_shape']    = $cr['capacity_u_shape'] !== null ? (int)$cr['capacity_u_shape'] : null;
+                    foreach (['area_m2','height_m'] as $k) $cr[$k] = $cr[$k] !== null ? (float)$cr[$k] : null;
+                    foreach (['capacity_theater','capacity_cocktail','capacity_auditorium','capacity_banquet','capacity_classroom','capacity_u_shape'] as $k) {
+                        $cr[$k] = $cr[$k] !== null ? (int)$cr[$k] : null;
+                    }
                 }
             }
 
-            $sql_notes = "
-                SELECT inc_note_id, language, note
-                FROM incentive.inc_note
-                WHERE inc_id = $1
-                ORDER BY inc_note_id ASC
-            ";
-            $res_notes = pg_query_params($conn, $sql_notes, [$id]);
-            $notes = pg_fetch_all($res_notes) ?: [];
-            foreach ($notes as &$n) {
-                $n['inc_note_id'] = (int)$n['inc_note_id'];
-            }
+            // Notes
+            $notes = pg_fetch_all(pg_query_params($conn,
+                "SELECT * FROM incentive.inc_note WHERE inc_id = $1 ORDER BY inc_note_id",
+                [$id])) ?: [];
+            foreach ($notes as &$n) $n['inc_note_id'] = (int)$n['inc_note_id'];
 
             response([
                 'program' => $program,
                 'relations' => [
                     'media'            => $media,
-                    'room_categories'   => $room_categories,
-                    'dining'            => $dining,
-                    'facilities'        => $facilities,
-                    'convention'        => $convention,
-                    'convention_rooms'  => $convention_rooms,
-                    'notes'             => $notes,
+                    'room_categories'  => $rooms,
+                    'room_amenities'   => $amenities,
+                    'dining'           => $dining,
+                    'facilities'       => $facilities,
+                    'convention'       => $convention,
+                    'convention_rooms' => $conv_rooms,
+                    'notes'            => $notes,
                 ]
             ]);
             break;
-        // ======================================
-        // CRIAR (inc_program + relacionamentos opcionais)
-        // ======================================
+
+        // ────────────────────────────────────────────────
+        // CRIAR
+        // ────────────────────────────────────────────────
         case 'criar_incentive':
             if ($method !== 'POST') response(["error" => "Use POST"], 405);
+            requireBearerToken($conn, $user_data);
 
-            $user_data = null;
-            requireBearerToken($conn, $user_data, $cod_sis ?? null);
-
-            if (empty($input)) response(["error" => "Body JSON obrigatorio"], 400);
+            if (empty($input)) response(["error" => "Body JSON obrigatório"], 400);
 
             pg_query($conn, "BEGIN");
             try {
                 $fields = [
-                    'inc_name'            => formatString($input['inc_name'] ?? ''),
+                    'inc_name'            => formatString($input['inc_name'] ?? null),
                     'inc_description'     => formatString($input['inc_description'] ?? null),
                     'hotel_ref_id'        => formatInt($input['hotel_ref_id'] ?? null),
                     'hotel_name_snapshot' => formatString($input['hotel_name_snapshot'] ?? null),
                     'city_name'           => formatString($input['city_name'] ?? null),
                     'country_code'        => formatCountry($input['country_code'] ?? null),
+                    'address'             => formatString($input['address'] ?? null),
+                    'postal_code'         => formatString($input['postal_code'] ?? null),
+                    'state_code'          => formatString($input['state_code'] ?? null),
+                    'phone'               => formatString($input['phone'] ?? null),
+                    'email'               => formatString($input['email'] ?? null),
+                    'website_url'         => formatString($input['website_url'] ?? null),
+                    'google_maps_url'     => formatString($input['google_maps_url'] ?? null),
+                    'latitude'            => formatNumeric($input['latitude'] ?? null),
+                    'longitude'           => formatNumeric($input['longitude'] ?? null),
+                    'star_rating'         => formatStarRating($input['star_rating'] ?? null),
+                    'total_rooms'         => formatInt($input['total_rooms'] ?? null),
+                    'floor_plan_url'      => formatString($input['floor_plan_url'] ?? null),
                     'inc_status'          => formatStatus($input['inc_status'] ?? 'active'),
                     'inc_is_active'       => formatBoolean($input['inc_is_active'] ?? true),
                 ];
 
-                if (!$fields['inc_name']) throw new Exception("O campo inc_name e obrigatorio");
+                if (!$fields['inc_name']) throw new Exception("inc_name é obrigatório");
 
                 $cols = $vals = $params = [];
                 $idx = 1;
-                foreach ($fields as $col => $val) {
-                    if ($val !== null) {
-                        $cols[] = $col;
+                foreach ($fields as $k => $v) {
+                    if ($v !== null) {
+                        $cols[] = $k;
                         $vals[] = '$' . $idx++;
-                        $params[] = $val;
+                        $params[] = $v;
                     }
                 }
 
-                $sql = "
-                    INSERT INTO incentive.inc_program (" . implode(', ', $cols) . ")
-                    VALUES (" . implode(', ', $vals) . ")
-                    RETURNING inc_id
-                ";
-                $result = pg_query_params($conn, $sql, $params);
-                if (!$result) throw new Exception(pg_last_error($conn));
+                $sql = "INSERT INTO incentive.inc_program (" . implode(', ', $cols) . ") 
+                        VALUES (" . implode(', ', $vals) . ") RETURNING inc_id";
+                $newId = (int) pg_fetch_result(execParams($conn, $sql, $params, "Erro criando programa"), 0);
 
-                $newId = (int) pg_fetch_result($result, 0, 0);
-
-                $hasMedia           = array_key_exists('media', $input);
-                $hasRoomCategories  = array_key_exists('room_categories', $input);
-                $hasDining          = array_key_exists('dining', $input);
-                $hasFacilities      = array_key_exists('facilities', $input);
-                $hasConvention      = array_key_exists('convention', $input);
-                $hasConventionRooms = array_key_exists('convention_rooms', $input);
-                $hasNotes           = array_key_exists('notes', $input);
-
-                if ($hasMedia) {
-                    $media = is_array($input['media']) ? $input['media'] : [];
-                    syncMedia($conn, $newId, $media);
-                }
-                if ($hasRoomCategories) {
-                    $room_categories = is_array($input['room_categories']) ? $input['room_categories'] : [];
-                    syncRoomCategories($conn, $newId, $room_categories);
-                }
-                if ($hasDining) {
-                    $dining = is_array($input['dining']) ? $input['dining'] : [];
-                    syncDining($conn, $newId, $dining);
-                }
-                if ($hasFacilities) {
-                    $facilities = is_array($input['facilities']) ? $input['facilities'] : [];
-                    syncFacilities($conn, $newId, $facilities);
-                }
+                // Sincronizações
+                if (isset($input['media']))            syncMedia($conn, $newId, $input['media']);
+                if (isset($input['room_categories']))  syncRoomCategories($conn, $newId, $input['room_categories']);
+                if (isset($input['room_amenities']))   syncRoomAmenities($conn, $newId, $input['room_amenities']);
+                if (isset($input['dining']))           syncDining($conn, $newId, $input['dining']);
+                if (isset($input['facilities']))       syncFacilities($conn, $newId, $input['facilities']);
+                if (isset($input['notes']))            syncNotes($conn, $newId, $input['notes']);
 
                 $conv_id = null;
-                if ($hasConvention) {
+                if (isset($input['convention'])) {
                     $conv_id = upsertConvention($conn, $newId, $input['convention']);
-                } elseif ($hasConventionRooms) {
-                    $conv_id = upsertConvention($conn, $newId, []);
                 }
-                if ($hasConventionRooms) {
-                    $rooms = is_array($input['convention_rooms']) ? $input['convention_rooms'] : [];
-                    if (!$conv_id) throw new Exception("Convention necessario para salas");
-                    syncConventionRooms($conn, $conv_id, $rooms);
-                }
-
-                if ($hasNotes) {
-                    $notes = is_array($input['notes']) ? $input['notes'] : [];
-                    syncNotes($conn, $newId, $notes);
+                if (isset($input['convention_rooms'])) {
+                    if (!$conv_id) $conv_id = upsertConvention($conn, $newId, []);
+                    syncConventionRooms($conn, $conv_id, $input['convention_rooms']);
                 }
 
                 pg_query($conn, "COMMIT");
-
-                response([
-                    "success" => true,
-                    "message" => "Programa criado com sucesso!",
-                    "inc_id"  => $newId
-                ], 201);
+                response(["success" => true, "inc_id" => $newId], 201);
 
             } catch (Exception $e) {
                 pg_query($conn, "ROLLBACK");
@@ -722,121 +561,82 @@ try {
             }
             break;
 
-        // ======================================
-        // ATUALIZAR (parcial) - inc_program + relacionamentos opcionais
-        // ======================================
+        // ────────────────────────────────────────────────
+        // ATUALIZAR (parcial)
+        // ────────────────────────────────────────────────
         case 'atualizar_incentive':
             if ($method !== 'PUT') response(["error" => "Use PUT"], 405);
-
             $id = getIntParam('id');
-            if (!$id) response(["error" => "ID obrigatorio"], 400);
+            if (!$id) response(["error" => "ID obrigatório"], 400);
+            requireBearerToken($conn, $user_data);
 
-            $user_data = null;
-            requireBearerToken($conn, $user_data, $cod_sis ?? null);
-
-            if (empty($input)) response(["error" => "Nenhum campo para atualizar"], 400);
+            if (empty($input)) response(["error" => "Nenhum dado para atualizar"], 400);
 
             pg_query($conn, "BEGIN");
             try {
                 $allowed = [
-                    'inc_name','inc_description','hotel_ref_id','hotel_name_snapshot',
-                    'city_name','country_code','inc_status','inc_is_active'
+                    'inc_name','inc_description','hotel_ref_id','hotel_name_snapshot','city_name','country_code',
+                    'address','postal_code','state_code','phone','email','website_url','google_maps_url',
+                    'latitude','longitude','star_rating','total_rooms','floor_plan_url',
+                    'inc_status','inc_is_active'
                 ];
 
-                $updates = [];
-                $params  = [];
-                $idx     = 1;
+                $updates = $params = [];
+                $idx = 1;
 
-                foreach ($input as $key => $val) {
-                    if (!in_array($key, $allowed, true)) continue;
+                foreach ($input as $k => $v) {
+                    if (!in_array($k, $allowed)) continue;
 
-                    $formatted = null;
-                    switch ($key) {
-                        case 'hotel_ref_id':  $formatted = formatInt($val); break;
-                        case 'inc_is_active': $formatted = formatBoolean($val); break;
-                        case 'inc_status':    $formatted = formatStatus($val); break;
-                        case 'country_code':  $formatted = formatCountry($val); break;
-                        default:              $formatted = formatString($val);
-                    }
+                    $val = match ($k) {
+                        'hotel_ref_id', 'total_rooms', 'star_rating' => formatInt($v),
+                        'latitude', 'longitude' => formatNumeric($v),
+                        'inc_is_active' => formatBoolean($v),
+                        'inc_status' => formatStatus($v),
+                        'country_code' => formatCountry($v),
+                        default => formatString($v)
+                    };
 
-                    if ($formatted !== null) {
-                        $updates[] = "$key = $" . $idx++;
-                        $params[]  = $formatted;
+                    if ($val !== null) {
+                        $updates[] = "$k = $" . $idx++;
+                        $params[] = $val;
                     }
                 }
 
-                $hasMedia           = array_key_exists('media', $input);
-                $hasRoomCategories  = array_key_exists('room_categories', $input);
-                $hasDining          = array_key_exists('dining', $input);
-                $hasFacilities      = array_key_exists('facilities', $input);
-                $hasConvention      = array_key_exists('convention', $input);
-                $hasConventionRooms = array_key_exists('convention_rooms', $input);
-                $hasNotes           = array_key_exists('notes', $input);
-
-                $hasRelations = $hasMedia || $hasRoomCategories || $hasDining || $hasFacilities || $hasConvention || $hasConventionRooms || $hasNotes;
+                $hasRelations = isset($input['media']) || isset($input['room_categories']) || isset($input['room_amenities']) ||
+                                isset($input['dining']) || isset($input['facilities']) || isset($input['convention']) ||
+                                isset($input['convention_rooms']) || isset($input['notes']);
 
                 if (empty($updates) && !$hasRelations) {
                     pg_query($conn, "ROLLBACK");
-                    response(["message" => "Nenhuma alteracao valida"], 200);
+                    response(["message" => "Nenhuma alteração válida"], 200);
                 }
 
-                if (!empty($updates)) {
+                if ($updates) {
                     $params[] = $id;
-                    $sql = "
-                        UPDATE incentive.inc_program
-                        SET " . implode(', ', $updates) . ", updated_at = NOW()
-                        WHERE inc_id = $" . $idx
-                    ;
-
-                    $result = pg_query_params($conn, $sql, $params);
-                    if (!$result || pg_affected_rows($result) == 0) {
-                        throw new Exception("Programa nao encontrado ou sem alteracoes");
-                    }
+                    $sql = "UPDATE incentive.inc_program SET " . implode(', ', $updates) . ", updated_at = NOW() 
+                            WHERE inc_id = $" . $idx;
+                    execParams($conn, $sql, $params, "Erro atualizando programa");
                 }
 
-                if ($hasMedia) {
-                    $media = is_array($input['media']) ? $input['media'] : [];
-                    syncMedia($conn, $id, $media);
-                }
-                if ($hasRoomCategories) {
-                    $room_categories = is_array($input['room_categories']) ? $input['room_categories'] : [];
-                    syncRoomCategories($conn, $id, $room_categories);
-                }
-                if ($hasDining) {
-                    $dining = is_array($input['dining']) ? $input['dining'] : [];
-                    syncDining($conn, $id, $dining);
-                }
-                if ($hasFacilities) {
-                    $facilities = is_array($input['facilities']) ? $input['facilities'] : [];
-                    syncFacilities($conn, $id, $facilities);
-                }
+                if (isset($input['media']))            syncMedia($conn, $id, $input['media']);
+                if (isset($input['room_categories']))  syncRoomCategories($conn, $id, $input['room_categories']);
+                if (isset($input['room_amenities']))   syncRoomAmenities($conn, $id, $input['room_amenities']);
+                if (isset($input['dining']))           syncDining($conn, $id, $input['dining']);
+                if (isset($input['facilities']))       syncFacilities($conn, $id, $input['facilities']);
+                if (isset($input['notes']))            syncNotes($conn, $id, $input['notes']);
 
                 $conv_id = null;
-                if ($hasConvention) {
+                if (isset($input['convention'])) {
                     $conv_id = upsertConvention($conn, $id, $input['convention']);
-                } elseif ($hasConventionRooms) {
-                    $conv_id = getConventionId($conn, $id);
-                    if (!$conv_id) {
-                        $conv_id = upsertConvention($conn, $id, []);
-                    }
+                } elseif (isset($input['convention_rooms'])) {
+                    $conv_id = getConventionId($conn, $id) ?? upsertConvention($conn, $id, []);
                 }
-                if ($hasConventionRooms) {
-                    $rooms = is_array($input['convention_rooms']) ? $input['convention_rooms'] : [];
-                    if (!$conv_id) throw new Exception("Convention necessario para salas");
-                    syncConventionRooms($conn, $conv_id, $rooms);
-                }
-
-                if ($hasNotes) {
-                    $notes = is_array($input['notes']) ? $input['notes'] : [];
-                    syncNotes($conn, $id, $notes);
+                if (isset($input['convention_rooms'])) {
+                    syncConventionRooms($conn, $conv_id, $input['convention_rooms']);
                 }
 
                 pg_query($conn, "COMMIT");
-                response([
-                    "success" => true,
-                    "message" => "Programa atualizado com sucesso!",
-                    "inc_id"  => $id
-                ]);
+                response(["success" => true, "inc_id" => $id]);
 
             } catch (Exception $e) {
                 pg_query($conn, "ROLLBACK");
@@ -844,50 +644,36 @@ try {
             }
             break;
 
-        // ======================================
-        // EXCLUIR - inc_program e filhos
-        // ======================================
+        // ────────────────────────────────────────────────
+        // EXCLUIR (cascata)
+        // ────────────────────────────────────────────────
         case 'excluir_incentive':
             if ($method !== 'DELETE') response(["error" => "Use DELETE"], 405);
-
             $id = getIntParam('id');
-            if (!$id) response(["error" => "ID obrigatorio"], 400);
-
-            $user_data = null;
-            requireBearerToken($conn, $user_data, $cod_sis ?? null);
+            if (!$id) response(["error" => "ID obrigatório"], 400);
+            requireBearerToken($conn, $user_data);
 
             pg_query($conn, "BEGIN");
             try {
                 $conv_id = getConventionId($conn, $id);
                 if ($conv_id) {
-                    execParams(
-                        $conn,
-                        "DELETE FROM incentive.inc_convention_room WHERE inc_convention_id = $1",
-                        [$conv_id],
-                        "Erro ao excluir salas"
-                    );
+                    execParams($conn, "DELETE FROM incentive.inc_convention_room WHERE inc_convention_id = $1", [$conv_id], "");
                 }
 
-                execParams($conn, "DELETE FROM incentive.inc_convention WHERE inc_id = $1", [$id], "Erro ao excluir convention");
-                execParams($conn, "DELETE FROM incentive.inc_note WHERE inc_id = $1", [$id], "Erro ao excluir notas");
-                execParams($conn, "DELETE FROM incentive.inc_facility WHERE inc_id = $1", [$id], "Erro ao excluir facilities");
-                execParams($conn, "DELETE FROM incentive.inc_dining WHERE inc_id = $1", [$id], "Erro ao excluir dining");
-                execParams($conn, "DELETE FROM incentive.inc_room_category WHERE inc_id = $1", [$id], "Erro ao excluir quartos");
-                execParams($conn, "DELETE FROM incentive.inc_media WHERE inc_id = $1", [$id], "Erro ao excluir midias");
-
-                $res = execParams(
-                    $conn,
-                    "DELETE FROM incentive.inc_program WHERE inc_id = $1",
-                    [$id],
-                    "Erro ao excluir programa"
-                );
-
-                if (pg_affected_rows($res) == 0) {
-                    throw new Exception("Programa nao encontrado");
+                $tables = [
+                    'inc_convention', 'inc_note', 'inc_facility', 'inc_dining',
+                    'inc_room_category', 'inc_room_amenity', 'inc_media'
+                ];
+                foreach ($tables as $t) {
+                    execParams($conn, "DELETE FROM incentive.$t WHERE inc_id = $1", [$id], "Erro excluindo $t");
                 }
+
+                $res = execParams($conn, "DELETE FROM incentive.inc_program WHERE inc_id = $1", [$id], "Erro excluindo programa");
+                if (pg_affected_rows($res) === 0) throw new Exception("Programa não encontrado");
 
                 pg_query($conn, "COMMIT");
-                response(["success" => true, "message" => "Programa excluido com sucesso"]);
+                response(["success" => true, "message" => "Excluído com sucesso"]);
+
             } catch (Exception $e) {
                 pg_query($conn, "ROLLBACK");
                 response(["error" => $e->getMessage()], 400);
@@ -895,11 +681,10 @@ try {
             break;
 
         default:
-            response(["error" => "Rota/instrucao invalida"], 400);
+            response(["error" => "Rota inválida"], 400);
     }
-
 } catch (Exception $e) {
-    if (isset($conn)) @pg_query($conn, "ROLLBACK");
-    error_log("Erro API Incentives: " . $e->getMessage());
-    response(["error" => "Erro interno no servidor"], 500);
+    if (isset($conn)) pg_query($conn, "ROLLBACK");
+    error_log("API Incentive erro: " . $e->getMessage());
+    response(["error" => "Erro interno"], 500);
 }
