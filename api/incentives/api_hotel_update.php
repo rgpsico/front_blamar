@@ -1,5 +1,58 @@
 <?php 
 
+function upsertHotelContact($conn, $inc_id, $contact) {
+    if ($contact === null) {
+        execParams($conn, "DELETE FROM incentive.inc_hotel_contact WHERE inc_id = $1", [$inc_id], "Erro ao excluir contato");
+        return null;
+    }
+
+    $address        = formatString($contact['address'] ?? null);
+    $postal_code    = formatString($contact['postal_code'] ?? null);
+    $state_code     = formatString($contact['state_code'] ?? null);
+    $phone          = formatString($contact['phone'] ?? null);
+    $email          = formatString($contact['email'] ?? null);
+    $website_url    = formatString($contact['website_url'] ?? null);
+    $google_maps_url= formatString($contact['google_maps_url'] ?? null);
+    $latitude       = formatNumeric($contact['latitude'] ?? null);
+    $longitude      = formatNumeric($contact['longitude'] ?? null);
+
+    $res = execParams(
+        $conn,
+        "SELECT inc_contact_id FROM incentive.inc_hotel_contact WHERE inc_id = $1 LIMIT 1",
+        [$inc_id],
+        "Erro ao buscar contato"
+    );
+
+    if (pg_num_rows($res) > 0) {
+        $row = pg_fetch_assoc($res);
+        $inc_contact_id = (int)$row['inc_contact_id'];
+
+        execParams(
+            $conn,
+            "UPDATE incentive.inc_hotel_contact
+             SET address=$1, postal_code=$2, state_code=$3, phone=$4, email=$5, website_url=$6,
+                 google_maps_url=$7, latitude=$8, longitude=$9
+             WHERE inc_contact_id=$10",
+            [$address,$postal_code,$state_code,$phone,$email,$website_url,$google_maps_url,$latitude,$longitude,$inc_contact_id],
+            "Erro ao atualizar contato"
+        );
+
+        return $inc_contact_id;
+    }
+
+    $ins = execParams(
+        $conn,
+        "INSERT INTO incentive.inc_hotel_contact
+            (inc_id, address, postal_code, state_code, phone, email, website_url, google_maps_url, latitude, longitude)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         RETURNING inc_contact_id",
+        [$inc_id,$address,$postal_code,$state_code,$phone,$email,$website_url,$google_maps_url,$latitude,$longitude],
+        "Erro ao inserir contato"
+    );
+
+    return (int) pg_fetch_result($ins, 0, 0);
+}
+
 
    
         if ($method !== 'PUT') {
@@ -66,6 +119,11 @@
                 if (!$result) {
                     throw new Exception(pg_last_error($conn));
                 }
+            }
+
+         
+            if (isset($input['hotel_contact']) && is_array($input['hotel_contact'])) {
+                upsertHotelContact($conn, $id, $input['hotel_contact']);
             }
 
             // Sincroniza relacionamentos (se fornecidos)

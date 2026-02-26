@@ -3,6 +3,10 @@
 require_once '../util/connection.php';
 require_once 'middleware.php';
 require_once 'incentives/api_helpers.php';
+
+require_once 'incentives/api_sinc.php';
+
+
 $request = getParam('request');
 if (!$request) {
     response(["error" => "Parâmetro 'request' é obrigatório"], 400);
@@ -283,190 +287,240 @@ try {
     // =====================================================
     // BUSCAR 1 INCENTIVO (completo com relacionamentos)
     // =====================================================
-    elseif ($request === 'buscar_incentive') {
-        if ($method !== 'GET') {
-            response(["error" => "Use método GET"], 405);
-        }
-
-        $id = getIntParam('id');
-        if (!$id) {
-            response(["error" => "ID obrigatório"], 400);
-        }
-
-        // Programa principal
-        $sql_program = "SELECT * FROM incentive.inc_program WHERE inc_id = $1 LIMIT 1";
-        $res_program = pg_query_params($conn, $sql_program, [$id]);
-        
-        if (!$res_program || pg_num_rows($res_program) === 0) {
-            response(["error" => "Incentivo não encontrado"], 404);
-        }
-
-        $p = pg_fetch_assoc($res_program);
-
-        $program = [
-            'inc_id'              => (int)$p['inc_id'],
-            'inc_name'            => $p['inc_name'],
-            'inc_description'     => $p['inc_description'],
-            'hotel_ref_id'        => $p['hotel_ref_id'] ? (int)$p['hotel_ref_id'] : null,
-            'hotel_name_snapshot' => $p['hotel_name_snapshot'],
-            'city_name'           => $p['city_name'],
-            'country_code'        => $p['country_code'],
-            'inc_status'          => $p['inc_status'],
-            'inc_is_active'       => boolFromPg($p['inc_is_active']),
-            'created_at'          => $p['created_at'],
-            'updated_at'          => $p['updated_at'],
-        ];
-
-        // Mídias
-        $sql_media = "
-            SELECT inc_media_id, media_type, media_url, position, is_active
-            FROM incentive.inc_media
-            WHERE inc_id = $1
-            ORDER BY position ASC, inc_media_id ASC
-        ";
-        $res_media = pg_query_params($conn, $sql_media, [$id]);
-        $media = pg_fetch_all($res_media) ?: [];
-        foreach ($media as &$m) {
-            $m['inc_media_id'] = (int)$m['inc_media_id'];
-            $m['position']     = (int)$m['position'];
-            $m['is_active']    = boolFromPg($m['is_active']);
-        }
-
-        // Categorias de quartos
-        $sql_rooms = "
-            SELECT inc_room_id, room_name, quantity, notes, position, is_active
-            FROM incentive.inc_room_category
-            WHERE inc_id = $1
-            ORDER BY position ASC, inc_room_id ASC
-        ";
-        $res_rooms = pg_query_params($conn, $sql_rooms, [$id]);
-        $room_categories = pg_fetch_all($res_rooms) ?: [];
-        foreach ($room_categories as &$r) {
-            $r['inc_room_id'] = (int)$r['inc_room_id'];
-            $r['quantity']    = $r['quantity'] ? (int)$r['quantity'] : null;
-            $r['position']    = (int)$r['position'];
-            $r['is_active']   = boolFromPg($r['is_active']);
-        }
-
-        // Dining
-        $sql_dining = "
-            SELECT
-                inc_dining_id, name, description, cuisine, capacity, schedule,
-                is_michelin, can_be_private, image_url, position, is_active
-            FROM incentive.inc_dining
-            WHERE inc_id = $1
-            ORDER BY position ASC, inc_dining_id ASC
-        ";
-        $res_dining = pg_query_params($conn, $sql_dining, [$id]);
-        $dining = pg_fetch_all($res_dining) ?: [];
-        foreach ($dining as &$d) {
-            $d['inc_dining_id']  = (int)$d['inc_dining_id'];
-            $d['capacity']       = $d['capacity'] ? (int)$d['capacity'] : null;
-            $d['is_michelin']    = boolFromPg($d['is_michelin']);
-            $d['can_be_private'] = boolFromPg($d['can_be_private']);
-            $d['position']       = (int)$d['position'];
-            $d['is_active']      = boolFromPg($d['is_active']);
-        }
-
-        // Facilities
-        $sql_fac = "
-            SELECT inc_facility_id, name, icon, is_active
-            FROM incentive.inc_facility
-            WHERE inc_id = $1
-            ORDER BY inc_facility_id ASC
-        ";
-        $res_fac = pg_query_params($conn, $sql_fac, [$id]);
-        $facilities = pg_fetch_all($res_fac) ?: [];
-        foreach ($facilities as &$f) {
-            $f['inc_facility_id'] = (int)$f['inc_facility_id'];
-            $f['is_active']       = boolFromPg($f['is_active']);
-        }
-
-        // Convention
-        $sql_conv = "
-            SELECT inc_convention_id, description, total_rooms, has_360
-            FROM incentive.inc_convention
-            WHERE inc_id = $1
-            LIMIT 1
-        ";
-        $res_conv = pg_query_params($conn, $sql_conv, [$id]);
-        $convention = null;
-        $convention_rooms = [];
-
-        if ($res_conv && pg_num_rows($res_conv) > 0) {
-            $c = pg_fetch_assoc($res_conv);
-
-            $convention = [
-                'inc_convention_id' => (int)$c['inc_convention_id'],
-                'description'       => $c['description'],
-                'total_rooms'       => $c['total_rooms'] ? (int)$c['total_rooms'] : null,
-                'has_360'           => boolFromPg($c['has_360']),
-            ];
-
-            // Salas de convenção
-            $sql_conv_rooms = "
-                SELECT
-                    inc_room_id, name, area_m2,
-                    capacity_auditorium, capacity_banquet, 
-                    capacity_classroom, capacity_u_shape,
-                    notes
-                FROM incentive.inc_convention_room
-                WHERE inc_convention_id = $1
-                ORDER BY inc_room_id ASC
-            ";
-            $res_conv_rooms = pg_query_params($conn, $sql_conv_rooms, [$convention['inc_convention_id']]);
-            $convention_rooms = pg_fetch_all($res_conv_rooms) ?: [];
-            foreach ($convention_rooms as &$cr) {
-                $cr['inc_room_id']          = (int)$cr['inc_room_id'];
-                $cr['capacity_auditorium']  = $cr['capacity_auditorium'] ? (int)$cr['capacity_auditorium'] : null;
-                $cr['capacity_banquet']     = $cr['capacity_banquet'] ? (int)$cr['capacity_banquet'] : null;
-                $cr['capacity_classroom']   = $cr['capacity_classroom'] ? (int)$cr['capacity_classroom'] : null;
-                $cr['capacity_u_shape']     = $cr['capacity_u_shape'] ? (int)$cr['capacity_u_shape'] : null;
-            }
-        }
-
-        // Notes
-        $sql_notes = "
-            SELECT inc_note_id, language, note
-            FROM incentive.inc_note
-            WHERE inc_id = $1
-            ORDER BY inc_note_id ASC
-        ";
-        $res_notes = pg_query_params($conn, $sql_notes, [$id]);
-        $notes = pg_fetch_all($res_notes) ?: [];
-        foreach ($notes as &$n) {
-            $n['inc_note_id'] = (int)$n['inc_note_id'];
-        }
-
-        response([
-            'success' => true,
-            'data' => [
-                'inc_id'            => $program['inc_id'],
-                'inc_name'          => $program['inc_name'],
-                'inc_description'   => $program['inc_description'],
-                'hotel_ref_id'      => $program['hotel_ref_id'],
-                'hotel_name_snapshot' => $program['hotel_name_snapshot'],
-                'city_name'         => $program['city_name'],
-                'country_code'      => $program['country_code'],
-                'inc_status'        => $program['inc_status'],
-                'inc_is_active'     => $program['inc_is_active'],
-                'created_at'        => $program['created_at'],
-                'updated_at'        => $program['updated_at'],
-                'media'             => $media,
-                'room_categories'   => $room_categories,
-                'dining'            => $dining,
-                'facilities'        => $facilities,
-                'convention'        => $convention ?: [
-                    'description' => '',
-                    'total_rooms' => null,
-                    'has_360' => false
-                ],
-                'convention_rooms'  => $convention_rooms,
-                'notes'             => $notes,
-            ]
-        ]);
+   elseif ($request === 'buscar_incentive') {
+    if ($method !== 'GET') {
+        response(["error" => "Use método GET"], 405);
     }
 
+    $id = getIntParam('id');
+    if (!$id) {
+        response(["error" => "ID obrigatório"], 400);
+    }
+
+    // Programa principal
+    $sql_program = "SELECT * FROM incentive.inc_program WHERE inc_id = $1 LIMIT 1";
+    $res_program = pg_query_params($conn, $sql_program, [$id]);
+    
+    if (!$res_program || pg_num_rows($res_program) === 0) {
+        response(["error" => "Incentivo não encontrado"], 404);
+    }
+
+    $p = pg_fetch_assoc($res_program);
+
+    $program = [
+        'inc_id'              => (int)$p['inc_id'],
+        'inc_name'            => $p['inc_name'],
+        'inc_description'     => $p['inc_description'],
+        'hotel_ref_id'        => $p['hotel_ref_id'] ? (int)$p['hotel_ref_id'] : null,
+        'hotel_name_snapshot' => $p['hotel_name_snapshot'],
+        'city_name'           => $p['city_name'],
+        'country_code'        => $p['country_code'],
+        'inc_status'          => $p['inc_status'],
+        'inc_is_active'       => boolFromPg($p['inc_is_active']),
+        'created_at'          => $p['created_at'],
+        'updated_at'          => $p['updated_at'],
+    ];
+
+    // =============================================
+    // CONTATO DO HOTEL (tabela inc_hotel_contact)
+    // =============================================
+    $sql_contact = "
+        SELECT 
+            inc_contact_id, 
+            address, 
+            postal_code, 
+            state_code, 
+            phone, 
+            email, 
+            website_url, 
+            google_maps_url, 
+            latitude, 
+            longitude
+        FROM incentive.inc_hotel_contact
+        WHERE inc_id = $1
+        LIMIT 1
+    ";
+    $res_contact = pg_query_params($conn, $sql_contact, [$id]);
+    $hotel_contact = null;
+
+    if ($res_contact && pg_num_rows($res_contact) > 0) {
+        $c = pg_fetch_assoc($res_contact);
+        $hotel_contact = [
+            'inc_contact_id'   => (int)$c['inc_contact_id'],
+            'address'          => $c['address'],
+            'postal_code'      => $c['postal_code'],
+            'state_code'       => $c['state_code'],
+            'phone'            => $c['phone'],
+            'email'            => $c['email'],
+            'website_url'      => $c['website_url'],
+            'google_maps_url'  => $c['google_maps_url'],
+            'latitude'         => $c['latitude'] !== null ? (float)$c['latitude'] : null,
+            'longitude'        => $c['longitude'] !== null ? (float)$c['longitude'] : null,
+        ];
+    }
+
+    // Mídias
+    $sql_media = "
+        SELECT inc_media_id, media_type, media_url, position, is_active
+        FROM incentive.inc_media
+        WHERE inc_id = $1
+        ORDER BY position ASC, inc_media_id ASC
+    ";
+    $res_media = pg_query_params($conn, $sql_media, [$id]);
+    $media = pg_fetch_all($res_media) ?: [];
+    foreach ($media as &$m) {
+        $m['inc_media_id'] = (int)$m['inc_media_id'];
+        $m['position']     = (int)$m['position'];
+        $m['is_active']    = boolFromPg($m['is_active']);
+    }
+
+    // Categorias de quartos
+    $sql_rooms = "
+        SELECT inc_room_id, room_name, quantity, notes, position, is_active,
+               area_m2, view_type, room_type
+        FROM incentive.inc_room_category
+        WHERE inc_id = $1
+        ORDER BY position ASC, inc_room_id ASC
+    ";
+    $res_rooms = pg_query_params($conn, $sql_rooms, [$id]);
+    $room_categories = pg_fetch_all($res_rooms) ?: [];
+    foreach ($room_categories as &$r) {
+        $r['inc_room_id'] = (int)$r['inc_room_id'];
+        $r['quantity']    = $r['quantity'] ? (int)$r['quantity'] : null;
+        $r['position']    = (int)$r['position'];
+        $r['is_active']   = boolFromPg($r['is_active']);
+        $r['area_m2']     = $r['area_m2'] !== null ? (float)$r['area_m2'] : null;
+    }
+
+    // Dining
+    $sql_dining = "
+        SELECT
+            inc_dining_id, name, description, cuisine, capacity, schedule,
+            is_michelin, can_be_private, image_url, position, is_active,
+            seating_capacity
+        FROM incentive.inc_dining
+        WHERE inc_id = $1
+        ORDER BY position ASC, inc_dining_id ASC
+    ";
+    $res_dining = pg_query_params($conn, $sql_dining, [$id]);
+    $dining = pg_fetch_all($res_dining) ?: [];
+    foreach ($dining as &$d) {
+        $d['inc_dining_id']     = (int)$d['inc_dining_id'];
+        $d['capacity']          = $d['capacity'] ? (int)$d['capacity'] : null;
+        $d['seating_capacity']  = $d['seating_capacity'] ? (int)$d['seating_capacity'] : null;
+        $d['is_michelin']       = boolFromPg($d['is_michelin']);
+        $d['can_be_private']    = boolFromPg($d['can_be_private']);
+        $d['position']          = (int)$d['position'];
+        $d['is_active']         = boolFromPg($d['is_active']);
+    }
+
+    // Facilities
+    $sql_fac = "
+        SELECT inc_facility_id, name, icon, is_active
+        FROM incentive.inc_facility
+        WHERE inc_id = $1
+        ORDER BY inc_facility_id ASC
+    ";
+    $res_fac = pg_query_params($conn, $sql_fac, [$id]);
+    $facilities = pg_fetch_all($res_fac) ?: [];
+    foreach ($facilities as &$f) {
+        $f['inc_facility_id'] = (int)$f['inc_facility_id'];
+        $f['is_active']       = boolFromPg($f['is_active']);
+    }
+
+    // Convention + Salas
+    $sql_conv = "
+        SELECT inc_convention_id, description, total_rooms, has_360
+        FROM incentive.inc_convention
+        WHERE inc_id = $1
+        LIMIT 1
+    ";
+    $res_conv = pg_query_params($conn, $sql_conv, [$id]);
+    $convention = null;
+    $convention_rooms = [];
+
+    if ($res_conv && pg_num_rows($res_conv) > 0) {
+        $c = pg_fetch_assoc($res_conv);
+
+        $convention = [
+            'inc_convention_id' => (int)$c['inc_convention_id'],
+            'description'       => $c['description'],
+            'total_rooms'       => $c['total_rooms'] ? (int)$c['total_rooms'] : null,
+            'has_360'           => boolFromPg($c['has_360']),
+        ];
+
+        $sql_conv_rooms = "
+            SELECT
+                inc_room_id, name, area_m2, height_m,
+                capacity_theater, capacity_cocktail,
+                capacity_auditorium, capacity_banquet, 
+                capacity_classroom, capacity_u_shape,
+                notes
+            FROM incentive.inc_convention_room
+            WHERE inc_convention_id = $1
+            ORDER BY inc_room_id ASC
+        ";
+        $res_conv_rooms = pg_query_params($conn, $sql_conv_rooms, [$convention['inc_convention_id']]);
+        $convention_rooms = pg_fetch_all($res_conv_rooms) ?: [];
+        foreach ($convention_rooms as &$cr) {
+            $cr['inc_room_id']          = (int)$cr['inc_room_id'];
+            $cr['area_m2']              = $cr['area_m2'] !== null ? (float)$cr['area_m2'] : null;
+            $cr['height_m']             = $cr['height_m'] !== null ? (float)$cr['height_m'] : null;
+            $cr['capacity_theater']     = $cr['capacity_theater'] ? (int)$cr['capacity_theater'] : null;
+            $cr['capacity_cocktail']    = $cr['capacity_cocktail'] ? (int)$cr['capacity_cocktail'] : null;
+            $cr['capacity_auditorium']  = $cr['capacity_auditorium'] ? (int)$cr['capacity_auditorium'] : null;
+            $cr['capacity_banquet']     = $cr['capacity_banquet'] ? (int)$cr['capacity_banquet'] : null;
+            $cr['capacity_classroom']   = $cr['capacity_classroom'] ? (int)$cr['capacity_classroom'] : null;
+            $cr['capacity_u_shape']     = $cr['capacity_u_shape'] ? (int)$cr['capacity_u_shape'] : null;
+        }
+    }
+
+    // Notes
+    $sql_notes = "
+        SELECT inc_note_id, language, note
+        FROM incentive.inc_note
+        WHERE inc_id = $1
+        ORDER BY inc_note_id ASC
+    ";
+    $res_notes = pg_query_params($conn, $sql_notes, [$id]);
+    $notes = pg_fetch_all($res_notes) ?: [];
+    foreach ($notes as &$n) {
+        $n['inc_note_id'] = (int)$n['inc_note_id'];
+    }
+
+    // Resposta final com todos os relacionamentos, incluindo hotel_contact
+    response([
+        'success' => true,
+        'data' => [
+            'inc_id'              => $program['inc_id'],
+            'inc_name'            => $program['inc_name'],
+            'inc_description'     => $program['inc_description'],
+            'hotel_ref_id'        => $program['hotel_ref_id'],
+            'hotel_name_snapshot' => $program['hotel_name_snapshot'],
+            'city_name'           => $program['city_name'],
+            'country_code'        => $program['country_code'],
+            'inc_status'          => $program['inc_status'],
+            'inc_is_active'       => $program['inc_is_active'],
+            'created_at'          => $program['created_at'],
+            'updated_at'          => $program['updated_at'],
+            
+            // Novo: Contato do hotel
+            'hotel_contact'       => $hotel_contact,
+
+            'media'               => $media,
+            'room_categories'     => $room_categories,
+            'dining'              => $dining,
+            'facilities'          => $facilities,
+            'convention'          => $convention ?: [
+                'description' => '',
+                'total_rooms' => null,
+                'has_360'     => false
+            ],
+            'convention_rooms'    => $convention_rooms,
+            'notes'               => $notes,
+        ]
+    ]);
+}
     // =====================================================
     // CRIAR INCENTIVO (completo)
     // =====================================================

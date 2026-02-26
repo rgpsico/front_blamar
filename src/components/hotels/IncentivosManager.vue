@@ -897,7 +897,6 @@ export default {
           star_rating: this.editedItem.star_rating,
           total_rooms: this.editedItem.total_rooms,
           floor_plan_url: this.editedItem.floor_plan_url,
-          hotel_contact: this.editedItem.hotel_contact,
           media: this.editedItem.media,
           room_categories: this.editedItem.room_categories,
           room_amenities: this.editedItem.room_amenities,
@@ -906,6 +905,22 @@ export default {
           convention: this.editedItem.convention,
           convention_rooms: this.editedItem.convention_rooms,
           notes: this.editedItem.notes
+        }
+
+        const contact = this.editedItem.hotel_contact || {}
+        const hasContact =
+          (contact.address && String(contact.address).trim() !== '') ||
+          (contact.postal_code && String(contact.postal_code).trim() !== '') ||
+          (contact.state_code && String(contact.state_code).trim() !== '') ||
+          (contact.phone && String(contact.phone).trim() !== '') ||
+          (contact.email && String(contact.email).trim() !== '') ||
+          (contact.website_url && String(contact.website_url).trim() !== '') ||
+          (contact.google_maps_url && String(contact.google_maps_url).trim() !== '') ||
+          (contact.latitude !== null && contact.latitude !== undefined && String(contact.latitude).trim() !== '') ||
+          (contact.longitude !== null && contact.longitude !== undefined && String(contact.longitude).trim() !== '')
+
+        if (hasContact) {
+          payload.hotel_contact = contact
         }
 
         const response = await fetch(url, {
