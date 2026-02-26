@@ -92,8 +92,10 @@
           <v-form>
             <v-tabs v-model="activeTab" background-color="transparent" grow>
               <v-tab>Programa</v-tab>
+              <v-tab>Contato</v-tab>
               <v-tab>Midias</v-tab>
               <v-tab>Quartos</v-tab>
+              <v-tab>Amenities</v-tab>
               <v-tab>Dining</v-tab>
               <v-tab>Facilities</v-tab>
               <v-tab>Convention</v-tab>
@@ -155,6 +157,76 @@
                   <v-col cols="12" md="3">
                     <v-switch v-model="editedItem.inc_is_active" label="Ativo" inset></v-switch>
                   </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field
+                      v-model.number="editedItem.star_rating"
+                      label="Estrelas"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model.number="editedItem.total_rooms"
+                      label="Total de quartos"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="7">
+                    <v-text-field
+                      v-model="editedItem.floor_plan_url"
+                      label="URL planta"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12" md="8">
+                    <v-text-field v-model="editedItem.hotel_contact.address" label="Endereco" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field v-model="editedItem.hotel_contact.postal_code" label="CEP" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field v-model="editedItem.hotel_contact.state_code" label="UF" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model="editedItem.hotel_contact.phone" label="Telefone" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model="editedItem.hotel_contact.email" label="Email" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model="editedItem.hotel_contact.website_url" label="Website" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="8">
+                    <v-text-field v-model="editedItem.hotel_contact.google_maps_url" label="Google Maps URL" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field
+                      v-model.number="editedItem.hotel_contact.latitude"
+                      label="Latitude"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field
+                      v-model.number="editedItem.hotel_contact.longitude"
+                      label="Longitude"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
                 </v-row>
               </v-tab-item>
 
@@ -208,7 +280,16 @@
                   <v-col cols="12" md="2">
                     <v-text-field v-model.number="room.quantity" label="Qtd" type="number" outlined dense></v-text-field>
                   </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field v-model.number="room.area_m2" label="Area m2" type="number" outlined dense></v-text-field>
+                  </v-col>
                   <v-col cols="12" md="3">
+                    <v-text-field v-model="room.view_type" label="Vista" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field v-model="room.room_type" label="Tipo" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
                     <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
                   </v-col>
                   <v-col cols="6" md="1">
@@ -227,6 +308,29 @@
 
               <v-tab-item>
                 <div class="incentivos-manager__tab-head">
+                  <div>Room amenities</div>
+                  <v-btn small outlined color="primary" @click="addRoomAmenity">Adicionar</v-btn>
+                </div>
+                <v-row v-for="(amenity, index) in editedItem.room_amenities" :key="`amenity-${index}`">
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="amenity.name" label="Nome" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field v-model="amenity.icon" label="Icon" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="1">
+                    <v-switch v-model="amenity.is_active" label="Ativo" inset></v-switch>
+                  </v-col>
+                  <v-col cols="12" md="1" class="d-flex align-center">
+                    <v-btn icon color="error" @click="removeRoomAmenity(index)">
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+
+              <v-tab-item>
+                <div class="incentivos-manager__tab-head">
                   <div>Dining</div>
                   <v-btn small outlined color="primary" @click="addDining">Adicionar</v-btn>
                 </div>
@@ -239,6 +343,9 @@
                   </v-col>
                   <v-col cols="12" md="2">
                     <v-text-field v-model.number="dining.capacity" label="Cap." type="number" outlined dense></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field v-model.number="dining.seating_capacity" label="Lugares" type="number" outlined dense></v-text-field>
                   </v-col>
                   <v-col cols="12" md="2">
                     <v-text-field v-model="dining.schedule" label="Horario" outlined dense></v-text-field>
@@ -335,22 +442,33 @@
                       <v-text-field v-model.number="room.area_m2" label="Area m2" type="number" outlined dense></v-text-field>
                     </v-col>
                     <v-col cols="12" md="2">
-                      <v-text-field v-model.number="room.capacity_auditorium" label="Audit." type="number" outlined dense></v-text-field>
-                    </v-col>
-                    <v-col cols="12" md="2">
-                      <v-text-field v-model.number="room.capacity_banquet" label="Banquet" type="number" outlined dense></v-text-field>
-                    </v-col>
-                    <v-col cols="12" md="2">
-                      <v-text-field v-model.number="room.capacity_classroom" label="Class" type="number" outlined dense></v-text-field>
-                    </v-col>
-                    <v-col cols="12" md="2">
-                      <v-text-field v-model.number="room.capacity_u_shape" label="U" type="number" outlined dense></v-text-field>
+                      <v-text-field v-model.number="room.height_m" label="Altura m" type="number" outlined dense></v-text-field>
                     </v-col>
                     <v-col cols="12" md="4">
                       <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
                     </v-col>
                     <v-col cols="12" md="1" class="d-flex align-center">
                       <v-btn icon color="error" @click="removeConventionRoom(index)">
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                  <div class="incentivos-manager__tab-head mt-2">
+                    <div>Layouts</div>
+                    <v-btn small outlined color="primary" @click="addRoomLayout(index)">Adicionar layout</v-btn>
+                  </div>
+                  <v-row
+                    v-for="(layout, lIndex) in room.layouts"
+                    :key="`layout-${index}-${lIndex}`"
+                  >
+                    <v-col cols="12" md="6">
+                      <v-text-field v-model="layout.layout_type" label="Tipo" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-text-field v-model.number="layout.capacity" label="Capacidade" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="1" class="d-flex align-center">
+                      <v-btn icon color="error" @click="removeRoomLayout(index, lIndex)">
                         <v-icon>mdi-delete</v-icon>
                       </v-btn>
                     </v-col>
@@ -429,8 +547,23 @@ const blankItem = () => ({
   country_code: '',
   inc_status: 'active',
   inc_is_active: true,
+  star_rating: null,
+  total_rooms: null,
+  floor_plan_url: '',
+  hotel_contact: {
+    address: '',
+    postal_code: '',
+    state_code: '',
+    phone: '',
+    email: '',
+    website_url: '',
+    google_maps_url: '',
+    latitude: null,
+    longitude: null
+  },
   media: [],
   room_categories: [],
+  room_amenities: [],
   dining: [],
   facilities: [],
   convention: {
@@ -485,7 +618,7 @@ export default {
         { text: 'Sim', value: 'true' },
         { text: 'Nao', value: 'false' }
       ],
-      mediaTypeOptions: ['banner', 'gallery', 'video', 'map']
+      mediaTypeOptions: ['banner', 'gallery', 'video', 'map', 'floor_plan']
     }
   },
   computed: {
@@ -507,23 +640,47 @@ export default {
       this.snackbar.show = true
     },
     normalizeItem(item) {
+      const program = item.program || item
+      const relations = item.relations || item
+      const normalizedRooms = Array.isArray(relations.convention_rooms)
+        ? relations.convention_rooms.map((room) => ({
+            ...room,
+            layouts: Array.isArray(room.layouts) ? room.layouts : []
+          }))
+        : []
+
       return {
-        inc_id: item.inc_id || item.id || null,
-        inc_name: item.inc_name || item.name || '',
-        inc_description: item.inc_description || item.description || '',
-        hotel_ref_id: item.hotel_ref_id || null,
-        hotel_name_snapshot: item.hotel_name_snapshot || '',
-        city_name: item.city_name || '',
-        country_code: item.country_code || '',
-        inc_status: item.inc_status || 'active',
-        inc_is_active: item.inc_is_active !== undefined ? item.inc_is_active : true,
-        media: Array.isArray(item.media) ? item.media : [],
-        room_categories: Array.isArray(item.room_categories) ? item.room_categories : [],
-        dining: Array.isArray(item.dining) ? item.dining : [],
-        facilities: Array.isArray(item.facilities) ? item.facilities : [],
-        convention: item.convention || { description: '', total_rooms: null, has_360: false },
-        convention_rooms: Array.isArray(item.convention_rooms) ? item.convention_rooms : [],
-        notes: Array.isArray(item.notes) ? item.notes : []
+        inc_id: program.inc_id || program.id || null,
+        inc_name: program.inc_name || program.name || '',
+        inc_description: program.inc_description || program.description || '',
+        hotel_ref_id: program.hotel_ref_id || null,
+        hotel_name_snapshot: program.hotel_name_snapshot || '',
+        city_name: program.city_name || '',
+        country_code: program.country_code || '',
+        inc_status: program.inc_status || 'active',
+        inc_is_active: program.inc_is_active !== undefined ? program.inc_is_active : true,
+        star_rating: program.star_rating !== undefined ? program.star_rating : null,
+        total_rooms: program.total_rooms !== undefined ? program.total_rooms : null,
+        floor_plan_url: program.floor_plan_url || '',
+        hotel_contact: relations.hotel_contact || {
+          address: '',
+          postal_code: '',
+          state_code: '',
+          phone: '',
+          email: '',
+          website_url: '',
+          google_maps_url: '',
+          latitude: null,
+          longitude: null
+        },
+        media: Array.isArray(relations.media) ? relations.media : [],
+        room_categories: Array.isArray(relations.room_categories) ? relations.room_categories : [],
+        room_amenities: Array.isArray(relations.room_amenities) ? relations.room_amenities : [],
+        dining: Array.isArray(relations.dining) ? relations.dining : [],
+        facilities: Array.isArray(relations.facilities) ? relations.facilities : [],
+        convention: relations.convention || { description: '', total_rooms: null, has_360: false },
+        convention_rooms: normalizedRooms,
+        notes: Array.isArray(relations.notes) ? relations.notes : []
       }
     },
     buildQuery() {
@@ -602,6 +759,9 @@ export default {
         inc_room_id: null,
         room_name: '',
         quantity: null,
+        area_m2: null,
+        view_type: '',
+        room_type: '',
         notes: '',
         position: 0,
         is_active: true
@@ -617,6 +777,7 @@ export default {
         description: '',
         cuisine: '',
         capacity: null,
+        seating_capacity: null,
         schedule: '',
         is_michelin: false,
         can_be_private: false,
@@ -639,20 +800,46 @@ export default {
     removeFacility(index) {
       this.editedItem.facilities.splice(index, 1)
     },
+    addRoomAmenity() {
+      this.editedItem.room_amenities.push({
+        inc_room_amenity_id: null,
+        name: '',
+        icon: '',
+        is_active: true
+      })
+    },
+    removeRoomAmenity(index) {
+      this.editedItem.room_amenities.splice(index, 1)
+    },
     addConventionRoom() {
       this.editedItem.convention_rooms.push({
         inc_room_id: null,
         name: '',
         area_m2: null,
-        capacity_auditorium: null,
-        capacity_banquet: null,
-        capacity_classroom: null,
-        capacity_u_shape: null,
-        notes: ''
+        height_m: null,
+        notes: '',
+        layouts: []
       })
     },
     removeConventionRoom(index) {
       this.editedItem.convention_rooms.splice(index, 1)
+    },
+    addRoomLayout(roomIndex) {
+      const room = this.editedItem.convention_rooms[roomIndex]
+      if (!room.layouts) {
+        this.$set(room, 'layouts', [])
+      }
+      room.layouts.push({
+        inc_layout_id: null,
+        layout_type: '',
+        capacity: null
+      })
+    },
+    removeRoomLayout(roomIndex, layoutIndex) {
+      const room = this.editedItem.convention_rooms[roomIndex]
+      if (room && Array.isArray(room.layouts)) {
+        room.layouts.splice(layoutIndex, 1)
+      }
     },
     addNote() {
       this.editedItem.notes.push({
@@ -707,8 +894,13 @@ export default {
           country_code: this.editedItem.country_code,
           inc_status: this.editedItem.inc_status,
           inc_is_active: this.editedItem.inc_is_active,
+          star_rating: this.editedItem.star_rating,
+          total_rooms: this.editedItem.total_rooms,
+          floor_plan_url: this.editedItem.floor_plan_url,
+          hotel_contact: this.editedItem.hotel_contact,
           media: this.editedItem.media,
           room_categories: this.editedItem.room_categories,
+          room_amenities: this.editedItem.room_amenities,
           dining: this.editedItem.dining,
           facilities: this.editedItem.facilities,
           convention: this.editedItem.convention,
@@ -744,7 +936,7 @@ export default {
       this.saving = true
       try {
         const response = await fetch(
-          `${API_BASE}incentives.php?request=excluir_incentivo&id=${this.editedItem.inc_id}`,
+          `${API_BASE}api_incentives.php?request=excluir_incentive&id=${this.editedItem.inc_id}`,
           { method: 'DELETE', headers: this.authHeaders() }
         )
         const result = await response.json()
