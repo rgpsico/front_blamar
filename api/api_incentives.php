@@ -231,7 +231,8 @@ try {
                                                 'capacity_banquet', cr.capacity_banquet,
                                                 'capacity_classroom', cr.capacity_classroom,
                                                 'capacity_u_shape', cr.capacity_u_shape,
-                                                'notes', cr.notes
+                                                'notes', cr.notes,
+                                                'imagem_planta_hotel', cr.imagem_planta_hotel
                                             )
                                             ORDER BY cr.inc_room_id ASC
                                         )
@@ -458,7 +459,8 @@ try {
                 capacity_theater, capacity_cocktail,
                 capacity_auditorium, capacity_banquet, 
                 capacity_classroom, capacity_u_shape,
-                notes
+                notes,
+                imagem_planta_hotel
             FROM incentive.inc_convention_room
             WHERE inc_convention_id = $1
             ORDER BY inc_room_id ASC

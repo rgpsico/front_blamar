@@ -120,3 +120,5 @@ CREATE TABLE IF NOT EXISTS incentive.inc_hotel_contact (
 -- ============================================================
 -- END OF MIGRATION
 -- ============================================================
+
+ ALTER TABLE incentive.inc_convention_room ADD COLUMN imagem_planta_hotel text;

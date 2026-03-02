@@ -262,6 +262,7 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
         $capacity_classroom  = formatInt($room['capacity_classroom'] ?? null);
         $capacity_u_shape    = formatInt($room['capacity_u_shape'] ?? null);
         $notes               = formatString($room['notes'] ?? null);
+        $imagem_planta_hotel = formatString($room['imagem_planta_hotel'] ?? null);
 
         if (!$name) {
             throw new Exception("Sala de convenção {$index}: name obrigatório");
@@ -269,7 +270,7 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
 
         execParams(
             $conn,
-            "INSERT INTO incentive.inc_convention_room\n                (inc_convention_id, name, area_m2, height_m, capacity_theater, capacity_cocktail,\n                 capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+            "INSERT INTO incentive.inc_convention_room\n                (inc_convention_id, name, area_m2, height_m, capacity_theater, capacity_cocktail,\n                 capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes, imagem_planta_hotel)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             [
                 $inc_convention_id,
                 $name,
@@ -281,7 +282,8 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
                 $capacity_banquet,
                 $capacity_classroom,
                 $capacity_u_shape,
-                $notes
+                $notes,
+                $imagem_planta_hotel
             ],
             "Erro ao inserir sala de convenção"
         );
