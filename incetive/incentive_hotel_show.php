@@ -260,7 +260,7 @@
                          <div class="section-separator m-0"></div>
                       
                     </div>
-                    <h3 class="section-title mt-2">Convention Center and Event Facilities        <button class="btn btn-sm btn-outline-warning text-dark">View floor plan of the area</button></h3>
+                    <h3 class="section-title mt-2">Convention Center and Event Facilities        <a id="floorPlanLink" class="btn btn-sm btn-outline-warning text-dark" target="_blank" rel="noopener">View floor plan of the area</a></h3>
                     <p class="small text-muted mb-4" id="conventionDescription">The hotel offers luxurious and extensive convention areas, featuring 13 meeting rooms that can host a variety of events.</p>
 
                     <div class="table-responsive" class="table-facilities">

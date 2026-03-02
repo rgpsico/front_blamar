@@ -413,6 +413,22 @@
                       rows="3"
                     ></v-textarea>
                   </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="editedItem.floor_plan_url"
+                      label="Floor plan of the area (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="floorPlanImageUrl"
+                      label="Floor plan image (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
                   <v-col cols="12" md="4">
                     <v-text-field
                       v-model.number="editedItem.convention.total_rooms"
@@ -645,6 +661,38 @@ export default {
   computed: {
     dialogTitle() {
       return this.editedIndex === -1 ? 'Novo Incentivo' : 'Editar Incentivo'
+    },
+    floorPlanImageUrl: {
+      get() {
+        const item = Array.isArray(this.editedItem.media)
+          ? this.editedItem.media.find((media) => media.media_type === 'floor_plan')
+          : null
+        return item && item.media_url ? item.media_url : ''
+      },
+      set(value) {
+        const url = value ? `${value}`.trim() : ''
+        if (!Array.isArray(this.editedItem.media)) {
+          this.$set(this.editedItem, 'media', [])
+        }
+        const list = this.editedItem.media
+        const index = list.findIndex((media) => media.media_type === 'floor_plan')
+        if (!url) {
+          if (index >= 0) list.splice(index, 1)
+          return
+        }
+        if (index >= 0) {
+          list[index].media_url = url
+          list[index].is_active = list[index].is_active !== false
+        } else {
+          list.push({
+            inc_media_id: null,
+            media_type: 'floor_plan',
+            media_url: url,
+            position: 0,
+            is_active: true
+          })
+        }
+      }
     },
     mapEmbedUrl() {
       const url = this.editedItem?.hotel_contact?.google_maps_url || ''

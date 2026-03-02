@@ -319,6 +319,7 @@ try {
         'inc_is_active'       => boolFromPg($p['inc_is_active']),
         'star_rating'         => (int)$p['star_rating'],
         'total_rooms'         => $p['total_rooms'] ? (int)$p['total_rooms'] : null,
+        'floor_plan_url'      => $p['floor_plan_url'],
         'created_at'          => $p['created_at'],
         'updated_at'          => $p['updated_at'],
     ];
@@ -507,6 +508,7 @@ try {
             'updated_at'          => $program['updated_at'],
             'star_rating'         => $program['star_rating'],
             'total_rooms'         => $program['total_rooms'],
+            'floor_plan_url'      => $program['floor_plan_url'],
             // Novo: Contato do hotel
             'hotel_contact'       => $hotel_contact,
 
@@ -557,6 +559,7 @@ try {
                 'country_code'        => formatCountry($input['country_code'] ?? null),
                 'inc_status'          => formatStatus($input['inc_status'] ?? 'active'),
                 'inc_is_active'       => formatBoolean($input['inc_is_active'] ?? true),
+                'floor_plan_url'      => formatString($input['floor_plan_url'] ?? null),
             ];
 
             // Monta INSERT

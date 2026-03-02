@@ -199,7 +199,7 @@ function formatStatus($val) {
 }
 
 function formatMediaType($val) {
-    $allowed = ['banner', 'gallery', 'video', 'map'];
+    $allowed = ['banner', 'gallery', 'video', 'map', 'floor_plan'];
     return in_array($val, $allowed, true) ? $val : null;
 }
 

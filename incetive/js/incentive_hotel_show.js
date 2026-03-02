@@ -260,6 +260,7 @@ function renderConvention(convention, mapUrl) {
   const descriptionEl = document.getElementById('conventionDescription');
   const tableBody = document.getElementById('conventionRoomsBody');
   const floorPlan = document.getElementById('conventionFloorPlan');
+  const floorPlanLink = document.getElementById('floorPlanLink');
 
   if (descriptionEl) {
     descriptionEl.textContent = convention && convention.description
@@ -295,6 +296,15 @@ function renderConvention(convention, mapUrl) {
 
   if (floorPlan && mapUrl) {
     floorPlan.src = mapUrl;
+  }
+  if (floorPlanLink) {
+    if (mapUrl) {
+      floorPlanLink.href = mapUrl;
+      floorPlanLink.classList.remove('disabled');
+    } else {
+      floorPlanLink.removeAttribute('href');
+      floorPlanLink.classList.add('disabled');
+    }
   }
 }
 
@@ -345,10 +355,16 @@ function renderIncentive(payload) {
   renderRoomFacilities(relations.facilities || []);
   renderDining(relations.dining || []);
   const mapItem = getMediaByType(media, 'map')[0] || null;
+  const floorPlanMedia = getMediaByType(media, 'floor_plan')[0] || null;
+  const floorPlanUrl = program.floor_plan_url || '';
   const convention = relations.convention || null;
   const conventionRooms = Array.isArray(relations.convention_rooms) ? relations.convention_rooms : [];
   const conventionWithRooms = convention ? { ...convention, rooms: conventionRooms } : null;
-  renderConvention(conventionWithRooms, mapItem ? mapItem.media_url : null);
+  const resolvedFloorPlan =
+    (floorPlanMedia && floorPlanMedia.media_url) ||
+    floorPlanUrl ||
+    (mapItem ? mapItem.media_url : null);
+  renderConvention(conventionWithRooms, resolvedFloorPlan);
   updateTotalRooms(conventionWithRooms || null);
 }
 
