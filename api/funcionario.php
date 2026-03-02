@@ -323,6 +323,118 @@ try {
             ));
             break;
 
+            // ────────────────────────────────────────────────
+// VINCULAR FUNCIONÁRIO AO TARIFÁRIO
+// ────────────────────────────────────────────────
+case 'vincular_tarifario':
+
+    if ($method !== 'POST') {
+        response(array('error' => 'Use POST'), 405);
+    }
+
+    $id = $_GET['id'] ?? $input['id'] ?? $input['pk_usuario'] ?? null;
+
+    if (!$id) {
+        response(array('error' => 'pk_usuario obrigatório'), 400);
+    }
+
+    // 1️⃣ Busca funcionário
+    $sql_user = "
+        SELECT apelido AS login
+        FROM conteudo_internet.usuario
+        WHERE pk_usuario = $1
+    ";
+
+    $res_user = pg_query_params($conn, $sql_user, array($id));
+
+    if (pg_num_rows($res_user) == 0) {
+        response(array('error' => 'Funcionário não encontrado'), 404);
+    }
+
+    $user = pg_fetch_assoc($res_user);
+    $login = strtolower(trim($user['login']));
+
+    // 2️⃣ Verifica se já existe no tarifário
+    $sql_check = "
+        SELECT pk_cad_cli
+        FROM tarifario.cadastro_clientes
+        WHERE login = $1
+    ";
+
+    $res_check = pg_query_params($conn, $sql_check, array($login));
+
+    if (pg_num_rows($res_check) > 0) {
+
+        // Já existe → só reativa
+        $sql_update = "
+            UPDATE tarifario.cadastro_clientes
+            SET desativar_tarifario = false,
+                ativo = true
+            WHERE login = $1
+        ";
+
+        $res_update = pg_query_params($conn, $sql_update, array($login));
+
+        if (!$res_update) {
+            response(array('error' => pg_last_error($conn)), 500);
+        }
+
+        response(array(
+            'success' => true,
+            'message' => 'Usuário já existia no tarifário e foi reativado'
+        ));
+    }
+
+    // 3️⃣ Criar novo registro no tarifário
+    $sql_insert = "
+        INSERT INTO tarifario.cadastro_clientes (
+            login,
+            pass,
+            ativo,
+            desativar_tarifario,
+            root_srv,
+            root_htl,
+            emp,
+            fk_depto,
+            lang,
+            extranet,
+            ativo2tar
+        )
+        VALUES (
+            $1,
+            $2,
+            true,
+            false,
+            25,
+            172,
+            1,
+            2,
+            2,
+            false,
+            true
+        )
+        RETURNING pk_cad_cli
+    ";
+
+    // ⚠️ senha padrão temporária (você pode melhorar isso depois)
+    $senha_padrao = '123';
+
+    $res_insert = pg_query_params($conn, $sql_insert, array($login, $senha_padrao));
+
+    if (!$res_insert) {
+        response(array('error' => pg_last_error($conn)), 500);
+    }
+
+    $novo_id = pg_fetch_result($res_insert, 0, 0);
+
+    response(array(
+        'success' => true,
+        'message' => 'Usuário vinculado ao tarifário com sucesso',
+        'pk_cad_cli' => $novo_id
+    ));
+
+    break;
+
         // ────────────────────────────────────────────────
         // SALVAR ADVERTÊNCIA (exemplo mantido)
         // ────────────────────────────────────────────────
@@ -368,6 +480,38 @@ try {
                 'id' => (int)$id,
                 'cod_sis' => $cod_sis,
                 'old_cod_sis' => $old_cod_sis
+            ));
+            break;
+
+        // ------------------------------------------------------------------
+        // VINCULAR TARIFARIO (habilita/desabilita acesso)
+        // ------------------------------------------------------------------
+        case 'vincular_tarifario':
+            if ($method !== 'PUT' && $method !== 'POST') {
+                response(array('error' => 'Use PUT'), 405);
+            }
+
+            if (!$id) {
+                response(array('error' => 'id/pk_usuario obrigatorio'), 400);
+            }
+
+            if (!array_key_exists('vincular_tarifario', $input)) {
+                response(array('error' => 'vincular_tarifario obrigatorio'), 400);
+            }
+
+            $vincular_raw = $input['vincular_tarifario'];
+            $vincular_val = filter_var($vincular_raw, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false';
+
+            $sql = "UPDATE conteudo_internet.usuario SET vincular_tarifario = $1 WHERE pk_usuario = $2";
+            $res = pg_query_params($conn, $sql, array($vincular_val, $id));
+            if (!$res) {
+                response(array('error' => pg_last_error($conn)), 500);
+            }
+
+            response(array(
+                'success' => true,
+                'id' => (int)$id,
+                'vincular_tarifario' => $vincular_val === 'true'
             ));
             break;
 

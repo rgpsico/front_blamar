@@ -135,6 +135,13 @@
                   clearable
                 ></v-select>
               </v-col>
+              <v-col cols="12" md="6" class="d-flex align-center">
+                <v-switch
+                  v-model="editedItem.acesso_tarifario"
+                  label="Acesso ao Tarifario"
+                  inset
+                ></v-switch>
+              </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="editedItem.data_admissao"
@@ -353,6 +360,7 @@ export default {
         email: '',
         fk_cargo: null,
         perfil_id: null,
+        acesso_tarifario: false,
         data_admissao: '',
         ativo: true,
         senha: ''
