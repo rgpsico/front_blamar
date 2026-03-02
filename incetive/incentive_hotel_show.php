@@ -279,34 +279,7 @@
                             </thead>
                             <tbody id="conventionRoomsBody">
                                 <tr>
-                                    <td>Golden Room</td>
-                                    <td>300</td>
-                                    <td>5.0</td>
-                                    <td>500</td>
-                                    <td>250</td>
-                                    <td>80</td>
-                                    <td>350</td>
-                                    <td>600</td>
-                                </tr>
-                                <tr>
-                                    <td>Nobre Room</td>
-                                    <td>200</td>
-                                    <td>4.5</td>
-                                    <td>300</td>
-                                    <td>150</td>
-                                    <td>60</td>
-                                    <td>200</td>
-                                    <td>400</td>
-                                </tr>
-                                <tr>
-                                    <td>Palm Room</td>
-                                    <td>150</td>
-                                    <td>3.5</td>
-                                    <td>120</td>
-                                    <td>80</td>
-                                    <td>40</td>
-                                    <td>100</td>
-                                    <td>150</td>
+                                    <td colspan="8" class="text-center text-muted">No rooms registered.</td>
                                 </tr>
                             </tbody>
                         </table>

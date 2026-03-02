@@ -448,13 +448,30 @@
                     <v-col cols="12" md="2">
                       <v-text-field v-model.number="room.height_m" label="Altura m" type="number" outlined dense></v-text-field>
                     </v-col>
-                    <v-col cols="12" md="4">
-                      <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
-                    </v-col>
                     <v-col cols="12" md="1" class="d-flex align-center">
                       <v-btn icon color="error" @click="removeConventionRoom(index)">
                         <v-icon>mdi-delete</v-icon>
                       </v-btn>
+                    </v-col>
+                  </v-row>
+                  <v-row>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_theater" label="Theater" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_classroom" label="School" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_u_shape" label="U-Shape" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_banquet" label="Banquet" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model.number="room.capacity_cocktail" label="Cocktail" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="2">
+                      <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
                     </v-col>
                   </v-row>
                   <div class="incentivos-manager__tab-head mt-2">
@@ -661,6 +678,26 @@ export default {
       const normalizedRooms = Array.isArray(relations.convention_rooms)
         ? relations.convention_rooms.map((room) => ({
             ...room,
+            capacity_theater:
+              room.capacity_theater !== undefined && room.capacity_theater !== null && `${room.capacity_theater}` !== ''
+                ? Number(room.capacity_theater)
+                : null,
+            capacity_classroom:
+              room.capacity_classroom !== undefined && room.capacity_classroom !== null && `${room.capacity_classroom}` !== ''
+                ? Number(room.capacity_classroom)
+                : null,
+            capacity_u_shape:
+              room.capacity_u_shape !== undefined && room.capacity_u_shape !== null && `${room.capacity_u_shape}` !== ''
+                ? Number(room.capacity_u_shape)
+                : null,
+            capacity_banquet:
+              room.capacity_banquet !== undefined && room.capacity_banquet !== null && `${room.capacity_banquet}` !== ''
+                ? Number(room.capacity_banquet)
+                : null,
+            capacity_cocktail:
+              room.capacity_cocktail !== undefined && room.capacity_cocktail !== null && `${room.capacity_cocktail}` !== ''
+                ? Number(room.capacity_cocktail)
+                : null,
             layouts: Array.isArray(room.layouts) ? room.layouts : []
           }))
         : []
@@ -839,6 +876,11 @@ export default {
         name: '',
         area_m2: null,
         height_m: null,
+        capacity_theater: null,
+        capacity_classroom: null,
+        capacity_u_shape: null,
+        capacity_banquet: null,
+        capacity_cocktail: null,
         notes: '',
         layouts: []
       })

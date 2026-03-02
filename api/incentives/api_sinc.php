@@ -252,8 +252,11 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
     );
 
     foreach ($rooms as $index => $room) {
-    $name                = formatString($room['name'] ?? null);
+        $name                = formatString($room['name'] ?? null);
         $area_m2             = formatNumeric($room['area_m2'] ?? null);
+        $height_m            = formatNumeric($room['height_m'] ?? null);
+        $capacity_theater    = formatInt($room['capacity_theater'] ?? ($room['capacity_auditorium'] ?? null));
+        $capacity_cocktail   = formatInt($room['capacity_cocktail'] ?? null);
         $capacity_auditorium = formatInt($room['capacity_auditorium'] ?? null);
         $capacity_banquet    = formatInt($room['capacity_banquet'] ?? null);
         $capacity_classroom  = formatInt($room['capacity_classroom'] ?? null);
@@ -266,14 +269,14 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
 
         execParams(
             $conn,
-            "INSERT INTO incentive.inc_convention_room
-                (inc_convention_id, name, area_m2, capacity_auditorium, 
-                 capacity_banquet, capacity_classroom, capacity_u_shape, notes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            "INSERT INTO incentive.inc_convention_room\n                (inc_convention_id, name, area_m2, height_m, capacity_theater, capacity_cocktail,\n                 capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
             [
                 $inc_convention_id,
                 $name,
                 $area_m2,
+                $height_m,
+                $capacity_theater,
+                $capacity_cocktail,
                 $capacity_auditorium,
                 $capacity_banquet,
                 $capacity_classroom,
@@ -314,3 +317,5 @@ function syncNotes($conn, $inc_id, $notes) {
         );
     }
 }
+
+
