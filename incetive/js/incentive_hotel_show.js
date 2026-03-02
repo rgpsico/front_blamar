@@ -281,7 +281,7 @@ function renderConvention(convention, mapUrl) {
             <td>${r.name || '-'}</td>
             <td>${r.area_m2 ?? '-'}</td>
             <td>${r.height_m ?? '-'}</td>
-            <td>${r.capacity_auditorium ?? '-'}</td>
+            <td>${r.capacity_theater ?? r.capacity_auditorium ?? '-'}</td>
             <td>${r.capacity_classroom ?? '-'}</td>
             <td>${r.capacity_u_shape ?? '-'}</td>
             <td>${r.capacity_banquet ?? '-'}</td>
@@ -345,8 +345,11 @@ function renderIncentive(payload) {
   renderRoomFacilities(relations.facilities || []);
   renderDining(relations.dining || []);
   const mapItem = getMediaByType(media, 'map')[0] || null;
-  renderConvention(relations.convention || null, mapItem ? mapItem.media_url : null);
-  updateTotalRooms(relations.convention || null);
+  const convention = relations.convention || null;
+  const conventionRooms = Array.isArray(relations.convention_rooms) ? relations.convention_rooms : [];
+  const conventionWithRooms = convention ? { ...convention, rooms: conventionRooms } : null;
+  renderConvention(conventionWithRooms, mapItem ? mapItem.media_url : null);
+  updateTotalRooms(conventionWithRooms || null);
 }
 
 function loadIncentiveById(id) {
@@ -365,12 +368,19 @@ function loadIncentiveById(id) {
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
+  const proposalBtn = document.getElementById('createProposalBtn');
 
   if (id && !isNaN(Number(id))) {
     loadIncentiveById(id);
+    if (proposalBtn) {
+      proposalBtn.href = `incentive_hotel_show_proposal.php?id=${encodeURIComponent(id)}`;
+    }
   } else {
     setText('hotelTitle', 'Selecione um incentivo');
     setText('hotelDescription', 'Nenhum incentivo foi selecionado para exibir.');
+    if (proposalBtn) {
+      proposalBtn.href = 'incentive_hotel_show_proposal.php';
+    }
   }
 
   const galleryGrid = document.querySelector('#galleryModal .gallery-grid');

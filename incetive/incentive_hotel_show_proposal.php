@@ -12,28 +12,7 @@
     
 </head>
 <body>
-<!-- Gallery Modal -->
-<!-- Gallery Modal -->
-<div class="modal fade" id="galleryModal" tabindex="-1" aria-labelledby="galleryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="galleryModalLabel">Incentive Gallery</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="row g-3 gallery-grid">
-                    <!-- As imagens serão inseridas aqui via JS ou estaticamente -->
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <header class="top-bar">
+<header class="top-bar">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="brand-logo">BLUMAR</div>
             <div class="d-flex align-items-center gap-3">
@@ -50,7 +29,7 @@
                 <span class="ms-2 text-muted" id="hotelCitySubtitle"></span>
             </div>
             <div class="dropdown">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle border-0" type="button" data-bs-toggle="dropdown">
+                <button class="btn btn-outline-secondary btn-sm border-0" type="button">
                     Change the city
                 </button>
             </div>
@@ -72,9 +51,9 @@
             <div class="col d-flex justify-content-between align-items-center">
                 <h1 class="hotel-main-title mb-3" id="hotelTitle"></h1>
 
-                <a id="createProposalBtn" class="btn btn-proposal py-2 mb-3" style="width: 300px;" target="_blank" rel="noopener">
+                <div class="btn btn-proposal py-2 mb-3 d-none" style="width: 300px;">
                     <i class="far fa-edit me-2"></i>Create proposal
-                </a>
+                </div>
             </div>
         </div>
 
@@ -90,7 +69,7 @@
                         <img id="thumb1" src="img/hotel_01.png" alt="Hotel">
                         <img id="thumb2" src="img/hotel_01.png" alt="Hotel">
                         
-                        <div class="gallery-trigger position-relative" data-bs-toggle="modal" data-bs-target="#galleryModal">
+                        <div class="gallery-trigger position-relative" >
                             <img id="thumb3" src="img/hotel_01.png" alt="Mais fotos" style="margin-bottom:0;">
                             <div class="gallery-more-overlay" id="galleryCount">
                                 <i class="fas fa-camera me-2"></i> View 32 photos
@@ -355,7 +334,9 @@
     </main>
 
     <script src="js/incentive_hotel_show.js"></script>
-    <!-- Bootstrap JS + Popper (necessário para modais, dropdowns, etc) -->
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-       <?php include 'footer_show.php'; ?>
+    <?php include 'footer_show.php'; ?>
+
+
+
+
+
