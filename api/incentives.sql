@@ -135,6 +135,7 @@ CREATE TABLE inc_convention (
     description         TEXT,
     total_rooms         INTEGER,
     has_360             BOOLEAN             DEFAULT FALSE,
+    url_planta_image    TEXT,
     
     created_at          TIMESTAMPTZ         DEFAULT NOW(),
     updated_at          TIMESTAMPTZ         DEFAULT NOW()

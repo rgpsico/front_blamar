@@ -423,8 +423,8 @@
                   </v-col>
                   <v-col cols="12">
                     <v-text-field
-                      v-model="floorPlanImageUrl"
-                      label="Floor plan image (URL)"
+                      v-model="editedItem.convention.url_planta_image"
+                      label="Imagem planta (URL)"
                       outlined
                       dense
                     ></v-text-field>
@@ -606,7 +606,8 @@ const blankItem = () => ({
   convention: {
     description: '',
     total_rooms: null,
-    has_360: false
+    has_360: false,
+    url_planta_image: ''
   },
   convention_rooms: [],
   notes: []
@@ -661,38 +662,6 @@ export default {
   computed: {
     dialogTitle() {
       return this.editedIndex === -1 ? 'Novo Incentivo' : 'Editar Incentivo'
-    },
-    floorPlanImageUrl: {
-      get() {
-        const item = Array.isArray(this.editedItem.media)
-          ? this.editedItem.media.find((media) => media.media_type === 'floor_plan')
-          : null
-        return item && item.media_url ? item.media_url : ''
-      },
-      set(value) {
-        const url = value ? `${value}`.trim() : ''
-        if (!Array.isArray(this.editedItem.media)) {
-          this.$set(this.editedItem, 'media', [])
-        }
-        const list = this.editedItem.media
-        const index = list.findIndex((media) => media.media_type === 'floor_plan')
-        if (!url) {
-          if (index >= 0) list.splice(index, 1)
-          return
-        }
-        if (index >= 0) {
-          list[index].media_url = url
-          list[index].is_active = list[index].is_active !== false
-        } else {
-          list.push({
-            inc_media_id: null,
-            media_type: 'floor_plan',
-            media_url: url,
-            position: 0,
-            is_active: true
-          })
-        }
-      }
     },
     mapEmbedUrl() {
       const url = this.editedItem?.hotel_contact?.google_maps_url || ''
@@ -785,7 +754,8 @@ export default {
         room_amenities: Array.isArray(relations.room_amenities) ? relations.room_amenities : [],
         dining: Array.isArray(relations.dining) ? relations.dining : [],
         facilities: Array.isArray(relations.facilities) ? relations.facilities : [],
-        convention: relations.convention || { description: '', total_rooms: null, has_360: false },
+        convention:
+          relations.convention || { description: '', total_rooms: null, has_360: false, url_planta_image: '' },
         convention_rooms: normalizedRooms,
         notes: Array.isArray(relations.notes) ? relations.notes : []
       }

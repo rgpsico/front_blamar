@@ -169,6 +169,7 @@ function upsertConvention($conn, $inc_id, $convention) {
     // Formata valores com tratamento extra
     $description = formatString($convention['description'] ?? null);
     $total_rooms = formatInt($convention['total_rooms'] ?? null);
+    $url_planta_image = formatString($convention['url_planta_image'] ?? null);
     
     // Tratamento ESPECIAL para has_360
     $has_360_raw = $convention['has_360'] ?? false;
@@ -194,9 +195,9 @@ function upsertConvention($conn, $inc_id, $convention) {
         execParams(
             $conn,
             "UPDATE incentive.inc_convention 
-             SET description = $1, total_rooms = $2, has_360 = $3 
-             WHERE inc_convention_id = $4",
-            [$description, $total_rooms, $has_360, $conv_id],
+             SET description = $1, total_rooms = $2, has_360 = $3, url_planta_image = $4 
+             WHERE inc_convention_id = $5",
+            [$description, $total_rooms, $has_360, $url_planta_image, $conv_id],
             "Erro ao atualizar convention"
         );
         
@@ -206,10 +207,10 @@ function upsertConvention($conn, $inc_id, $convention) {
         $resInsert = execParams(
             $conn,
             "INSERT INTO incentive.inc_convention 
-                (inc_id, description, total_rooms, has_360) 
-             VALUES ($1, $2, $3, $4) 
+                (inc_id, description, total_rooms, has_360, url_planta_image) 
+             VALUES ($1, $2, $3, $4, $5) 
              RETURNING inc_convention_id",
-            [$inc_id, $description, $total_rooms, $has_360],
+            [$inc_id, $description, $total_rooms, $has_360, $url_planta_image],
             "Erro ao inserir convention"
         );
         

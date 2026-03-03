@@ -302,13 +302,13 @@ function syncMedia($conn, $inc_id, $mediaList) {
         $media_url  = formatString($media['media_url'] ?? null);
         $position   = formatPosition($media['position'] ?? 0);
         $is_active  = formatBoolean($media['is_active'] ?? true);
-
-        if (!$media_type) {
-            throw new Exception("Mídia {$index}: media_type inválido ou ausente");
-        }
-        if (!$media_url) {
-            throw new Exception("Mídia {$index}: media_url obrigatório");
-        }
+    // Ignora entradas sem URL (ex.: floor_plan agora salvo em outra tabela)
+    if (!$media_url) {
+        continue;
+    }
+    if (!$media_type) {
+        throw new Exception("M??dia {$index}: media_type inv??lido ou ausente");
+    }
 
         execParams(
             $conn,
