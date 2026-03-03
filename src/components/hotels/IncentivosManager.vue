@@ -656,7 +656,7 @@ export default {
         { text: 'Sim', value: 'true' },
         { text: 'Nao', value: 'false' }
       ],
-      mediaTypeOptions: ['banner', 'gallery', 'video', 'map', 'floor_plan']
+      mediaTypeOptions: ['banner', 'gallery', 'video', 'map']
     }
   },
   computed: {
