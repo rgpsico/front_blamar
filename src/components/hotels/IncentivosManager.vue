@@ -91,6 +91,7 @@
         <v-card-text>
           <v-form>
             <v-tabs v-model="activeTab" background-color="transparent" grow>
+              <v-tab>Banners</v-tab>
               <v-tab>Programa</v-tab>
               <v-tab>Contato</v-tab>
               <v-tab>Midias</v-tab>
@@ -99,11 +100,74 @@
               <v-tab>Dining</v-tab>
               <v-tab>Facilities</v-tab>
               <v-tab>Convention</v-tab>
+              <v-tab>Layouts de Sala</v-tab>
               <v-tab>Salas</v-tab>
               <v-tab>Notas</v-tab>
             </v-tabs>
 
             <v-tabs-items v-model="activeTab" class="mt-4">
+              <v-tab-item>
+                <div class="incentivos-manager__tab-head">
+                  <div>Banners do hotel</div>
+                </div>
+                <div class="incentivos-manager__banner-grid">
+                  <div>
+                    <div class="text-subtitle-2 mb-2">Imagem principal ou video</div>
+                    <v-row>
+                      <v-col cols="12" md="4">
+                        <v-select
+                          v-model="editedItem.banner_main_type"
+                          :items="bannerMainTypeOptions"
+                          label="Tipo principal"
+                          outlined
+                          dense
+                        ></v-select>
+                      </v-col>
+                      <v-col cols="12" md="8">
+                        <v-text-field
+                          v-model="editedItem.banner_main_url"
+                          label="URL principal"
+                          outlined
+                          dense
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                    <div class="incentivos-manager__banner-preview incentivos-manager__banner-preview--main">
+                      <v-img
+                        v-if="editedItem.banner_main_type !== 'video' && editedItem.banner_main_url"
+                        :src="editedItem.banner_main_url"
+                        height="220"
+                        cover
+                      ></v-img>
+                      <div v-else class="incentivos-manager__banner-placeholder">
+                        <v-icon size="36">mdi-image</v-icon>
+                        <div class="mt-1">
+                          {{ editedItem.banner_main_type === 'video' ? 'Video principal' : 'Sem imagem' }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-subtitle-2 mb-2">Tres outras imagens</div>
+                    <div v-for="(url, index) in editedItem.banner_images" :key="`banner-img-${index}`" class="mb-3">
+                      <v-text-field
+                        v-model="editedItem.banner_images[index]"
+                        :label="`Imagem ${index + 1} (URL)`"
+                        outlined
+                        dense
+                      ></v-text-field>
+                      <div class="incentivos-manager__banner-preview">
+                        <v-img v-if="url" :src="url" height="100" cover></v-img>
+                        <div v-else class="incentivos-manager__banner-placeholder">
+                          <v-icon size="28">mdi-image</v-icon>
+                          <div class="mt-1">Sem imagem</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </v-tab-item>
+
               <v-tab-item>
                 <v-row>
                   <v-col cols="12" md="8">
@@ -446,6 +510,45 @@
 
               <v-tab-item>
                 <div class="incentivos-manager__tab-head">
+                  <div>Layouts por sala</div>
+                </div>
+                <div v-if="!editedItem.convention_rooms.length" class="text-caption text--secondary">
+                  Cadastre as salas primeiro para definir os layouts.
+                </div>
+                <div
+                  v-for="(room, index) in editedItem.convention_rooms"
+                  :key="`layout-room-${index}`"
+                  class="incentivos-manager__room-group"
+                >
+                  <div class="text-subtitle-2 mb-2">
+                    {{ room.name || `Sala ${index + 1}` }}
+                  </div>
+                  <div class="incentivos-manager__tab-head">
+                    <div>Layouts</div>
+                    <v-btn small outlined color="primary" @click="addRoomLayout(index)">Adicionar layout</v-btn>
+                  </div>
+                  <v-row
+                    v-for="(layout, lIndex) in room.layouts"
+                    :key="`layout-${index}-${lIndex}`"
+                  >
+                    <v-col cols="12" md="6">
+                      <v-text-field v-model="layout.layout_type" label="Tipo" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="3">
+                      <v-text-field v-model.number="layout.capacity" label="Capacidade" type="number" outlined dense></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="1" class="d-flex align-center">
+                      <v-btn icon color="error" @click="removeRoomLayout(index, lIndex)">
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                  <v-divider v-if="index < editedItem.convention_rooms.length - 1" class="my-2"></v-divider>
+                </div>
+              </v-tab-item>
+
+              <v-tab-item>
+                <div class="incentivos-manager__tab-head">
                   <div>Salas de evento</div>
                   <v-btn small outlined color="primary" @click="addConventionRoom">Adicionar</v-btn>
                 </div>
@@ -488,26 +591,6 @@
                     </v-col>
                     <v-col cols="12" md="2">
                       <v-text-field v-model="room.notes" label="Notas" outlined dense></v-text-field>
-                    </v-col>
-                  </v-row>
-                  <div class="incentivos-manager__tab-head mt-2">
-                    <div>Layouts</div>
-                    <v-btn small outlined color="primary" @click="addRoomLayout(index)">Adicionar layout</v-btn>
-                  </div>
-                  <v-row
-                    v-for="(layout, lIndex) in room.layouts"
-                    :key="`layout-${index}-${lIndex}`"
-                  >
-                    <v-col cols="12" md="6">
-                      <v-text-field v-model="layout.layout_type" label="Tipo" outlined dense></v-text-field>
-                    </v-col>
-                    <v-col cols="12" md="3">
-                      <v-text-field v-model.number="layout.capacity" label="Capacidade" type="number" outlined dense></v-text-field>
-                    </v-col>
-                    <v-col cols="12" md="1" class="d-flex align-center">
-                      <v-btn icon color="error" @click="removeRoomLayout(index, lIndex)">
-                        <v-icon>mdi-delete</v-icon>
-                      </v-btn>
                     </v-col>
                   </v-row>
                   <v-divider v-if="index < editedItem.convention_rooms.length - 1" class="my-2"></v-divider>
@@ -573,6 +656,7 @@
 <script>
 import api from '@/services/api'
 const API_BASE = `${api.defaults.baseURL}/`
+const LAYOUT_TAB = 9
 
 const blankItem = () => ({
   inc_id: null,
@@ -598,6 +682,9 @@ const blankItem = () => ({
     latitude: null,
     longitude: null
   },
+  banner_main_type: 'image',
+  banner_main_url: '',
+  banner_images: ['', '', ''],
   media: [],
   room_categories: [],
   room_amenities: [],
@@ -656,7 +743,18 @@ export default {
         { text: 'Sim', value: 'true' },
         { text: 'Nao', value: 'false' }
       ],
-      mediaTypeOptions: ['banner', 'gallery', 'video', 'map']
+      mediaTypeOptions: ['banner', 'gallery', 'video', 'map'],
+      bannerMainTypeOptions: [
+        { text: 'Imagem', value: 'image' },
+        { text: 'Video', value: 'video' }
+      ]
+    }
+  },
+  watch: {
+    activeTab(val) {
+      if (val === LAYOUT_TAB) {
+        this.fetchRoomLayouts()
+      }
     }
   },
   computed: {
@@ -680,6 +778,63 @@ export default {
     this.fetchIncentives()
   },
   methods: {
+    splitMedia(mediaList) {
+      const list = Array.isArray(mediaList) ? mediaList : []
+      const isBannerSlot = (media) => {
+        const type = media?.media_type
+        const pos = Number(media?.position ?? 0)
+        return (type === 'banner' || type === 'video') && pos >= 0 && pos <= 3
+      }
+      const bannerEntries = list.filter((media) => isBannerSlot(media))
+      const otherEntries = list.filter((media) => !isBannerSlot(media))
+      const sorted = [...bannerEntries].sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0))
+      const main =
+        sorted.find((media) => media.media_type === 'video') ||
+        sorted.find((media) => Number(media.position ?? 0) === 0) ||
+        sorted[0]
+      const mainType = main && main.media_type === 'video' ? 'video' : 'image'
+      const mainUrl = main?.media_url || ''
+      const images = sorted
+        .filter((media) => media !== main && media.media_type === 'banner')
+        .map((media) => media.media_url || '')
+      while (images.length < 3) {
+        images.push('')
+      }
+      return {
+        banner: {
+          mainType,
+          mainUrl,
+          images: images.slice(0, 3)
+        },
+        otherMedia: otherEntries
+      }
+    },
+    buildBannerMediaPayload() {
+      const items = []
+      const mainUrl = (this.editedItem.banner_main_url || '').trim()
+      if (mainUrl) {
+        items.push({
+          inc_media_id: null,
+          media_type: this.editedItem.banner_main_type === 'video' ? 'video' : 'banner',
+          media_url: mainUrl,
+          position: 0,
+          is_active: true
+        })
+      }
+      const images = Array.isArray(this.editedItem.banner_images) ? this.editedItem.banner_images : []
+      images.slice(0, 3).forEach((url, index) => {
+        const clean = (url || '').trim()
+        if (!clean) return
+        items.push({
+          inc_media_id: null,
+          media_type: 'banner',
+          media_url: clean,
+          position: index + 1,
+          is_active: true
+        })
+      })
+      return items
+    },
     authHeaders() {
       const token = localStorage.getItem('auth_token')
       return token ? { Authorization: `Bearer ${token}` } : {}
@@ -719,6 +874,8 @@ export default {
           }))
         : []
 
+      const mediaSplit = this.splitMedia(relations.media)
+
       return {
         inc_id: program.inc_id || program.id || null,
         inc_name: program.inc_name || program.name || '',
@@ -749,7 +906,10 @@ export default {
           latitude: null,
           longitude: null
         },
-        media: Array.isArray(relations.media) ? relations.media : [],
+        banner_main_type: mediaSplit.banner.mainType,
+        banner_main_url: mediaSplit.banner.mainUrl,
+        banner_images: mediaSplit.banner.images,
+        media: mediaSplit.otherMedia,
         room_categories: Array.isArray(relations.room_categories) ? relations.room_categories : [],
         room_amenities: Array.isArray(relations.room_amenities) ? relations.room_amenities : [],
         dining: Array.isArray(relations.dining) ? relations.dining : [],
@@ -822,7 +982,7 @@ export default {
     addMedia() {
       this.editedItem.media.push({
         inc_media_id: null,
-        media_type: 'banner',
+        media_type: 'gallery',
         media_url: '',
         position: 0,
         is_active: true
@@ -952,7 +1112,76 @@ export default {
         this.saving = false
       }
     },
+    async fetchRoomLayouts() {
+      if (!this.editedItem || !this.editedItem.inc_id) {
+        return
+      }
+      try {
+        const response = await fetch(`${API_BASE}api_layouts.php?id=${this.editedItem.inc_id}`, {
+          headers: this.authHeaders()
+        })
+        const result = await response.json()
+        if (result && (result.error || result.success === false)) {
+          throw new Error(result.error || result.message || 'Erro ao carregar layouts')
+        }
+        const data = Array.isArray(result.data) ? result.data : []
+        const layoutMap = new Map(
+          data.map((room) => [Number(room.inc_room_id), Array.isArray(room.layouts) ? room.layouts : []])
+        )
+        this.editedItem.convention_rooms = (this.editedItem.convention_rooms || []).map((room) => {
+          const roomId = room.inc_room_id !== undefined && room.inc_room_id !== null ? Number(room.inc_room_id) : null
+          const layouts = roomId !== null && layoutMap.has(roomId) ? layoutMap.get(roomId) : room.layouts
+          return {
+            ...room,
+            layouts: Array.isArray(layouts) ? layouts : []
+          }
+        })
+      } catch (error) {
+        this.showMessage(`Erro ao carregar layouts: ${error.message}`, 'error')
+      }
+    },
+    async saveRoomLayouts() {
+      if (!this.editedItem || !this.editedItem.inc_id) {
+        this.showMessage('Salve o incentivo antes de cadastrar layouts.', 'warning')
+        return
+      }
+      const rooms = Array.isArray(this.editedItem.convention_rooms) ? this.editedItem.convention_rooms : []
+      if (!rooms.length) {
+        this.showMessage('Cadastre as salas antes de salvar layouts.', 'warning')
+        return
+      }
+      this.saving = true
+      try {
+        const payload = {
+          convention_rooms: rooms.map((room) => ({
+            inc_room_id: room.inc_room_id,
+            layouts: Array.isArray(room.layouts) ? room.layouts : []
+          }))
+        }
+        const response = await fetch(`${API_BASE}api_layouts.php?id=${this.editedItem.inc_id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...this.authHeaders()
+          },
+          body: JSON.stringify(payload)
+        })
+        const result = await response.json()
+        if (result && (result.error || result.success === false)) {
+          throw new Error(result.error || result.message || 'Erro ao salvar layouts')
+        }
+        this.showMessage('Layouts salvos.')
+      } catch (error) {
+        this.showMessage(`Erro ao salvar layouts: ${error.message}`, 'error')
+      } finally {
+        this.saving = false
+      }
+    },
     async save() {
+      if (this.activeTab === LAYOUT_TAB) {
+        await this.saveRoomLayouts()
+        return
+      }
       if (!this.editedItem.inc_name) {
         this.showMessage('Informe o nome do incentivo.', 'warning')
         return
@@ -966,6 +1195,7 @@ export default {
           ? `${API_BASE}api_incentives.php?request=${request}&id=${this.editedItem.inc_id}`
           : `${API_BASE}api_incentives.php?request=${request}`
 
+        const mediaPayload = [...this.buildBannerMediaPayload(), ...this.editedItem.media]
         const payload = {
           inc_id: this.editedItem.inc_id,
           inc_name: this.editedItem.inc_name,
@@ -979,7 +1209,7 @@ export default {
           star_rating: this.editedItem.star_rating,
           total_rooms: this.editedItem.total_rooms,
           floor_plan_url: this.editedItem.floor_plan_url,
-          media: this.editedItem.media,
+          media: mediaPayload,
           room_categories: this.editedItem.room_categories,
           room_amenities: this.editedItem.room_amenities,
           dining: this.editedItem.dining,
@@ -1108,6 +1338,40 @@ export default {
   background: #f8fafc;
 }
 
+.incentivos-manager__banner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.incentivos-manager__banner-preview {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.incentivos-manager__banner-preview--main {
+  min-height: 220px;
+}
+
+.incentivos-manager__banner-placeholder {
+  height: 100%;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.incentivos-manager__banner-preview--main .incentivos-manager__banner-placeholder {
+  min-height: 220px;
+}
+
 .incentivos-manager__map-embed {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -1122,5 +1386,11 @@ export default {
   justify-content: center;
   color: #64748b;
   font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .incentivos-manager__banner-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

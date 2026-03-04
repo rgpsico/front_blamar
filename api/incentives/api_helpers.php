@@ -524,10 +524,58 @@ function getConventionId($conn, $inc_id) {
 /**
  * Sincroniza salas de convenção
  */
+function syncConventionRoomLayouts($conn, $inc_room_id, $layouts) {
+    if (!$inc_room_id) {
+        return;
+    }
+
+    execParams(
+        $conn,
+        "DELETE FROM incentive.inc_convention_room_layout WHERE inc_room_id = $1",
+        [$inc_room_id],
+        "Erro ao limpar layouts da sala"
+    );
+
+    if (!is_array($layouts)) {
+        return;
+    }
+
+    foreach ($layouts as $index => $layout) {
+        $layout_type = formatString($layout['layout_type'] ?? null);
+        $capacity    = formatInt($layout['capacity'] ?? null);
+
+        if (!$layout_type && $capacity === null) {
+            continue;
+        }
+
+        if (!$layout_type) {
+            throw new Exception("Layout {$index}: layout_type obrigatorio");
+        }
+
+        execParams(
+            $conn,
+            "INSERT INTO incentive.inc_convention_room_layout (inc_room_id, layout_type, capacity)
+             VALUES ($1, $2, $3)",
+            [$inc_room_id, $layout_type, $capacity],
+            "Erro ao inserir layout"
+        );
+    }
+}
+
 function syncConventionRooms($conn, $inc_convention_id, $rooms) {
     if (!$inc_convention_id) {
         return;
     }
+
+    execParams(
+        $conn,
+        "DELETE FROM incentive.inc_convention_room_layout
+         WHERE inc_room_id IN (
+             SELECT inc_room_id FROM incentive.inc_convention_room WHERE inc_convention_id = $1
+         )",
+        [$inc_convention_id],
+        "Erro ao limpar layouts das salas"
+    );
 
     execParams(
         $conn,
@@ -553,9 +601,9 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
             throw new Exception("Sala de convenção {$index}: name obrigatório");
         }
 
-        execParams(
+        $resRoom = execParams(
             $conn,
-            "INSERT INTO incentive.inc_convention_room\n                (inc_convention_id, name, area_m2, height_m, capacity_theater, capacity_cocktail,\n                 capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes, imagem_planta_hotel)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+            "INSERT INTO incentive.inc_convention_room\n                (inc_convention_id, name, area_m2, height_m, capacity_theater, capacity_cocktail,\n                 capacity_auditorium, capacity_banquet, capacity_classroom, capacity_u_shape, notes, imagem_planta_hotel)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)\n             RETURNING inc_room_id",
             [
                 $inc_convention_id,
                 $name,
@@ -572,6 +620,9 @@ function syncConventionRooms($conn, $inc_convention_id, $rooms) {
             ],
             "Erro ao inserir sala de convenção"
         );
+
+        $inc_room_id = (int)pg_fetch_result($resRoom, 0, 0);
+        syncConventionRoomLayouts($conn, $inc_room_id, $room['layouts'] ?? []);
     }
 }
 
