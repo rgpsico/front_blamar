@@ -122,3 +122,8 @@ CREATE TABLE IF NOT EXISTS incentive.inc_hotel_contact (
 -- ============================================================
 
  ALTER TABLE incentive.inc_convention_room ADD COLUMN imagem_planta_hotel text;
+
+ -- Adiciona os dois campos de uma vez só (recomendado: uma única transação)
+ALTER TABLE incentive.inc_convention
+    ADD COLUMN IF NOT EXISTS imagem_planta_hotel TEXT,
+    ADD COLUMN IF NOT EXISTS url360_hotel       TEXT;

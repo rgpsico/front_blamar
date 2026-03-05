@@ -451,6 +451,8 @@ function upsertConvention($conn, $inc_id, $convention) {
     // Formata valores com tratamento extra
     $description = formatString($convention['description'] ?? null);
     $total_rooms = formatInt($convention['total_rooms'] ?? null);
+    $imagem_planta_hotel = formatString($convention['imagem_planta_hotel'] ?? null);
+    $url360_hotel = formatString($convention['url360_hotel'] ?? null);
     
     // Tratamento ESPECIAL para has_360
     $has_360_raw = $convention['has_360'] ?? false;
@@ -476,9 +478,9 @@ function upsertConvention($conn, $inc_id, $convention) {
         execParams(
             $conn,
             "UPDATE incentive.inc_convention 
-             SET description = $1, total_rooms = $2, has_360 = $3 
-             WHERE inc_convention_id = $4",
-            [$description, $total_rooms, $has_360, $conv_id],
+             SET description = $1, total_rooms = $2, has_360 = $3, imagem_planta_hotel = $4, url360_hotel = $5 
+             WHERE inc_convention_id = $6",
+            [$description, $total_rooms, $has_360, $imagem_planta_hotel, $url360_hotel, $conv_id],
             "Erro ao atualizar convention"
         );
         
@@ -488,10 +490,10 @@ function upsertConvention($conn, $inc_id, $convention) {
         $resInsert = execParams(
             $conn,
             "INSERT INTO incentive.inc_convention 
-                (inc_id, description, total_rooms, has_360) 
-             VALUES ($1, $2, $3, $4) 
+                (inc_id, description, total_rooms, has_360, imagem_planta_hotel, url360_hotel) 
+             VALUES ($1, $2, $3, $4, $5, $6) 
              RETURNING inc_convention_id",
-            [$inc_id, $description, $total_rooms, $has_360],
+            [$inc_id, $description, $total_rooms, $has_360, $imagem_planta_hotel, $url360_hotel],
             "Erro ao inserir convention"
         );
         
@@ -818,6 +820,8 @@ try {
                         'description',       c.description,
                         'total_rooms',       c.total_rooms,
                         'has_360',           c.has_360,
+                        'imagem_planta_hotel', c.imagem_planta_hotel,
+                        'url360_hotel',      c.url360_hotel,
                         'rooms', COALESCE((
                             SELECT json_agg(
                                 json_build_object(
@@ -1040,7 +1044,7 @@ try {
     // Convention + Salas
     // =============================================
     $sql_conv = "
-        SELECT inc_convention_id, description, total_rooms, has_360
+        SELECT inc_convention_id, description, total_rooms, has_360, imagem_planta_hotel, url360_hotel
         FROM incentive.inc_convention
         WHERE inc_id = $1
         LIMIT 1
@@ -1058,6 +1062,8 @@ try {
             'description'       => $c['description'] ?? '',
             'total_rooms'       => $c['total_rooms'] !== null ? (int)$c['total_rooms'] : null,
             'has_360'           => boolFromPg($c['has_360']),
+            'imagem_planta_hotel' => $c['imagem_planta_hotel'] ?? '',
+            'url360_hotel'      => $c['url360_hotel'] ?? '',
             'rooms'             => [] // será preenchido abaixo
         ];
 
@@ -1129,6 +1135,8 @@ try {
                 'description'       => '',
                 'total_rooms'       => null,
                 'has_360'           => false,
+                'imagem_planta_hotel' => '',
+                'url360_hotel'      => '',
                 'rooms'             => []
             ],
             'notes'               => $notes,

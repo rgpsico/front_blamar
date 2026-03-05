@@ -88,18 +88,24 @@
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
-        <v-card-text>
-          <v-form>
-            <v-tabs v-model="activeTab" background-color="transparent" grow>
+      <v-card-text>
+        <v-progress-linear
+          v-if="loadingDetail"
+          indeterminate
+          color="primary"
+          class="mb-4"
+        ></v-progress-linear>
+        <v-form>
+          <v-tabs v-model="activeTab" background-color="transparent" grow>
               <v-tab>Banners</v-tab>
               <v-tab>Programa</v-tab>
+              <v-tab>Convention</v-tab>
               <v-tab>Contato</v-tab>
               <v-tab>Midias</v-tab>
               <v-tab>Quartos</v-tab>
               <v-tab>Amenities</v-tab>
               <v-tab>Dining</v-tab>
               <v-tab>Facilities</v-tab>
-              <v-tab>Convention</v-tab>
               <v-tab>Layouts de Sala</v-tab>
               <v-tab>Salas</v-tab>
               <v-tab>Notas</v-tab>
@@ -133,14 +139,27 @@
                       </v-col>
                     </v-row>
                     <div class="incentivos-manager__banner-preview incentivos-manager__banner-preview--main">
+                      <template v-if="editedItem.banner_main_type === 'video' && editedItem.banner_main_url">
+                        <iframe
+                          v-if="isYoutubeUrl(editedItem.banner_main_url)"
+                          :src="youtubeEmbedUrl(editedItem.banner_main_url)"
+                          title="Video principal"
+                          frameborder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowfullscreen
+                        ></iframe>
+                        <video v-else :src="editedItem.banner_main_url" controls></video>
+                      </template>
                       <v-img
-                        v-if="editedItem.banner_main_type !== 'video' && editedItem.banner_main_url"
+                        v-else-if="editedItem.banner_main_url"
                         :src="editedItem.banner_main_url"
                         height="220"
                         cover
                       ></v-img>
                       <div v-else class="incentivos-manager__banner-placeholder">
-                        <v-icon size="36">mdi-image</v-icon>
+                        <v-icon size="36">
+                          {{ editedItem.banner_main_type === 'video' ? 'mdi-video' : 'mdi-image' }}
+                        </v-icon>
                         <div class="mt-1">
                           {{ editedItem.banner_main_type === 'video' ? 'Video principal' : 'Sem imagem' }}
                         </div>
@@ -246,6 +265,55 @@
                       outlined
                       dense
                     ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12">
+                    <v-textarea
+                      v-model="editedItem.convention.description"
+                      label="Descricao"
+                      outlined
+                      rows="3"
+                    ></v-textarea>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="editedItem.floor_plan_url"
+                      label="Floor plan of the area (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="editedItem.convention.imagem_planta_hotel"
+                      label="Imagem planta do hotel (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="editedItem.convention.url360_hotel"
+                      label="URL Tour 360 do hotel"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model.number="editedItem.convention.total_rooms"
+                      label="Total de salas"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch v-model="editedItem.convention.has_360" label="Tour 360" inset></v-switch>
                   </v-col>
                 </v-row>
               </v-tab-item>
@@ -468,47 +536,6 @@
               </v-tab-item>
 
               <v-tab-item>
-                <v-row>
-                  <v-col cols="12">
-                    <v-textarea
-                      v-model="editedItem.convention.description"
-                      label="Descricao"
-                      outlined
-                      rows="3"
-                    ></v-textarea>
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="editedItem.floor_plan_url"
-                      label="Floor plan of the area (URL)"
-                      outlined
-                      dense
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="editedItem.convention.url_planta_image"
-                      label="Imagem planta (URL)"
-                      outlined
-                      dense
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field
-                      v-model.number="editedItem.convention.total_rooms"
-                      label="Total de salas"
-                      type="number"
-                      outlined
-                      dense
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-switch v-model="editedItem.convention.has_360" label="Tour 360" inset></v-switch>
-                  </v-col>
-                </v-row>
-              </v-tab-item>
-
-              <v-tab-item>
                 <div class="incentivos-manager__tab-head">
                   <div>Layouts por sala</div>
                 </div>
@@ -694,7 +721,8 @@ const blankItem = () => ({
     description: '',
     total_rooms: null,
     has_360: false,
-    url_planta_image: ''
+    imagem_planta_hotel: '',
+    url360_hotel: ''
   },
   convention_rooms: [],
   notes: []
@@ -706,6 +734,7 @@ export default {
     return {
       loading: false,
       saving: false,
+      loadingDetail: false,
       dialog: false,
       dialogDelete: false,
       activeTab: 0,
@@ -778,6 +807,34 @@ export default {
     this.fetchIncentives()
   },
   methods: {
+    isYoutubeUrl(value) {
+      return /(?:youtube\.com|youtu\.be)/i.test(value || '')
+    },
+    youtubeEmbedUrl(value) {
+      const raw = (value || '').trim()
+      if (!raw) return ''
+      if (/youtube\.com\/embed\//i.test(raw)) return raw
+      try {
+        const parsed = new URL(raw)
+        const host = parsed.hostname.replace(/^www\./i, '')
+        if (host === 'youtu.be') {
+          const id = parsed.pathname.replace('/', '')
+          return id ? `https://www.youtube.com/embed/${id}` : raw
+        }
+        if (host.endsWith('youtube.com')) {
+          const v = parsed.searchParams.get('v')
+          if (v) return `https://www.youtube.com/embed/${v}`
+          const parts = parsed.pathname.split('/').filter(Boolean)
+          const idx = parts.findIndex((part) => part === 'embed' || part === 'shorts')
+          if (idx >= 0 && parts[idx + 1]) {
+            return `https://www.youtube.com/embed/${parts[idx + 1]}`
+          }
+        }
+      } catch (error) {
+        return raw
+      }
+      return raw
+    },
     splitMedia(mediaList) {
       const list = Array.isArray(mediaList) ? mediaList : []
       const isBannerSlot = (media) => {
@@ -914,8 +971,23 @@ export default {
         room_amenities: Array.isArray(relations.room_amenities) ? relations.room_amenities : [],
         dining: Array.isArray(relations.dining) ? relations.dining : [],
         facilities: Array.isArray(relations.facilities) ? relations.facilities : [],
-        convention:
-          relations.convention || { description: '', total_rooms: null, has_360: false, url_planta_image: '' },
+        convention: (() => {
+          const baseConvention = relations.convention || {}
+          return {
+            ...baseConvention,
+            description: baseConvention.description || '',
+            total_rooms:
+              baseConvention.total_rooms !== undefined &&
+              baseConvention.total_rooms !== null &&
+              `${baseConvention.total_rooms}` !== ''
+                ? Number(baseConvention.total_rooms)
+                : null,
+            has_360: baseConvention.has_360 !== undefined ? baseConvention.has_360 : false,
+            imagem_planta_hotel:
+              baseConvention.imagem_planta_hotel || baseConvention.url_planta_image || '',
+            url360_hotel: baseConvention.url360_hotel || ''
+          }
+        })(),
         convention_rooms: normalizedRooms,
         notes: Array.isArray(relations.notes) ? relations.notes : []
       }
@@ -1094,7 +1166,7 @@ export default {
       this.editedItem.notes.splice(index, 1)
     },
     async fetchIncentiveDetail(id) {
-      this.saving = true
+      this.loadingDetail = true
       try {
         const response = await fetch(
           `${API_BASE}api_incentives.php?request=buscar_incentive&id=${id}`,
@@ -1109,7 +1181,7 @@ export default {
       } catch (error) {
         this.showMessage(`Erro ao carregar incentivo: ${error.message}`, 'error')
       } finally {
-        this.saving = false
+        this.loadingDetail = false
       }
     },
     async fetchRoomLayouts() {
@@ -1351,8 +1423,18 @@ export default {
   background: #f1f5f9;
 }
 
+.incentivos-manager__banner-preview iframe,
+.incentivos-manager__banner-preview video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  object-fit: cover;
+}
+
 .incentivos-manager__banner-preview--main {
   min-height: 220px;
+  height: 220px;
 }
 
 .incentivos-manager__banner-placeholder {

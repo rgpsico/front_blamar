@@ -98,6 +98,8 @@ try {
                         p.country_code,
                         p.inc_status,
                         p.inc_is_active,
+                        p.star_rating,
+                        p.total_rooms,
                         p.created_at,
                         p.updated_at
                     FROM incentive.inc_program p
@@ -315,6 +317,8 @@ try {
         'hotel_ref_id'        => $p['hotel_ref_id'] ? (int)$p['hotel_ref_id'] : null,
         'hotel_name_snapshot' => $p['hotel_name_snapshot'],
         'city_name'           => $p['city_name'],
+       
+        'total_rooms'         => $p['total_rooms'] ? (int)$p['total_rooms'] : null,
         'country_code'        => $p['country_code'],
         'inc_status'          => $p['inc_status'],
         'inc_is_active'       => boolFromPg($p['inc_is_active']),
