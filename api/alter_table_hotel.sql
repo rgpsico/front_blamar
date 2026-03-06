@@ -127,3 +127,15 @@ CREATE TABLE IF NOT EXISTS incentive.inc_hotel_contact (
 ALTER TABLE incentive.inc_convention
     ADD COLUMN IF NOT EXISTS imagem_planta_hotel TEXT,
     ADD COLUMN IF NOT EXISTS url360_hotel       TEXT;
+
+
+    ALTER TABLE incentive.inc_room_category
+ADD COLUMN building VARCHAR(50),
+ADD COLUMN max_guests INT,
+ADD COLUMN bed_type VARCHAR(50);
+
+ALTER TABLE incentive.inc_program
+ADD COLUMN room_description TEXT;
+
+ALTER TABLE incentive.inc_program
+ADD COLUMN rooms_categories_text TEXT;
