@@ -84,7 +84,8 @@ function upsertHotelContact($conn, $inc_id, $contact) {
           $allowed = [
     'inc_name', 'inc_description', 'hotel_ref_id', 'hotel_name_snapshot',
     'city_name', 'country_code', 'inc_status', 'inc_is_active',
-    'star_rating', 'total_rooms', 'floor_plan_url'
+    'star_rating', 'total_rooms', 'floor_plan_url',
+    'room_description', 'rooms_categories_text'
 ];
 
             $updates = [];

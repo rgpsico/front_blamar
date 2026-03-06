@@ -407,8 +407,29 @@
               <v-tab-item>
                 <div class="incentivos-manager__tab-head">
                   <div>Categorias de quartos</div>
+                </div>
+                <v-row>
+                  <v-col cols="12" md="5">
+                    <v-text-field
+                      v-model="editedItem.rooms_categories_text"
+                      label="Texto categorias"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="7">
+                    <v-textarea
+                      v-model="editedItem.room_description"
+                      label="Descricao dos quartos"
+                      outlined
+                      rows="2"
+                    ></v-textarea>
+                  </v-col>
+                </v-row>
+                <div class="d-flex justify-end">
                   <v-btn small outlined color="primary" @click="addRoomCategory">Adicionar</v-btn>
                 </div>
+                <v-divider class="my-4"></v-divider>
                 <v-row v-for="(room, index) in editedItem.room_categories" :key="`room-${index}`">
                   <v-col cols="12" md="5">
                     <v-text-field v-model="room.room_name" label="Nome" outlined dense></v-text-field>
@@ -713,6 +734,8 @@ const blankItem = () => ({
   banner_main_url: '',
   banner_images: ['', '', ''],
   media: [],
+  room_description: '',
+  rooms_categories_text: '',
   room_categories: [],
   room_amenities: [],
   dining: [],
@@ -952,6 +975,8 @@ export default {
             ? Number(program.total_rooms)
             : null,
         floor_plan_url: program.floor_plan_url || '',
+        room_description: program.room_description || '',
+        rooms_categories_text: program.rooms_categories_text || '',
         hotel_contact: relations.hotel_contact || {
           address: '',
           postal_code: '',
@@ -1281,6 +1306,8 @@ export default {
           star_rating: this.editedItem.star_rating,
           total_rooms: this.editedItem.total_rooms,
           floor_plan_url: this.editedItem.floor_plan_url,
+          room_description: this.editedItem.room_description,
+          rooms_categories_text: this.editedItem.rooms_categories_text,
           media: mediaPayload,
           room_categories: this.editedItem.room_categories,
           room_amenities: this.editedItem.room_amenities,

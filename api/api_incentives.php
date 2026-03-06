@@ -100,6 +100,8 @@ try {
                         p.inc_is_active,
                         p.star_rating,
                         p.total_rooms,
+                        p.room_description,
+                        p.rooms_categories_text,
                         p.created_at,
                         p.updated_at
                     FROM incentive.inc_program p
@@ -325,6 +327,8 @@ try {
         'star_rating'         => (int)$p['star_rating'],
         'total_rooms'         => $p['total_rooms'] ? (int)$p['total_rooms'] : null,
         'floor_plan_url'      => $p['floor_plan_url'],
+        'room_description'    => $p['room_description'],
+        'rooms_categories_text' => $p['rooms_categories_text'],
         'created_at'          => $p['created_at'],
         'updated_at'          => $p['updated_at'],
     ];
@@ -566,6 +570,8 @@ try {
                 'inc_status'          => formatStatus($input['inc_status'] ?? 'active'),
                 'inc_is_active'       => formatBoolean($input['inc_is_active'] ?? true),
                 'floor_plan_url'      => formatString($input['floor_plan_url'] ?? null),
+                'room_description'    => formatString($input['room_description'] ?? null),
+                'rooms_categories_text' => formatString($input['rooms_categories_text'] ?? null),
             ];
 
             // Monta INSERT
