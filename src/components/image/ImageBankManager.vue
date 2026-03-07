@@ -122,6 +122,19 @@
               <span v-else-if="image.fk_cidcod">Cidade: {{ image.fk_cidcod }}</span>
               <span v-if="image.autor">Autor: {{ image.autor }}</span>
             </div>
+            <div class="image-bank__order">
+              <v-text-field
+                v-model="image.ordem"
+                label="Ordem"
+                dense
+                outlined
+                type="number"
+                hide-details
+                :loading="orderSaving[image.pk_bco_img]"
+                @blur="saveOrder(image)"
+                @keyup.enter="saveOrder(image)"
+              ></v-text-field>
+            </div>
             <div class="image-bank__actions">
               <v-btn text small color="primary" @click="openPreview(image)">Preview</v-btn>
               <v-btn text small @click="copyUrl(image)">Copiar URL</v-btn>
@@ -743,6 +756,7 @@ export default {
         text: '',
         color: 'success'
       },
+      orderSaving: {},
       typeOptions: [
         { text: 'Todos', value: 'all' },
         { text: 'Hotel (1)', value: 1 },
@@ -850,6 +864,53 @@ export default {
       this.snackbar.text = text
       this.snackbar.color = color || 'success'
       this.snackbar.show = true
+    },
+    setOrderSnapshot(images) {
+      if (!Array.isArray(images)) {
+        return
+      }
+      images.forEach(image => {
+        if (!image) {
+          return
+        }
+        this.$set(image, '_ordem_saved', Number(image.ordem ?? 0))
+      })
+    },
+    async saveOrder(image) {
+      if (!image?.pk_bco_img) {
+        return
+      }
+      const pk = image.pk_bco_img
+      const parsed = Number(image.ordem ?? 0)
+      if (Number.isNaN(parsed)) {
+        this.showMessage('Ordem invalida.', 'error')
+        return
+      }
+      const ordem = parsed
+      if (Number(image._ordem_saved ?? 0) === ordem) {
+        return
+      }
+      const previous = Number(image._ordem_saved ?? 0)
+      this.$set(this.orderSaving, pk, true)
+      try {
+        const response = await api.post(`${API_BASE}?action=update_metadata`, {
+          pk_bco_img: pk,
+          ordem
+        })
+        if (response.data?.success) {
+          image.ordem = ordem
+          image._ordem_saved = ordem
+          this.showMessage('Ordem atualizada.')
+        } else {
+          image.ordem = previous
+          this.showMessage(response.data?.error || 'Erro ao atualizar ordem.', 'error')
+        }
+      } catch (error) {
+        image.ordem = previous
+        this.showMessage(`Erro ao atualizar ordem: ${error.message}`, 'error')
+      } finally {
+        this.$set(this.orderSaving, pk, false)
+      }
     },
     openCreate() {
       this.createDialog = true
@@ -963,6 +1024,7 @@ export default {
           }
 
           this.images = results
+          this.setOrderSnapshot(this.images)
           return
         }
 
@@ -994,6 +1056,7 @@ export default {
           `${API_BASE}?action=hotel_images&hotel_id=${encodeURIComponent(this.selectedHotel.mneu_for)}`
         )
         this.images = Array.isArray(response.data?.images) ? response.data.images : []
+        this.setOrderSnapshot(this.images)
       } catch (error) {
         this.showMessage(`Erro ao buscar imagens: ${error.message}`, 'error')
       } finally {
@@ -1013,6 +1076,7 @@ export default {
           )}`
         )
         this.images = Array.isArray(response.data?.images) ? response.data.images : []
+        this.setOrderSnapshot(this.images)
       } catch (error) {
         this.showMessage(`Erro ao buscar imagens da cidade: ${error.message}`, 'error')
       } finally {
@@ -1210,6 +1274,7 @@ export default {
         tam_5: payload.tam_5,
         zip: payload.zip
       }
+      updated._ordem_saved = Number(payload.ordem ?? updated._ordem_saved ?? 0)
       this.$set(this.images, index, updated)
       if (this.previewImage?.pk_bco_img === payload.pk_bco_img) {
         this.previewImage = { ...this.previewImage, ...updated }
@@ -1257,6 +1322,7 @@ export default {
           const newImage = response.data?.image
           if (newImage) {
             this.images = [newImage, ...this.images]
+            this.setOrderSnapshot([newImage])
           }
           this.showMessage('Imagem cadastrada com sucesso.')
           this.createDialog = false
@@ -1414,6 +1480,11 @@ export default {
 ::v-deep .image-bank__actions .v-btn {
   min-width: 0;
   padding: 0 6px;
+}
+
+.image-bank__order {
+  margin-top: 10px;
+  max-width: 120px;
 }
 
 .image-bank__empty {
