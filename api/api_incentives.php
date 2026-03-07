@@ -224,6 +224,8 @@ try {
                                     'description', c.description,
                                     'total_rooms', c.total_rooms,
                                     'has_360', c.has_360,
+                                    'imagem_planta_hotel', c.imagem_planta_hotel,
+                                    'url360_hotel', c.url360_hotel,
                                     'rooms', COALESCE((
                                         SELECT json_agg(
                                             json_build_object(
@@ -442,7 +444,7 @@ try {
 
     // Convention + Salas
     $sql_conv = "
-        SELECT inc_convention_id, description, total_rooms, has_360
+        SELECT inc_convention_id, description, total_rooms, has_360, imagem_planta_hotel, url360_hotel
         FROM incentive.inc_convention
         WHERE inc_id = $1
         LIMIT 1
@@ -459,6 +461,8 @@ try {
             'description'       => $c['description'],
             'total_rooms'       => $c['total_rooms'] ? (int)$c['total_rooms'] : null,
             'has_360'           => boolFromPg($c['has_360']),
+            'imagem_planta_hotel' => $c['imagem_planta_hotel'],
+            'url360_hotel'        => $c['url360_hotel'],
         ];
 
         $sql_conv_rooms = "
@@ -529,7 +533,9 @@ try {
             'convention'          => $convention ?: [
                 'description' => '',
                 'total_rooms' => null,
-                'has_360'     => false
+                'has_360'     => false,
+                'imagem_planta_hotel' => '',
+                'url360_hotel'        => ''
             ],
             'convention_rooms'    => $convention_rooms,
             'notes'               => $notes,

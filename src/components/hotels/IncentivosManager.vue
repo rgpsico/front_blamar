@@ -82,7 +82,12 @@
     <v-dialog v-model="dialog" max-width="980px" persistent>
       <v-card>
         <v-card-title class="incentivos-manager__dialog-title">
-          <span>{{ dialogTitle }}</span>
+          <div class="incentivos-manager__dialog-heading">
+            <div>{{ dialogTitle }}</div>
+            <div v-if="dialogHotelLabel" class="incentivos-manager__dialog-subtitle">
+              {{ dialogHotelLabel }}
+            </div>
+          </div>
           <v-spacer></v-spacer>
           <v-btn icon @click="closeDialog">
             <v-icon>mdi-close</v-icon>
@@ -406,21 +411,21 @@
 
               <v-tab-item>
                 <div class="incentivos-manager__tab-head">
-                  <div>Categorias de quartos</div>
+                  <div>Categoria quarto</div>
                 </div>
                 <v-row>
                   <v-col cols="12" md="5">
                     <v-text-field
-                      v-model="editedItem.rooms_categories_text"
-                      label="Texto categorias"
+                      v-model="editedItem.room_description"
+                      label="Categoria quarto"
                       outlined
                       dense
                     ></v-text-field>
                   </v-col>
                   <v-col cols="12" md="7">
                     <v-textarea
-                      v-model="editedItem.room_description"
-                      label="Descricao dos quartos"
+                      v-model="editedItem.rooms_categories_text"
+                      label="Descricao da categoria"
                       outlined
                       rows="2"
                     ></v-textarea>
@@ -813,6 +818,15 @@ export default {
     dialogTitle() {
       return this.editedIndex === -1 ? 'Novo Incentivo' : 'Editar Incentivo'
     },
+    dialogHotelLabel() {
+      if (this.editedIndex === -1) return ''
+      const id = this.editedItem?.inc_id
+      const name = (this.editedItem?.inc_name || '').trim()
+      if (!id && !name) return ''
+      if (id && name) return `Incentivo: ${id} - ${name}`
+      if (id) return `Incentivo: ${id}`
+      return `Incentivo: ${name}`
+    },
     mapEmbedUrl() {
       const url = this.editedItem?.hotel_contact?.google_maps_url || ''
       if (!url) return ''
@@ -999,7 +1013,7 @@ export default {
         convention: (() => {
           const baseConvention = relations.convention || {}
           return {
-            ...baseConvention,
+            inc_convention_id: baseConvention.inc_convention_id || null,
             description: baseConvention.description || '',
             total_rooms:
               baseConvention.total_rooms !== undefined &&
@@ -1293,6 +1307,21 @@ export default {
           : `${API_BASE}api_incentives.php?request=${request}`
 
         const mediaPayload = [...this.buildBannerMediaPayload(), ...this.editedItem.media]
+        const conventionPayload = (() => {
+          const base = this.editedItem.convention || {}
+          return {
+            inc_convention_id: base.inc_convention_id || null,
+            description: base.description || '',
+            total_rooms:
+              base.total_rooms !== undefined && base.total_rooms !== null && `${base.total_rooms}` !== ''
+                ? Number(base.total_rooms)
+                : null,
+            has_360: base.has_360 !== undefined ? base.has_360 : false,
+            imagem_planta_hotel: base.imagem_planta_hotel || base.url_planta_image || '',
+            url360_hotel: base.url360_hotel || ''
+          }
+        })()
+
         const payload = {
           inc_id: this.editedItem.inc_id,
           inc_name: this.editedItem.inc_name,
@@ -1313,7 +1342,7 @@ export default {
           room_amenities: this.editedItem.room_amenities,
           dining: this.editedItem.dining,
           facilities: this.editedItem.facilities,
-          convention: this.editedItem.convention,
+          convention: conventionPayload,
           convention_rooms: this.editedItem.convention_rooms,
           notes: this.editedItem.notes
         }
@@ -1416,6 +1445,17 @@ export default {
 .incentivos-manager__dialog-title {
   display: flex;
   align-items: center;
+}
+
+.incentivos-manager__dialog-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.incentivos-manager__dialog-subtitle {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .incentivos-manager__tab-head {

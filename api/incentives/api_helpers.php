@@ -72,7 +72,9 @@
  *   "convention": {
  *     "description": "string",
  *     "total_rooms": int,
- *     "has_360": true|false
+ *     "has_360": true|false,
+ *     "imagem_planta_hotel": "string",
+ *     "url360_hotel": "string"
  *   },
  *   
  *   "convention_rooms": [
@@ -452,8 +454,10 @@ function upsertConvention($conn, $inc_id, $convention) {
     }
 
     // Formata valores com tratamento extra
-    $description = formatString($convention['description'] ?? null);
-    $total_rooms = formatInt($convention['total_rooms'] ?? null);
+    $description         = formatString($convention['description'] ?? null);
+    $total_rooms         = formatInt($convention['total_rooms'] ?? null);
+    $imagem_planta_hotel = formatString($convention['imagem_planta_hotel'] ?? null);
+    $url360_hotel        = formatString($convention['url360_hotel'] ?? null);
     
     // Tratamento ESPECIAL para has_360
     $has_360_raw = $convention['has_360'] ?? false;
@@ -479,9 +483,13 @@ function upsertConvention($conn, $inc_id, $convention) {
         execParams(
             $conn,
             "UPDATE incentive.inc_convention 
-             SET description = $1, total_rooms = $2, has_360 = $3 
-             WHERE inc_convention_id = $4",
-            [$description, $total_rooms, $has_360, $conv_id],
+             SET description = $1,
+                 total_rooms = $2,
+                 has_360 = $3,
+                 imagem_planta_hotel = $4,
+                 url360_hotel = $5
+             WHERE inc_convention_id = $6",
+            [$description, $total_rooms, $has_360, $imagem_planta_hotel, $url360_hotel, $conv_id],
             "Erro ao atualizar convention"
         );
         
@@ -491,10 +499,10 @@ function upsertConvention($conn, $inc_id, $convention) {
         $resInsert = execParams(
             $conn,
             "INSERT INTO incentive.inc_convention 
-                (inc_id, description, total_rooms, has_360) 
-             VALUES ($1, $2, $3, $4) 
+                (inc_id, description, total_rooms, has_360, imagem_planta_hotel, url360_hotel) 
+             VALUES ($1, $2, $3, $4, $5, $6) 
              RETURNING inc_convention_id",
-            [$inc_id, $description, $total_rooms, $has_360],
+            [$inc_id, $description, $total_rooms, $has_360, $imagem_planta_hotel, $url360_hotel],
             "Erro ao inserir convention"
         );
         
