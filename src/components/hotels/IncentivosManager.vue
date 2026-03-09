@@ -56,12 +56,21 @@
     </v-card>
 
     <v-card elevation="6">
+      <div class="incentivos-manager__table-tools">
+        <span class="incentivos-manager__table-label">Ordenar por</span>
+        <v-btn text small color="primary" @click="toggleIdSort">
+          <v-icon left>{{ sortDesc ? 'mdi-arrow-down' : 'mdi-arrow-up' }}</v-icon>
+          ID
+        </v-btn>
+      </div>
       <v-data-table
         :headers="headers"
         :items="items"
         :loading="loading"
         item-key="inc_id"
         class="elevation-0"
+        :sort-by.sync="sortBy"
+        :sort-desc.sync="sortDesc"
       >
         <template slot="item.inc_is_active" slot-scope="{ item }">
           <v-chip :color="item.inc_is_active ? 'success' : 'grey'" small>
@@ -107,6 +116,7 @@
               <v-tab>Convention</v-tab>
               <v-tab>Contato</v-tab>
               <v-tab>Midias</v-tab>
+              <v-tab>Imagens</v-tab>
               <v-tab>Quartos</v-tab>
               <v-tab>Amenities</v-tab>
               <v-tab>Dining</v-tab>
@@ -405,6 +415,81 @@
                   </v-col>
                   <v-col cols="12" md="3">
                     <v-switch v-model="media.is_active" label="Ativo" inset></v-switch>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+
+              <v-tab-item>
+                <div class="incentivos-manager__tab-head">
+                  <div>Imagens do hotel</div>
+                </div>
+                <v-row class="incentivos-manager__image-inputs">
+                  <v-col cols="12">
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="text-subtitle-2">Adicionar imagem por URL</div>
+                      <v-btn small outlined color="primary" @click="addImageDraft">Adicionar</v-btn>
+                    </div>
+                  </v-col>
+                  <v-col
+                    v-for="(draft, index) in imageDrafts"
+                    :key="`image-draft-${index}`"
+                    cols="12"
+                  >
+                    <v-row>
+                      <v-col cols="12" md="7">
+                        <v-text-field
+                          v-model="draft.url"
+                          label="URL da imagem"
+                          outlined
+                          dense
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" md="2">
+                        <v-text-field
+                          v-model.number="draft.order"
+                          label="Ordem"
+                          type="number"
+                          outlined
+                          dense
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" md="3" class="d-flex align-center">
+                        <v-btn small color="primary" class="mr-2" @click="saveImageDraft(index)">
+                          Salvar
+                        </v-btn>
+                        <v-btn small text color="error" @click="removeImageDraft(index)">
+                          Remover
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-col>
+                </v-row>
+                <div v-if="imageGalleryItems.length === 0" class="incentivos-manager__empty">
+                  Nenhuma imagem cadastrada.
+                </div>
+                <v-row v-else>
+                  <v-col
+                    v-for="(image, index) in imageGalleryItems"
+                    :key="`image-${index}`"
+                    cols="12"
+                    md="4"
+                  >
+                    <v-card class="incentivos-manager__image-card" elevation="2">
+                      <v-img :src="image.url" height="160" cover></v-img>
+                      <v-card-text class="py-2">
+                        <div class="text-caption text--secondary">{{ image.label }}</div>
+                        <v-text-field
+                          :value="image.order"
+                          label="Ordem"
+                          type="number"
+                          dense
+                          outlined
+                          class="mt-2"
+                          :disabled="!image.editable"
+                          @input="updateImageOrder(image, $event)"
+                        ></v-text-field>
+                      </v-card-text>
+                    </v-card>
                   </v-col>
                 </v-row>
               </v-tab-item>
@@ -767,6 +852,8 @@ export default {
       dialogDelete: false,
       activeTab: 0,
       items: [],
+      sortBy: 'inc_id',
+      sortDesc: false,
       filters: {
         nome: '',
         cidade: '',
@@ -804,7 +891,8 @@ export default {
       bannerMainTypeOptions: [
         { text: 'Imagem', value: 'image' },
         { text: 'Video', value: 'video' }
-      ]
+      ],
+      imageDrafts: [{ url: '', order: null }]
     }
   },
   watch: {
@@ -838,6 +926,40 @@ export default {
         return ''
       }
       return ''
+    },
+    imageGalleryItems() {
+      const items = []
+      const main = (this.editedItem?.banner_main_url || '').trim()
+      if (main) {
+        items.push({ url: main, label: 'Banner principal', order: 0, editable: false })
+      }
+      const banners = Array.isArray(this.editedItem?.banner_images) ? this.editedItem.banner_images : []
+      banners.forEach((url, index) => {
+        const clean = (url || '').trim()
+        if (!clean) return
+        items.push({ url: clean, label: `Banner ${index + 1}`, order: index + 1, editable: false })
+      })
+      const media = Array.isArray(this.editedItem?.media) ? this.editedItem.media : []
+      media.forEach((entry, index) => {
+        const url = (entry?.media_url || '').trim()
+        if (!url) return
+        const type = String(entry?.media_type || '').toLowerCase()
+        if (type === 'video' || type === 'map') return
+        const suffix = entry?.position !== null && entry?.position !== undefined ? ` #${entry.position}` : ''
+        items.push({
+          url,
+          label: `${entry.media_type || 'media'}${suffix}`,
+          order: entry?.position ?? null,
+          editable: true,
+          mediaIndex: index
+        })
+      })
+      return [...items].sort((a, b) => {
+        const ao = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER
+        const bo = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER
+        if (ao !== bo) return ao - bo
+        return String(a.label || '').localeCompare(String(b.label || ''))
+      })
     }
   },
   mounted() {
@@ -1033,7 +1155,7 @@ export default {
     },
     buildQuery() {
       const params = new URLSearchParams()
-      params.append('request', 'listar_incentives')
+      params.append('request', 'listar_incentives_simples')
       if (this.filters.nome) params.append('filtro_nome', this.filters.nome)
       if (this.filters.cidade) params.append('filtro_cidade', this.filters.cidade)
       if (this.filters.status) params.append('filtro_status', this.filters.status)
@@ -1058,6 +1180,10 @@ export default {
     applyFilters() {
       this.fetchIncentives()
     },
+    toggleIdSort() {
+      this.sortBy = 'inc_id'
+      this.sortDesc = !this.sortDesc
+    },
     resetFilters() {
       this.filters = {
         nome: '',
@@ -1066,6 +1192,41 @@ export default {
         ativo: 'all'
       }
       this.fetchIncentives()
+    },
+    updateImageOrder(item, value) {
+      if (!item || !item.editable) return
+      const index = item.mediaIndex
+      if (index === null || index === undefined) return
+      const parsed = Number(value)
+      this.editedItem.media[index].position = Number.isFinite(parsed) ? parsed : null
+    },
+    addImageDraft() {
+      this.imageDrafts.push({ url: '', order: null })
+    },
+    removeImageDraft(index) {
+      this.imageDrafts.splice(index, 1)
+      if (this.imageDrafts.length === 0) {
+        this.imageDrafts.push({ url: '', order: null })
+      }
+    },
+    saveImageDraft(index) {
+      const draft = this.imageDrafts[index]
+      const url = (draft?.url || '').trim()
+      if (!url) {
+        this.showMessage('Informe a URL da imagem.', 'warning')
+        return
+      }
+      const order = Number.isFinite(Number(draft.order)) ? Number(draft.order) : null
+      this.editedItem.media.push({
+        inc_media_id: null,
+        media_type: 'gallery',
+        media_url: url,
+        position: order,
+        is_active: true
+      })
+      this.imageDrafts[index].url = ''
+      this.imageDrafts[index].order = null
+      this.showMessage('Imagem adicionada.', 'success')
     },
     openCreate() {
       this.editedIndex = -1
@@ -1442,6 +1603,18 @@ export default {
   margin-top: 4px;
 }
 
+.incentivos-manager__table-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 0;
+}
+
+.incentivos-manager__table-label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
 .incentivos-manager__dialog-title {
   display: flex;
   align-items: center;
@@ -1456,6 +1629,20 @@ export default {
 .incentivos-manager__dialog-subtitle {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.6);
+}
+
+.incentivos-manager__empty {
+  padding: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 13px;
+}
+
+.incentivos-manager__image-card {
+  overflow: hidden;
+}
+
+.incentivos-manager__image-inputs {
+  margin-bottom: 8px;
 }
 
 .incentivos-manager__tab-head {

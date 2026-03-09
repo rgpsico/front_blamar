@@ -23,6 +23,107 @@ if ($method === 'OPTIONS') {
 try {
 
     // =====================================================
+    // LISTAR INCENTIVOS (SIMPLES)
+    // =====================================================
+    if ($request === 'listar_incentives_simples') {
+        if ($method !== 'GET') response(["error" => "Use GET"], 405);
+
+        $filtro_nome   = getStringParam('filtro_nome');
+        $filtro_status = getStringParam('filtro_status');
+        $filtro_cidade = getStringParam('filtro_cidade');
+        $filtro_pais   = getStringParam('filtro_pais');
+        $filtro_ativo  = getParam('filtro_ativo', 'all');
+
+        $page     = max(1, getIntParam('page', 1));
+        $per_page = max(1, min(100, getIntParam('per_page', 30)));
+        $offset   = ($page - 1) * $per_page;
+
+        $where  = [];
+        $params = [];
+        $idx    = 1;
+
+        if ($filtro_nome) {
+            $where[]  = "p.inc_name ILIKE $" . $idx++;
+            $params[] = "%{$filtro_nome}%";
+        }
+        if ($filtro_status) {
+            $where[]  = "p.inc_status = $" . $idx++;
+            $params[] = $filtro_status;
+        }
+        if ($filtro_pais) {
+            $where[]  = "p.country_code = $" . $idx++;
+            $params[] = strtoupper($filtro_pais);
+        }
+        if ($filtro_cidade) {
+            $where[]  = "p.city_name ILIKE $" . $idx++;
+            $params[] = "%{$filtro_cidade}%";
+        }
+        if ($filtro_ativo !== 'all') {
+            $ativo = filter_var($filtro_ativo, FILTER_VALIDATE_BOOLEAN);
+            $where[]  = "p.inc_is_active = $" . $idx++;
+            $params[] = $ativo;
+        }
+
+        $where_sql = count($where) ? "WHERE " . implode(" AND ", $where) : "";
+
+        $sql_count = "SELECT COUNT(*) AS total FROM incentive.inc_program p {$where_sql}";
+        $res_count = pg_query_params($conn, $sql_count, $params);
+        if (!$res_count) throw new Exception(pg_last_error($conn));
+        $total = (int) pg_fetch_result($res_count, 0, 'total');
+
+        $params_list = $params;
+        $params_list[] = $per_page;
+        $params_list[] = $offset;
+
+        $limitParam  = '$' . ($idx++);
+        $offsetParam = '$' . ($idx++);
+
+        $sql = "
+            SELECT
+                p.inc_id,
+                p.inc_name,
+                p.inc_description,
+                p.hotel_ref_id,
+                p.hotel_name_snapshot,
+                p.city_name,
+                p.country_code,
+                p.inc_status,
+                p.inc_is_active,
+                p.star_rating,
+                p.total_rooms,
+                p.created_at,
+                p.updated_at
+            FROM incentive.inc_program p
+            {$where_sql}
+            ORDER BY p.inc_id DESC
+            LIMIT {$limitParam} OFFSET {$offsetParam}
+        ";
+
+        $result = pg_query_params($conn, $sql, $params_list);
+        if (!$result) throw new Exception(pg_last_error($conn));
+
+        $rows = pg_fetch_all($result) ?: [];
+        foreach ($rows as &$row) {
+            $row['inc_id'] = (int)$row['inc_id'];
+            $row['hotel_ref_id'] = ($row['hotel_ref_id'] !== null && $row['hotel_ref_id'] !== '') ? (int)$row['hotel_ref_id'] : null;
+            $row['inc_is_active'] = boolFromPg($row['inc_is_active']);
+            $row['star_rating'] = ($row['star_rating'] !== null && $row['star_rating'] !== '') ? (int)$row['star_rating'] : null;
+            $row['total_rooms'] = ($row['total_rooms'] !== null && $row['total_rooms'] !== '') ? (int)$row['total_rooms'] : null;
+        }
+
+        response([
+            'success' => true,
+            'data' => $rows,
+            'pagination' => [
+                'total'        => $total,
+                'per_page'     => $per_page,
+                'current_page' => $page,
+                'last_page'    => (int) ceil($total / $per_page)
+            ]
+        ]);
+    }
+
+    // =====================================================
     // LISTAR INCENTIVOS (com paginação, filtros e contagens)
     // =====================================================
     if ($request === 'listar_incentives') {
@@ -224,8 +325,6 @@ try {
                                     'description', c.description,
                                     'total_rooms', c.total_rooms,
                                     'has_360', c.has_360,
-                                    'imagem_planta_hotel', c.imagem_planta_hotel,
-                                    'url360_hotel', c.url360_hotel,
                                     'rooms', COALESCE((
                                         SELECT json_agg(
                                             json_build_object(
@@ -321,6 +420,7 @@ try {
         'hotel_ref_id'        => $p['hotel_ref_id'] ? (int)$p['hotel_ref_id'] : null,
         'hotel_name_snapshot' => $p['hotel_name_snapshot'],
         'city_name'           => $p['city_name'],
+        
        
         'total_rooms'         => $p['total_rooms'] ? (int)$p['total_rooms'] : null,
         'country_code'        => $p['country_code'],
@@ -444,7 +544,7 @@ try {
 
     // Convention + Salas
     $sql_conv = "
-        SELECT inc_convention_id, description, total_rooms, has_360, imagem_planta_hotel, url360_hotel
+        SELECT inc_convention_id, description, total_rooms, has_360,url360_hotel,url_planta_image 
         FROM incentive.inc_convention
         WHERE inc_id = $1
         LIMIT 1
@@ -461,8 +561,8 @@ try {
             'description'       => $c['description'],
             'total_rooms'       => $c['total_rooms'] ? (int)$c['total_rooms'] : null,
             'has_360'           => boolFromPg($c['has_360']),
-            'imagem_planta_hotel' => $c['imagem_planta_hotel'],
-            'url360_hotel'        => $c['url360_hotel'],
+            'url360_hotel'      => $c['url360_hotel'] ?? null,
+            'url_planta_image ' => $c['url_planta_image'] ?? null,
         ];
 
         $sql_conv_rooms = "
@@ -523,6 +623,8 @@ try {
             'star_rating'         => $program['star_rating'],
             'total_rooms'         => $program['total_rooms'],
             'floor_plan_url'      => $program['floor_plan_url'],
+            'room_description'    => $program['room_description'],
+            'rooms_categories_text' => $program['rooms_categories_text'],
             // Novo: Contato do hotel
             'hotel_contact'       => $hotel_contact,
 
@@ -533,9 +635,7 @@ try {
             'convention'          => $convention ?: [
                 'description' => '',
                 'total_rooms' => null,
-                'has_360'     => false,
-                'imagem_planta_hotel' => '',
-                'url360_hotel'        => ''
+                'has_360'     => false
             ],
             'convention_rooms'    => $convention_rooms,
             'notes'               => $notes,
