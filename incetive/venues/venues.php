@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BLUMAR - Venues</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/estilo_novo_hotelshow.css">
+    <link rel="stylesheet" href="../css/estilo_novo_hotelshow.css">
 
 <style>
     /* Filters Bar - Principal */
@@ -118,8 +118,8 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="js/eventos_hotels.js"></script>
-    <script src="js/hotels.js"></script>
+    <script src="../js/eventos_hotels.js"></script>
+    <script src="../js/hotels.js"></script>
    
    
    <script>
@@ -154,11 +154,11 @@
                 const city = escapeHtml(v.city_name || v.city || '-');
                 const desc = escapeHtml(v.short_description || v.especialidade || '');
                 const image = escapeHtml(pickVenueImage(v));
-                const detailsUrl = v.cod_venues ? `venue_show.php?id=${encodeURIComponent(v.cod_venues)}` : '#';
+                const detailsUrl = v.cod_venues ? `venues_show_section.php?id=${encodeURIComponent(v.cod_venues)}` : '#';
 
                 return `
                     <div class="hotel-card">
-                        <img src="${image}" alt="${name}" class="hotel-image" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+                        <img src="${image}" alt="${name}" class="hotel-image">
                         <div class="hotel-content">
                             <div class="hotel-tag">&mdash;</div>
                             <div class="hotel-location">${city}</div>
