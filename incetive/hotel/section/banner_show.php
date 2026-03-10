@@ -13,6 +13,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $media = [];
 $main_media = null;
 $mock_image = '../img/carnaval_02_bg.jpg';
+$banner_media = [];
 
 if ($id > 0) {
     $sql_media = "
@@ -24,32 +25,32 @@ if ($id > 0) {
     $res_media = pg_query_params($conn, $sql_media, [$id]);
     $media = pg_fetch_all($res_media) ?: [];
 
-    // 1. Procura primeiro uma mídia ativa e com URL
+    // filtra apenas banners/videos (pos 0..3) ativos e com URL
     foreach ($media as $m) {
-        if (
-            ($m['is_active'] === 't' || $m['is_active'] === true) 
-            && !empty($m['media_url'])
-        ) {
+        $type = strtolower($m['media_type'] ?? '');
+        $pos = (int)($m['position'] ?? -1);
+        $active = ($m['is_active'] === 't' || $m['is_active'] === true);
+        if ($active && in_array($type, ['banner', 'video'], true) && $pos >= 0 && $pos <= 3 && !empty($m['media_url'])) {
+            $banner_media[] = $m;
+        }
+    }
+
+    // main: prioridade para position 0, sen?o primeiro dispon?vel
+    foreach ($banner_media as $m) {
+        if ((int)($m['position'] ?? -1) === 0) {
             $main_media = $m;
             break;
         }
     }
-
-    // 2. Se não achou ativa → pega qualquer uma com URL (fallback)
-    if (!$main_media && count($media) > 0) {
-        foreach ($media as $m) {
-            if (!empty($m['media_url'])) {
-                $main_media = $m;
-                break;
-            }
-        }
+    if (!$main_media && count($banner_media) > 0) {
+        $main_media = $banner_media[0];
     }
 }
 ?>
 
 <?php
 
- $url = $main_media['media_url'];
+ $url = $main_media ? $main_media['media_url'] : '';
 
 if (strpos($url, 'watch?v=') !== false) {
     $url = str_replace('watch?v=', 'embed/', $url);
@@ -87,7 +88,7 @@ if (strpos($url, 'watch?v=') !== false) {
         $thumbs = 0;
         $shown_ids = $main_media ? [$main_media['inc_media_id']] : [];
 
-        foreach ($media as $m) {
+        foreach ($banner_media as $m) {
             if (
                 in_array($m['inc_media_id'], $shown_ids) || 
                 empty($m['media_url']) ||
@@ -119,8 +120,8 @@ if (strpos($url, 'watch?v=') !== false) {
         }
         ?>
 
-        <?php if (count($media) > 0) : ?>
-            <p>More <?php echo count($media); ?> Photos</p>
+        <?php if (count($banner_media) > 0) : ?>
+            <p>More <?php echo count($banner_media); ?> Photos</p>
         <?php endif; ?>
     </div>
 </div>

@@ -40,7 +40,7 @@ if (!isset($hotel_name) || $hotel_name === '') {
             </div>
             <div class="menu_interno">
                 <a href="hotel_list.php">
-                    <button type="button">Back to main site</button>
+                    <button type="button" style="cursor: pointer;">Back to main site</button>
                 </a>
             </div>
         </div>

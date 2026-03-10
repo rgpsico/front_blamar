@@ -43,7 +43,7 @@ if ($id > 0) {
 <div class="featurs_right">
     <?php if (!isset($is_public_proposal) || !$is_public_proposal) : ?>
         <a href="hotel_show_propusal.php?id=<?php echo h($id); ?>" target="_blank" rel="noopener">
-            <button type="button">create produt link</button>
+            <button type="button" style="cursor: pointer;">create produt link</button>
         </a>
     <?php endif; ?>
 

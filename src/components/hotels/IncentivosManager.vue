@@ -112,6 +112,7 @@
         <v-form>
           <v-tabs v-model="activeTab" background-color="transparent" grow>
               <v-tab>Banners</v-tab>
+              <v-tab>Sidebar</v-tab>
               <v-tab>Programa</v-tab>
               <v-tab>Convention</v-tab>
               <v-tab>Contato</v-tab>
@@ -200,6 +201,75 @@
                     </div>
                   </div>
                 </div>
+              </v-tab-item>
+
+              <v-tab-item>
+                <div class="incentivos-manager__tab-head">
+                  <div>Sidebar</div>
+                </div>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model.number="editedItem.star_rating"
+                      label="Estrelas"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model.number="editedItem.total_rooms"
+                      label="Total de quartos"
+                      type="number"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="editedItem.hotel_contact.google_maps_url"
+                      label="Google Maps URL"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-text-field
+                      :value="sidebarNoteLanguage"
+                      label="Idioma nota"
+                      outlined
+                      dense
+                      @input="updateSidebarNoteLanguage"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="10">
+                    <v-textarea
+                      :value="sidebarNote"
+                      label="Personal note"
+                      outlined
+                      rows="3"
+                      @input="updateSidebarNote"
+                    ></v-textarea>
+                  </v-col>
+                  <v-col cols="12" md="8">
+                    <div class="incentivos-manager__map-embed">
+                      <iframe
+                        v-if="mapEmbedUrl"
+                        :src="mapEmbedUrl"
+                        width="100%"
+                        height="160"
+                        frameborder="0"
+                        style="border:0;"
+                        allowfullscreen
+                        loading="lazy"
+                      ></iframe>
+                      <div v-else class="incentivos-manager__map-placeholder">
+                        Mapa nao disponivel
+                      </div>
+                    </div>
+                  </v-col>
+                </v-row>
               </v-tab-item>
 
               <v-tab-item>
@@ -794,7 +864,7 @@
 <script>
 import api from '@/services/api'
 const API_BASE = `${api.defaults.baseURL}/`
-const LAYOUT_TAB = 9
+const LAYOUT_TAB = 11
 
 const blankItem = () => ({
   inc_id: null,
@@ -960,6 +1030,12 @@ export default {
         if (ao !== bo) return ao - bo
         return String(a.label || '').localeCompare(String(b.label || ''))
       })
+    },
+    sidebarNote() {
+      return this.editedItem?.notes?.[0]?.note || ''
+    },
+    sidebarNoteLanguage() {
+      return this.editedItem?.notes?.[0]?.language || ''
     }
   },
   mounted() {
@@ -1227,6 +1303,22 @@ export default {
       this.imageDrafts[index].url = ''
       this.imageDrafts[index].order = null
       this.showMessage('Imagem adicionada.', 'success')
+    },
+    ensureSidebarNote() {
+      if (!Array.isArray(this.editedItem.notes)) {
+        this.editedItem.notes = []
+      }
+      if (!this.editedItem.notes[0]) {
+        this.editedItem.notes.push({ inc_note_id: null, language: '', note: '' })
+      }
+    },
+    updateSidebarNote(value) {
+      this.ensureSidebarNote()
+      this.editedItem.notes[0].note = value
+    },
+    updateSidebarNoteLanguage(value) {
+      this.ensureSidebarNote()
+      this.editedItem.notes[0].language = value
     },
     openCreate() {
       this.editedIndex = -1
