@@ -177,7 +177,7 @@
         <ApiUsersManager v-else-if="activePage === 'api-usuarios'" />
         <ProfilePermissionsManager v-else-if="activePage === 'perfis'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
-        <IncentivosManager v-else-if="activePage === 'incentivos'" />
+        <VenuesManager v-else-if="activePage === 'incentivos'" />
         <IncentivosManager v-else-if="activePage === 'hotel-incentive'" />
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
@@ -256,6 +256,7 @@ import ImageBankManager from '@/components/image/ImageBankManager.vue'
 import VideoBankManager from '@/components/video/VideoBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
 import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
+import VenuesManager from '@/components/venues/VenuesManager.vue'
 import RestaurantsManager from '@/components/restaurants/RestaurantsManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
 import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
@@ -282,6 +283,7 @@ export default {
     RoadmapModal,
     HotelsManager,
     IncentivosManager,
+    VenuesManager,
     RestaurantsManager,
     UsersManager,
     ProfilePermissionsManager,

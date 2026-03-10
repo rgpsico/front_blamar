@@ -107,132 +107,94 @@
         </div>
     </div>
 
-    <!-- Hotels Grid -->
-    <div class="hotels-grid">
-        <!-- Hotel 1 - Copacabana Palace -->
+    <!-- Venues Grid (dinamico) -->
+    <div class="hotels-grid" id="venuesGrid">
         <div class="hotel-card">
-            <img src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop" alt="Copacabana Palace" class="hotel-image">
             <div class="hotel-content">
-                <div class="hotel-tag">—</div>
-                <div class="hotel-location">Rio de Janeiro</div>
-                <div class="hotel-type">Venue</div>
-                <h2 class="hotel-name">Copacabana Palace</h2>
-                <div class="hotel-details">
-                    <div>Stars: 5</div>
-                    <div>No. Rooms: XXXXXX</div>
-                    <div>Capacity:</div>
-                </div>
-                <p class="hotel-description">
-                    Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
-                </p>
-                <a class="read-more-btn" href="show.php?nome=Copacabana%20Palace">Read More</a>
-            </div>
-        </div>
-
-        <!-- Hotel 2 - Fasano Rio -->
-        <div class="hotel-card">
-            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop" alt="Fasano Rio" class="hotel-image">
-            <div class="hotel-content">
-                <div class="hotel-tag">—</div>
-                <div class="hotel-location">Rio de Janeiro</div>
-                <div class="hotel-type">Venue</div>
-                <h2 class="hotel-name">Fasano Rio</h2>
-                <div class="hotel-details">
-                    <div>Stars: 5</div>
-                    <div>No. Rooms: XXXXXX</div>
-                    <div>Capacity:</div>
-                </div>
-                <p class="hotel-description">
-                    Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
-                </p>
-                <a class="read-more-btn" href="show.php?nome=Fasano%20Rio">Read More</a>
-            </div>
-        </div>
-
-        <!-- Hotel 3 - Fairmont Rio de Janeiro -->
-        <div class="hotel-card">
-            <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop" alt="Fairmont Rio de Janeiro" class="hotel-image">
-            <div class="hotel-content">
-                <div class="hotel-tag">—</div>
-                <div class="hotel-location">Rio de Janeiro</div>
-                <div class="hotel-type">Venue</div>
-                <h2 class="hotel-name">Fairmont Rio de Janeiro</h2>
-                <div class="hotel-details">
-                    <div>Stars: 5</div>
-                    <div>No. Rooms: XXXXXX</div>
-                    <div>Capacity:</div>
-                </div>
-                <p class="hotel-description">
-                    Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
-                </p>
-                <a class="read-more-btn" href="show.php?nome=Fairmont%20Rio%20de%20Janeiro">Read More</a>
-            </div>
-        </div>
-
-        <!-- Hotel 4 - Copacabana Palace (Segunda linha) -->
-        <div class="hotel-card">
-            <img src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&h=300&fit=crop" alt="Copacabana Palace" class="hotel-image">
-            <div class="hotel-content">
-                <div class="hotel-tag">—</div>
-                <div class="hotel-location">Rio de Janeiro</div>
-                <div class="hotel-type">Venue</div>
-                <h2 class="hotel-name">Copacabana Palace</h2>
-                <div class="hotel-details">
-                    <div>Stars: 5</div>
-                    <div>No. Rooms: XXXXXX</div>
-                    <div>Capacity:</div>
-                </div>
-                <p class="hotel-description">
-                    Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
-                </p>
-                <a class="read-more-btn" href="show.php?nome=Copacabana%20Palace">Read More</a>
-            </div>
-        </div>
-
-        <!-- Hotel 5 - Fasano Rio (Segunda linha) -->
-        <div class="hotel-card">
-            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=300&fit=crop" alt="Fasano Rio" class="hotel-image">
-            <div class="hotel-content">
-                <div class="hotel-tag">—</div>
-                <div class="hotel-location">Rio de Janeiro</div>
-                <div class="hotel-type">Venue</div>
-                <h2 class="hotel-name">Fasano Rio</h2>
-                <div class="hotel-details">
-                    <div>Stars: 5</div>
-                    <div>No. Rooms: XXXXXX</div>
-                    <div>Capacity:</div>
-                </div>
-                <p class="hotel-description">
-                    Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
-                </p>
-                <a class="read-more-btn" href="show.php?nome=Fasano%20Rio">Read More</a>
-            </div>
-        </div>
-
-        <!-- Hotel 6 - Fairmont Rio de Janeiro (Segunda linha) -->
-        <div class="hotel-card">
-            <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=300&fit=crop" alt="Fairmont Rio de Janeiro" class="hotel-image">
-            <div class="hotel-content">
-                <div class="hotel-tag">—</div>
-                <div class="hotel-location">Rio de Janeiro</div>
-                <div class="hotel-type">Venue</div>
-                <h2 class="hotel-name">Fairmont Rio de Janeiro</h2>
-                <div class="hotel-details">
-                    <div>Stars: 5</div>
-                    <div>No. Rooms: XXXXXX</div>
-                    <div>Capacity:</div>
-                </div>
-                <p class="hotel-description">
-                    Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso. Breve descritivo do Hotel, algo em torno de 3 linhas para que não fique um texto muito extenso.
-                </p>
-                <a class="read-more-btn" href="show.php?nome=Fairmont%20Rio%20de%20Janeiro">Read More</a>
+                <p>Carregando venues...</p>
             </div>
         </div>
     </div>
-    
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="js/eventos_hotels.js"></script>
-    <script src="js/hotels.js"></script>
+    <script>
+        const VENUES_API_URL = 'https://webdeveloper.blumar.com.br/desenv/roger/conteudo/api/venues.php';
+        const PLACEHOLDER_IMAGE = 'img/hotel_01.png';
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function pickVenueImage(venue) {
+            if (Array.isArray(venue.imagens) && venue.imagens.length > 0) {
+                const primary = venue.imagens.find(img => img.is_primary) || venue.imagens[0];
+                return primary && primary.image_url ? primary.image_url : PLACEHOLDER_IMAGE;
+            }
+            return PLACEHOLDER_IMAGE;
+        }
+
+        function renderVenues(venues) {
+            if (!Array.isArray(venues) || venues.length === 0) {
+                $('#venuesGrid').html('<div class="hotel-card"><div class="hotel-content"><p>Nenhum venue encontrado.</p></div></div>');
+                return;
+            }
+
+            const html = venues.map(v => {
+                const name = escapeHtml(v.name || v.nome || '-');
+                const city = escapeHtml(v.city_name || v.city || '-');
+                const desc = escapeHtml(v.short_description || v.especialidade || '');
+                const image = escapeHtml(pickVenueImage(v));
+                const detailsUrl = v.cod_venues ? `venue_show.php?id=${encodeURIComponent(v.cod_venues)}` : '#';
+
+                return `
+                    <div class="hotel-card">
+                        <img src="${image}" alt="${name}" class="hotel-image" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+                        <div class="hotel-content">
+                            <div class="hotel-tag">&mdash;</div>
+                            <div class="hotel-location">${city}</div>
+                            <div class="hotel-type">Venue</div>
+                            <h2 class="hotel-name">${name}</h2>
+                            <div class="hotel-details">
+                                <div>Capacity: ${escapeHtml(v.capacity_max || '-')}</div>
+                            </div>
+                            <p class="hotel-description">${desc}</p>
+                            <a class="read-more-btn" href="${detailsUrl}">Read More</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            $('#venuesGrid').html(html);
+        }
+
+        function loadVenues() {
+            $.ajax({
+                url: VENUES_API_URL,
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    request: 'listar_venues',
+                    filtro_nome: '',
+                    filtro_ativo: 'all',
+                    cidade: '',
+                    limit: 200
+                }
+            }).done(function (data) {
+                renderVenues(Array.isArray(data) ? data : []);
+            }).fail(function () {
+                $('#venuesGrid').html('<div class="hotel-card"><div class="hotel-content"><p>Erro ao carregar venues.</p></div></div>');
+            });
+        }
+
+        $(document).ready(function () {
+            loadVenues();
+        });
+    </script>
     <?php include 'footer_show.php'; ?>
 </body>
 </html>
