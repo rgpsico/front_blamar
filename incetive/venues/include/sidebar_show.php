@@ -53,23 +53,150 @@ if ($product_link_url !== '' && !preg_match('/^https?:\/\//i', $product_link_url
 }
 ?>
 
+<style>
+    .featurs_right {
+        width: min(100%, 290px);
+        margin-left: auto;
+    }
+
+    .venues-product-link {
+        display: block;
+        margin-bottom: 16px;
+    }
+
+    .venues-product-link button {
+        width: 100%;
+        border: 1px solid #e0a24f;
+        background: #fff;
+        color: #d28c2e;
+        border-radius: 6px;
+        height: 38px;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .venues-product-link.is-disabled button {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .featurs_inner.venues-sidebar-card {
+        border: 1px solid #9dc1da;
+        border-radius: 14px;
+        background: #f7f7f7;
+        padding: 14px 14px 16px;
+    }
+
+    .venues-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-bottom: 1px solid #b7cede;
+        padding-bottom: 10px;
+        margin-bottom: 14px;
+    }
+
+    .venues-stat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+    }
+
+    .venues-stat:first-child {
+        border-right: 1px solid #b7cede;
+        padding-right: 10px;
+    }
+
+    .venues-stat:last-child {
+        padding-left: 10px;
+    }
+
+    .venues-stat-label {
+        font-size: 12px;
+        color: #666;
+        line-height: 1.1;
+        margin-bottom: 4px;
+    }
+
+    .venues-stat-value {
+        font-size: 34px;
+        color: #76aaca;
+        line-height: 0.9;
+        font-weight: 500;
+    }
+
+    .venues-capacity {
+        font-size: 22px;
+        color: #76aaca;
+        line-height: 1;
+    }
+
+    .venues-capacity-value {
+        color: #555;
+        font-size: 22px;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .venues-note-title {
+        text-align: center;
+        color: #555;
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-top: 10px;
+    }
+
+    .venues-divider {
+        border: 0;
+        border-top: 1px solid #b7cede;
+        margin: 14px 16px;
+    }
+
+    .venues-note-text {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.9;
+        padding: 0 10px;
+        min-height: 120px;
+    }
+
+    .venues-map {
+        padding: 2px 2px 0;
+    }
+
+    .venues-map iframe {
+        width: 100%;
+        height: 148px;
+        border: 0;
+        border-radius: 12px;
+    }
+</style>
+
 <div class="featurs_right">
     <?php if (!isset($is_public_proposal) || !$is_public_proposal) : ?>
         <?php if ($product_link_url !== '') : ?>
-            <a href="<?php echo h($product_link_url); ?>" target="_blank" rel="noopener">
+            <a class="venues-product-link" href="<?php echo h($product_link_url); ?>" target="_blank" rel="noopener">
                 <button type="button" style="cursor: pointer;">create produt link</button>
+            </a>
+        <?php else : ?>
+            <a class="venues-product-link is-disabled" href="javascript:void(0);" aria-disabled="true">
+                <button type="button" disabled>create produt link</button>
             </a>
         <?php endif; ?>
     <?php endif; ?>
 
-    <div class="featurs_inner">
-        <div class="avaliacao">
-            <div class="avalia_01">
-                <p><strong>Price Range</strong><br><?php echo $price_range !== '' ? h($price_range) : '-'; ?></p>
+    <div class="featurs_inner venues-sidebar-card">
+        <div class="venues-stats">
+            <div class="venues-stat">
+                <div>
+                    <div class="venues-stat-label">Price Range</div>
+                    <div class="venues-stat-value"><?php echo $price_range !== '' ? h($price_range) : '-'; ?></div>
+                </div>
             </div>
-            <div class="avalia_02">
-                <p>
-                    <strong>Capacity</strong><br>
+            <div class="venues-stat">
+                <span class="material-icons venues-capacity">groups</span>
+                <div class="venues-capacity-value">
                     <?php
                     if ($capacity_min !== null || $capacity_max !== null) {
                         echo h(($capacity_min !== null ? (string)$capacity_min : '-') . ' to ' . ($capacity_max !== null ? (string)$capacity_max : '-'));
@@ -77,18 +204,20 @@ if ($product_link_url !== '' && !preg_match('/^https?:\/\//i', $product_link_url
                         echo '-';
                     }
                     ?>
-                </p>
+                </div>
             </div>
         </div>
-        <div class="description">
-            <h4><strong>Personal note</strong><br>from the team</h4>
-            <p><?php echo $personal_note !== '' ? nl2br(h($personal_note)) : 'No notes available.'; ?></p>
-        </div>
-        <div class="map">
+
+        <h4 class="venues-note-title">Personal note<br>from the team</h4>
+        <hr class="venues-divider">
+        <p class="venues-note-text"><?php echo $personal_note !== '' ? nl2br(h($personal_note)) : 'No notes available.'; ?></p>
+        <hr class="venues-divider">
+
+        <div class="venues-map">
             <?php if ($map_embed_url !== '') : ?>
-                <iframe src="<?php echo h($map_embed_url); ?>" width="100%" style="border:0; height:8vw;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <iframe src="<?php echo h($map_embed_url); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             <?php else : ?>
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20779.12253490345!2d-43.19895375358977!3d-22.977295056677026!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9bd5a9a6a41ee5%3A0x5f178c915cb77d2c!2sBlumar%20Turismo!5e0!3m2!1spt-BR!2sbr!4v1771510608551!5m2!1spt-BR!2sbr" width="100%" style="border:0; height:8vw;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20779.12253490345!2d-43.19895375358977!3d-22.977295056677026!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9bd5a9a6a41ee5%3A0x5f178c915cb77d2c!2sBlumar%20Turismo!5e0!3m2!1spt-BR!2sbr!4v1771510608551!5m2!1spt-BR!2sbr" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             <?php endif; ?>
         </div>
     </div>

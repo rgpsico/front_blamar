@@ -1,5 +1,33 @@
 <?php include __DIR__ . '/include/header_show.php'; ?>
 
+<style>
+    #hotels_result_inner > .container {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    #hotels_result_inner .container_description {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #hotels_result_inner .featurs_right {
+        flex: 0 0 290px;
+    }
+
+    @media (max-width: 1024px) {
+        #hotels_result_inner > .container {
+            flex-direction: column;
+        }
+
+        #hotels_result_inner .featurs_right {
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+</style>
+
 <section id="hotels_result_inner">
     <div class="container">
         <div class="container_description">
