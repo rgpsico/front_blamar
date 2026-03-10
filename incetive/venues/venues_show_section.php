@@ -1,4 +1,8 @@
-<?php include __DIR__ . '/include/header_show.php'; ?>
+<?php
+require_once __DIR__ . '/../session_middleware.php';
+requireAuthenticatedSession();
+include __DIR__ . '/include/header_show.php';
+?>
 
 <style>
     #hotels_result_inner > .container {
