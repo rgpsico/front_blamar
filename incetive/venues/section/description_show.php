@@ -16,10 +16,55 @@ $insight = '';
 if ($id > 0) {
     $sql = "
         SELECT
-            COALESCE(NULLIF(descritivo_en, ''), NULLIF(descritivo_pt, ''), NULLIF(descritivo_esp, '')) AS descricao,
-            COALESCE(NULLIF(insight_en, ''), NULLIF(insight_pt, ''), NULLIF(insight_es, '')) AS insight
-        FROM conteudo_internet.venues
-        WHERE cod_venues = $1
+            COALESCE(
+                NULLIF((
+                    SELECT t.descritivo
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'en'
+                    LIMIT 1
+                ), ''),
+                NULLIF((
+                    SELECT t.descritivo
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'pt'
+                    LIMIT 1
+                ), ''),
+                NULLIF((
+                    SELECT t.descritivo
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'es'
+                    LIMIT 1
+                ), ''),
+                NULLIF(v.especialidade, '')
+            ) AS descricao,
+            COALESCE(
+                NULLIF((
+                    SELECT t.insight
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'en'
+                    LIMIT 1
+                ), ''),
+                NULLIF((
+                    SELECT t.insight
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'pt'
+                    LIMIT 1
+                ), ''),
+                NULLIF((
+                    SELECT t.insight
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'es'
+                    LIMIT 1
+                ), '')
+            ) AS insight
+        FROM incentive.venues v
+        WHERE v.venue_id = $1
         LIMIT 1
     ";
     $res = pg_query_params($conn, $sql, [$id]);

@@ -29,18 +29,19 @@ $mock_image = '../img/planta_venues.png';
 
 if ($id > 0) {
     $sql = "
-        SELECT floor_plan_image, foto1
-        FROM conteudo_internet.venues
-        WHERE cod_venues = $1
+        SELECT image_url, tipo
+        FROM incentive.venues_images
+        WHERE venue_id = $1
+        ORDER BY
+            CASE WHEN COALESCE(tipo, '') = 'floor_plan' THEN 0 ELSE 1 END,
+            ordem ASC,
+            image_id ASC
         LIMIT 1
     ";
     $res = pg_query_params($conn, $sql, [$id]);
     if ($res && pg_num_rows($res) > 0) {
         $row = pg_fetch_assoc($res);
-        $plan_img = venueMediaUrl($row['floor_plan_image'] ?? '');
-        if ($plan_img === '') {
-            $plan_img = venueMediaUrl($row['foto1'] ?? '');
-        }
+        $plan_img = venueMediaUrl($row['image_url'] ?? '');
     }
 }
 ?>

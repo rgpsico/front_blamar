@@ -20,15 +20,38 @@ $map_embed_url = '';
 if ($id > 0) {
     $sql = "
         SELECT
-            price_range,
-            capacity_min,
-            capacity_max,
-            COALESCE(NULLIF(insight_en, ''), NULLIF(insight_pt, ''), NULLIF(insight_es, '')) AS insight,
-            product_link_url,
-            latitude,
-            longitude
-        FROM conteudo_internet.venues
-        WHERE cod_venues = $1
+            v.price_range,
+            v.capacity_min,
+            v.capacity_max,
+            COALESCE(
+                NULLIF((
+                    SELECT t.insight
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'en'
+                    LIMIT 1
+                ), ''),
+                NULLIF((
+                    SELECT t.insight
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'pt'
+                    LIMIT 1
+                ), ''),
+                NULLIF((
+                    SELECT t.insight
+                    FROM incentive.venues_translations t
+                    WHERE t.venue_id = v.venue_id
+                      AND t.language = 'es'
+                    LIMIT 1
+                ), '')
+            ) AS insight,
+            v.product_link_url,
+            l.latitude,
+            l.longitude
+        FROM incentive.venues v
+        LEFT JOIN incentive.venues_location l ON l.venue_id = v.venue_id
+        WHERE v.venue_id = $1
         LIMIT 1
     ";
     $res = pg_query_params($conn, $sql, [$id]);

@@ -29,16 +29,15 @@ $mock_image = '../img/venues_bg.jpg';
 
 if ($id > 0) {
     $sql = "
-        SELECT foto1, foto2, foto3, foto4, foto5
-        FROM conteudo_internet.venues
-        WHERE cod_venues = $1
-        LIMIT 1
+        SELECT image_url
+        FROM incentive.venues_images
+        WHERE venue_id = $1
+        ORDER BY ordem ASC, image_id ASC
     ";
     $res = pg_query_params($conn, $sql, [$id]);
-    if ($res && pg_num_rows($res) > 0) {
-        $row = pg_fetch_assoc($res);
-        foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5'] as $field) {
-            $url = venueMediaUrl($row[$field] ?? '');
+    if ($res) {
+        while ($row = pg_fetch_assoc($res)) {
+            $url = venueMediaUrl($row['image_url'] ?? '');
             if ($url !== '') {
                 $media[] = $url;
             }

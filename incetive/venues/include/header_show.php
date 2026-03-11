@@ -14,9 +14,10 @@ $city_name = '';
 
 if ($id > 0) {
     $sql = "
-        SELECT nome, city
-        FROM conteudo_internet.venues
-        WHERE cod_venues = $1
+        SELECT v.nome, l.city
+        FROM incentive.venues v
+        LEFT JOIN incentive.venues_location l ON l.venue_id = v.venue_id
+        WHERE v.venue_id = $1
         LIMIT 1
     ";
     $res = pg_query_params($conn, $sql, [$id]);
