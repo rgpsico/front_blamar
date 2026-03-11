@@ -58,6 +58,9 @@
           </v-chip>
         </template>
         <template slot="item.actions" slot-scope="{ item }">
+          <v-btn icon small color="info" @click="openVenuePreview(item)" title="Ver venue">
+            <v-icon>mdi-open-in-new</v-icon>
+          </v-btn>
           <v-btn icon small color="primary" @click="openEdit(item)">
             <v-icon>mdi-pencil</v-icon>
           </v-btn>
@@ -852,12 +855,27 @@ export default {
         })
         const data = await response.json()
         this.editedItem = this.normalizeVenue(data)
+        const cityHint = String(this.editedItem.city_name || '').trim()
+        if (cityHint) {
+          await this.fetchCities(cityHint)
+        }
         this.reconcileEditedCitySelection()
       } catch (error) {
         this.showMessage(`Erro ao carregar venue: ${error.message}`, 'error')
       } finally {
         this.loadingDetail = false
       }
+    },
+    openVenuePreview(item) {
+      const id = item?.cod_venues
+      if (!id) {
+        this.showMessage('ID do venue não encontrado para abrir preview.', 'warning')
+        return
+      }
+      const url = `https://webdeveloper.blumar.com.br/desenv/roger/client_area_incentive/venues/venues_show_section.php?id=${encodeURIComponent(
+        id
+      )}`
+      window.open(url, '_blank', 'noopener')
     },
     closeDialog() {
       this.dialog = false

@@ -268,7 +268,7 @@ try {
                 $params[] = "%$nome%";
             }
             if ($cidade !== '') {
-                $where[] = "l.city ILIKE $" . (count($params) + 1);
+                $where[] = "COALESCE(l.city, c.nome_en, c.nome_pt) ILIKE $" . (count($params) + 1);
                 $params[] = "%$cidade%";
             }
             if ($ativo !== 'all') {
@@ -296,9 +296,12 @@ try {
                     l.country,
                     l.latitude,
                     l.longitude,
-                    l.google_maps_url
+                    l.google_maps_url,
+                    c.nome_en AS city_name_ref,
+                    c.nome_pt AS city_name_ref_pt
                 FROM incentive.venues v
                 LEFT JOIN incentive.venues_location l ON l.venue_id = v.venue_id
+                LEFT JOIN tarifario.cidade_tpo c ON c.cidade_cod = v.fk_cod_cidade
                 $whereSql
                 ORDER BY v.nome
                 LIMIT $" . (count($params) + 1) . "
@@ -335,13 +338,14 @@ try {
                     'created_at'     => $row['created_at'],
                     'location'       => [
                         'address_line' => $row['address_line'],
-                        'city'         => $row['city'],
+                        'city'         => $row['city'] ?: ($row['city_name_ref'] ?: ($row['city_name_ref_pt'] ?: null)),
                         'state'        => $row['state'],
                         'country'      => $row['country'],
                         'latitude'     => $row['latitude'] ? (float)$row['latitude'] : null,
                         'longitude'    => $row['longitude'] ? (float)$row['longitude'] : null,
                         'google_maps_url' => $row['google_maps_url'] ?? null,
                     ],
+                    'city_name'      => $row['city'] ?: ($row['city_name_ref'] ?: ($row['city_name_ref_pt'] ?: '')),
                     'translations'   => [],
                     'images'         => []
                 ];
@@ -384,9 +388,14 @@ try {
             if ($id < 1) error("ID inválido", 400);
 
             $sql = "
-                SELECT v.*, l.*
+                SELECT 
+                    v.*,
+                    l.*,
+                    c.nome_en AS city_name_ref,
+                    c.nome_pt AS city_name_ref_pt
                 FROM incentive.venues v
                 LEFT JOIN incentive.venues_location l ON l.venue_id = v.venue_id
+                LEFT JOIN tarifario.cidade_tpo c ON c.cidade_cod = v.fk_cod_cidade
                 WHERE v.venue_id = $1
             ";
             $res = pg_query_params($conn, $sql, [$id]);
@@ -431,13 +440,14 @@ try {
                 'created_at'    => $venue['created_at'],
                 'location'      => [
                     'address_line' => $venue['address_line'],
-                    'city'         => $venue['city'],
+                    'city'         => $venue['city'] ?: ($venue['city_name_ref'] ?: ($venue['city_name_ref_pt'] ?: null)),
                     'state'        => $venue['state'],
                     'country'      => $venue['country'],
                     'latitude'     => $venue['latitude'] ? (float)$venue['latitude'] : null,
                     'longitude'    => $venue['longitude'] ? (float)$venue['longitude'] : null,
                     'google_maps_url' => $venue['google_maps_url'] ?? null,
                 ],
+                'city_name'     => $venue['city'] ?: ($venue['city_name_ref'] ?: ($venue['city_name_ref_pt'] ?: '')),
                 'translations'  => $translations,
                 'images'        => $images,
             ];
