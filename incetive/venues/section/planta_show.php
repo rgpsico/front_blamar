@@ -25,7 +25,7 @@ if (!function_exists('venueMediaUrl')) {
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $plan_img = '';
-$mock_image = '../img/hotel_01.png';
+$mock_image = '../img/planta_venues.png';
 
 if ($id > 0) {
     $sql = "
