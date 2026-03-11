@@ -2,8 +2,8 @@
   <div class="venues-manager">
     <div class="venues-manager__header">
       <div>
-        <h2>Venues</h2>
-        <p>CRUD completo de venues usando a API de venues.</p>
+        <h2>{{ managerTitleText }}</h2>
+        <p>{{ managerDescriptionText }}</p>
       </div>
       <v-spacer></v-spacer>
       <v-btn color="primary" class="mr-2" @click="openCreate">Novo Venue</v-btn>
@@ -401,6 +401,20 @@ const blankVenue = () => ({
 
 export default {
   name: 'VenuesManager',
+  props: {
+    apiFile: {
+      type: String,
+      default: 'venues.php'
+    },
+    managerTitle: {
+      type: String,
+      default: 'Venues'
+    },
+    managerDescription: {
+      type: String,
+      default: 'CRUD completo de venues usando a API de venues.'
+    }
+  },
   data() {
     return {
       loading: false,
@@ -439,6 +453,15 @@ export default {
     }
   },
   computed: {
+    managerTitleText() {
+      return this.managerTitle || 'Venues'
+    },
+    managerDescriptionText() {
+      return this.managerDescription || 'CRUD completo de venues usando a API de venues.'
+    },
+    isIncentiveApi() {
+      return this.apiFile === 'api_venues.php'
+    },
     dialogTitle() {
       return this.editedIndex === -1 ? 'Novo Venue' : 'Editar Venue'
     },
@@ -468,32 +491,37 @@ export default {
         ? item.images
         : []
 
-      const getImageUrl = (index) => (apiImages[index] && apiImages[index].image_url ? apiImages[index].image_url : '')
+      const getImageUrl = (index) => {
+        if (!apiImages[index]) return ''
+        return this.sanitizeImageUrl(apiImages[index].image_url || apiImages[index].url || '')
+      }
+
+      const location = item.location || {}
 
       return {
-        cod_venues: item.cod_venues || item.id || null,
+        cod_venues: item.cod_venues || item.venue_id || item.id || null,
         name: item.name || item.nome || '',
         short_description: item.short_description || item.especialidade || '',
         description: item.description || item.descritivo_pt || '',
         city_id: item.fk_cod_cidade || item.city_id || null,
-        city_name: item.city_name || item.city || '',
-        is_active: item.is_active ?? (item.ativo === 't'),
+        city_name: item.city_name || item.city || location.city || '',
+        is_active: item.is_active ?? (item.ativo === true || item.ativo === 't'),
         capacity_min: item.capacity_min ?? null,
         capacity_max: item.capacity_max ?? item.capacity ?? null,
         price_range: item.price_range || '',
-        address_line: item.address_line || item.address || '',
-        state: item.state || '',
-        country: item.country || '',
-        latitude: item.latitude ?? null,
-        longitude: item.longitude ?? null,
+        address_line: item.address_line || item.address || location.address_line || '',
+        state: item.state || location.state || '',
+        country: item.country || location.country || '',
+        latitude: item.latitude ?? location.latitude ?? null,
+        longitude: item.longitude ?? location.longitude ?? null,
         insight: item.insight || item.insight_pt || '',
-        planta_img: item.planta_img || item.floor_plan_image || '',
+        planta_img: this.sanitizeImageUrl(item.planta_img || item.floor_plan_image || ''),
         banner_main: getImageUrl(0),
         banner_2: getImageUrl(1),
         banner_3: getImageUrl(2),
         banner_4: getImageUrl(3),
         gallery_images: apiImages.slice(4).map((img) => ({
-          image_url: img.image_url || '',
+          image_url: this.sanitizeImageUrl(img.image_url || img.url || ''),
           alt_text: img.alt_text || ''
         }))
       }
@@ -501,17 +529,17 @@ export default {
     buildQuery() {
       const params = new URLSearchParams()
       params.append('request', 'listar_venues')
-      if (this.filters.nome) params.append('filtro_nome', this.filters.nome)
+      if (this.filters.nome) params.append(this.isIncentiveApi ? 'nome' : 'filtro_nome', this.filters.nome)
       if (this.filters.cidade) params.append('cidade', this.filters.cidade)
-      if (this.filters.ativo) params.append('filtro_ativo', this.filters.ativo)
-      if (this.filters.data) params.append('filtro_data', this.filters.data)
+      if (this.filters.ativo) params.append(this.isIncentiveApi ? 'ativo' : 'filtro_ativo', this.filters.ativo)
+      if (!this.isIncentiveApi && this.filters.data) params.append('filtro_data', this.filters.data)
       params.append('limit', '200')
       return params.toString()
     },
     async fetchVenues() {
       this.loading = true
       try {
-        const response = await fetch(`${API_BASE}venues.php?${this.buildQuery()}`, {
+        const response = await fetch(`${API_BASE}${this.apiFile}?${this.buildQuery()}`, {
           headers: this.authHeaders()
         })
         const data = await response.json()
@@ -524,14 +552,30 @@ export default {
       }
     },
     async fetchCities() {
+      const mapCity = (city) => ({
+        id: city.id ?? city.cod_cid ?? city.cidade_cod ?? city.city_id ?? null,
+        name: city.name || city.nome_en || city.nome_pt || city.nome_cid || city.city || ''
+      })
+      const sortCities = (list) =>
+        list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }))
+
       try {
-        const response = await fetch(`${API_BASE}venues.php?request=listar_cidades`, {
+        const response = await fetch(`${API_BASE}cidades.php?request=listar_cidades&limit=500`, {
           headers: this.authHeaders()
         })
         const data = await response.json()
-        this.cities = Array.isArray(data) ? data : []
+        this.cities = Array.isArray(data) ? sortCities(data.map(mapCity).filter((c) => c.id && c.name)) : []
       } catch (error) {
-        this.cities = []
+        // fallback para APIs legadas de venues
+        try {
+          const response = await fetch(`${API_BASE}${this.apiFile}?request=listar_cidades`, {
+            headers: this.authHeaders()
+          })
+          const data = await response.json()
+          this.cities = Array.isArray(data) ? sortCities(data.map(mapCity).filter((c) => c.id && c.name)) : []
+        } catch (fallbackError) {
+          this.cities = []
+        }
       }
     },
     applyFilters() {
@@ -547,10 +591,21 @@ export default {
       this.fetchVenues()
     },
     previewImageUrl(url) {
-      const raw = (url || '').trim()
+      const raw = this.sanitizeImageUrl(url)
       if (!raw) return ''
       if (/^https?:\/\//i.test(raw) || raw.startsWith('//')) return raw
       return `https://www.blumar.com.br/${raw.replace(/^\/+/, '')}`
+    },
+    sanitizeImageUrl(url) {
+      let raw = (url || '').trim()
+      if (!raw) return ''
+      const idxHttps = raw.toLowerCase().indexOf('https://', 8)
+      const idxHttp = raw.toLowerCase().indexOf('http://', 8)
+      const idxCandidates = [idxHttps, idxHttp].filter((v) => v > 0)
+      if (idxCandidates.length) {
+        raw = raw.slice(Math.min(...idxCandidates))
+      }
+      return raw
     },
     addGalleryImage() {
       this.editedItem.gallery_images.push({ image_url: '', alt_text: '' })
@@ -560,15 +615,15 @@ export default {
     },
     buildImagesPayload() {
       const banners = [
-        { image_url: (this.editedItem.banner_main || '').trim(), alt_text: 'Banner principal' },
-        { image_url: (this.editedItem.banner_2 || '').trim(), alt_text: 'Banner 2' },
-        { image_url: (this.editedItem.banner_3 || '').trim(), alt_text: 'Banner 3' },
-        { image_url: (this.editedItem.banner_4 || '').trim(), alt_text: 'Banner 4' }
+        { image_url: this.sanitizeImageUrl(this.editedItem.banner_main), alt_text: 'Banner principal' },
+        { image_url: this.sanitizeImageUrl(this.editedItem.banner_2), alt_text: 'Banner 2' },
+        { image_url: this.sanitizeImageUrl(this.editedItem.banner_3), alt_text: 'Banner 3' },
+        { image_url: this.sanitizeImageUrl(this.editedItem.banner_4), alt_text: 'Banner 4' }
       ].filter((img) => img.image_url !== '')
 
       const gallery = (this.editedItem.gallery_images || [])
         .map((img) => ({
-          image_url: (img.image_url || '').trim(),
+          image_url: this.sanitizeImageUrl(img.image_url),
           alt_text: (img.alt_text || '').trim() || 'Galeria'
         }))
         .filter((img) => img.image_url !== '')
@@ -579,6 +634,16 @@ export default {
         alt_text: img.alt_text,
         is_primary: idx === 0
       }))
+    },
+    toIntOrNull(value) {
+      if (value === null || value === undefined || value === '') return null
+      const n = Number(value)
+      return Number.isFinite(n) ? Math.trunc(n) : null
+    },
+    toNumberOrNull(value) {
+      if (value === null || value === undefined || value === '') return null
+      const n = Number(value)
+      return Number.isFinite(n) ? n : null
     },
     openCreate() {
       this.editedIndex = -1
@@ -592,7 +657,8 @@ export default {
       this.dialog = true
       this.loadingDetail = true
       try {
-        const response = await fetch(`${API_BASE}venues.php?request=buscar_venue&id=${item.cod_venues}`, {
+        const requestName = this.isIncentiveApi ? 'obter_venue' : 'buscar_venue'
+        const response = await fetch(`${API_BASE}${this.apiFile}?request=${requestName}&id=${item.cod_venues}`, {
           headers: this.authHeaders()
         })
         const data = await response.json()
@@ -616,7 +682,7 @@ export default {
       this.saving = true
       try {
         const response = await fetch(
-          `${API_BASE}venues.php?request=excluir_venue&id=${this.editedItem.cod_venues}`,
+          `${API_BASE}${this.apiFile}?request=excluir_venue&id=${this.editedItem.cod_venues}`,
           { method: 'DELETE', headers: this.authHeaders() }
         )
         const data = await response.json()
@@ -641,28 +707,52 @@ export default {
         const request = isEdit ? 'atualizar_venue' : 'criar_venue'
         const method = isEdit ? 'PUT' : 'POST'
         const url = isEdit
-          ? `${API_BASE}venues.php?request=${request}&id=${this.editedItem.cod_venues}`
-          : `${API_BASE}venues.php?request=${request}`
+          ? `${API_BASE}${this.apiFile}?request=${request}&id=${this.editedItem.cod_venues}`
+          : `${API_BASE}${this.apiFile}?request=${request}`
 
-        const payload = {
-          name: this.editedItem.name,
-          short_description: this.editedItem.short_description,
-          description: this.editedItem.description,
-          city: this.editedItem.city_id,
-          is_active: this.editedItem.is_active,
-          capacity_min: this.editedItem.capacity_min,
-          capacity_max: this.editedItem.capacity_max,
-          price_range: this.editedItem.price_range,
-          address_line: this.editedItem.address_line,
-          state: this.editedItem.state,
-          country: this.editedItem.country,
-          latitude: this.editedItem.latitude,
-          longitude: this.editedItem.longitude,
-          insight: this.editedItem.insight,
-          planta_img: this.editedItem.planta_img,
-          floor_plan_image: this.editedItem.planta_img,
-          images: this.buildImagesPayload()
-        }
+        const payload = this.isIncentiveApi
+          ? {
+              nome: this.editedItem.name,
+              especialidade: this.editedItem.short_description,
+              ativo: this.editedItem.is_active,
+              fk_cod_cidade: this.toIntOrNull(this.editedItem.city_id),
+              price_range: this.editedItem.price_range,
+              capacity_min: this.toIntOrNull(this.editedItem.capacity_min),
+              capacity_max: this.toIntOrNull(this.editedItem.capacity_max),
+              product_link_url: '',
+              location: {
+                address_line: this.editedItem.address_line,
+                city: this.editedItem.city_name,
+                state: this.editedItem.state,
+                country: this.editedItem.country,
+                latitude: this.toNumberOrNull(this.editedItem.latitude),
+                longitude: this.toNumberOrNull(this.editedItem.longitude)
+              },
+              images: this.buildImagesPayload().map((img, idx) => ({
+                image_url: img.image_url,
+                ordem: idx + 1,
+                tipo: idx < 4 ? 'banner' : 'gallery'
+              }))
+            }
+          : {
+              name: this.editedItem.name,
+              short_description: this.editedItem.short_description,
+              description: this.editedItem.description,
+              city: this.editedItem.city_id,
+              is_active: this.editedItem.is_active,
+              capacity_min: this.editedItem.capacity_min,
+              capacity_max: this.editedItem.capacity_max,
+              price_range: this.editedItem.price_range,
+              address_line: this.editedItem.address_line,
+              state: this.editedItem.state,
+              country: this.editedItem.country,
+              latitude: this.editedItem.latitude,
+              longitude: this.editedItem.longitude,
+              insight: this.editedItem.insight,
+              planta_img: this.editedItem.planta_img,
+              floor_plan_image: this.editedItem.planta_img,
+              images: this.buildImagesPayload()
+            }
 
         const response = await fetch(url, {
           method,

@@ -25,11 +25,11 @@ if (!function_exists('venueMediaUrl')) {
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $plan_img = '';
-$mock_image = '../img/planta_hotel.png';
+$mock_image = '../img/hotel_01.png';
 
 if ($id > 0) {
     $sql = "
-        SELECT floor_plan_image
+        SELECT floor_plan_image, foto1
         FROM conteudo_internet.venues
         WHERE cod_venues = $1
         LIMIT 1
@@ -38,6 +38,9 @@ if ($id > 0) {
     if ($res && pg_num_rows($res) > 0) {
         $row = pg_fetch_assoc($res);
         $plan_img = venueMediaUrl($row['floor_plan_image'] ?? '');
+        if ($plan_img === '') {
+            $plan_img = venueMediaUrl($row['foto1'] ?? '');
+        }
     }
 }
 ?>

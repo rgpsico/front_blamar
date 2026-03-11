@@ -177,6 +177,12 @@
         <ApiUsersManager v-else-if="activePage === 'api-usuarios'" />
         <ProfilePermissionsManager v-else-if="activePage === 'perfis'" />
         <HotelsManager v-else-if="activePage === 'hotel'" />
+        <VenuesManager
+          v-else-if="activePage === 'cad-incentive-venues'"
+          api-file="api_venues.php"
+          manager-title="Cad. Incentive Venues"
+          manager-description="Cadastro de incentive venues usando a API api_venues.php."
+        />
         <VenuesManager v-else-if="activePage === 'incentivos'" />
         <IncentivosManager v-else-if="activePage === 'hotel-incentive'" />
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
@@ -354,6 +360,7 @@ export default {
           items: [
             { title: 'Hotel', icon: 'mdi-bed', page: 'hotel' },
             { title: 'Hotel Incentive', icon: 'mdi-gift-outline', page: 'hotel-incentive' },
+            { title: 'Cad. Incentive Venues', icon: 'mdi-office-building-cog', page: 'cad-incentive-venues' },
             { title: 'Venues', icon: 'mdi-office-building', page: 'incentivos' },
             { title: 'Restaurantes', icon: 'mdi-silverware-fork-knife', page: 'restaurantes' }
           ]
