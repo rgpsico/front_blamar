@@ -9,66 +9,9 @@
     <title>Blumar Hotels - Rio de Janeiro</title>
 </head>
 <body>
+    <?php include __DIR__ . '/include/header_list.php'; ?>
 
-    <header>
-        <div class="container">
-            <div class="logo_topo">
-                <img src="../img/logo_blumar.png" alt="Blumar Logo">
-            </div>
-            <div class="menu_interno">
-                <a href="">
-                    <button>Back to main site</button>
-                </a>
-            </div>
-        </div>
-        <style>
-            #read_more{
-                cursor: pointer;
-            }
-        </style>
-    </header>
-
-    <section id="header_page">
-        <div class="container">
-            <div class="page_title">
-                <h2>Hotels</h2>
-                <h3>Rio de Janeiro's</h3>
-            </div>
-            <div class="chose_city"></div>
-        </div>
-        <div class="container_max ct01">
-            <div class="container">
-                <div class="filter_box01">
-                    <div class="filters_hotel"><h3>Filters</h3> <i class="material-icons">&#xe152;</i></div>
-                </div>
-                <div class="filter_box02">
-                    <div class="filters_hotel">
-                        <select class="select_hotel" name="city">
-                            <option value="">select the location</option>
-                        </select>
-                        <select class="select_stars" name="stars">
-                            <option value="">Selecione as estrelas</option>
-                            <option value="1">★☆☆☆☆</option>
-                            <option value="2">★★☆☆☆</option>
-                            <option value="3">★★★☆☆</option>
-                            <option value="4">★★★★☆</option>
-                            <option value="5">★★★★★</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container_max ct02">
-            <div class="container">
-                <div class="breadcrumb">
-                    <a href="../index.html">Incentive Area</a><i class="material-icons">&#xe315;</i><a href="../hotels.html">Hotel</a><i class="material-icons">&#xe315;</i><a href="">Rio de Janeiro</a><i class="material-icons">&#xe315;</i><a href="">Copacabana Palace</a>
-                </div>
-            </div>
-        </div>
-        
-    </section>
-
-    <section id="hotels_result">
+<section id="hotels_result">
         <div class="container">
             <!-- Os hotéis serão renderizados aqui dinamicamente via JavaScript -->
             <div style="text-align:center;padding:40px;">
@@ -197,3 +140,4 @@
     </script>
 </body>
 </html>
+
