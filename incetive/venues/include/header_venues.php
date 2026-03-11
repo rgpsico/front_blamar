@@ -12,8 +12,8 @@
     }
 
     .language-toggle {
-        border: 1px solid #d0d0d0;
-        background: #fff;
+        border: 1px solid #286175;
+        background: #286175;
         border-radius: 4px;
         padding: 4px 6px;
         height: 30px;
@@ -25,7 +25,7 @@
 
     .language-caret {
         font-size: 12px;
-        color: #666;
+        color: #0e0606;
     }
 
     .language-menu {
@@ -68,6 +68,17 @@
         display: none !important;
     }
 
+    iframe.goog-te-banner-frame,
+    iframe.goog-te-menu-frame,
+    iframe.skiptranslate {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    body > .skiptranslate {
+        display: none !important;
+    }
+
     body {
         top: 0 !important;
     }
@@ -83,18 +94,18 @@
     <div class="header-right">
         <div class="language-switcher" aria-label="Language switcher">
             <button type="button" id="languageToggle" class="language-toggle" title="Language">
-                <img id="currentLanguageFlag" src="../../img/flags/us.png" alt="Language">
-                <span class="language-caret">▼</span>
+                <img id="currentLanguageFlag" src="../img/flags/us.png" alt="Language">
+                <span class="language-caret">&#9662;</span>
             </button>
             <div id="languageMenu" class="language-menu" role="listbox" aria-label="Language options">
                 <button type="button" class="language-option" data-lang="en" title="English">
-                    <img src="../../img/flags/us.png" alt="English">
+                    <img src="../img/flags/us.png" alt="English">
                 </button>
                 <button type="button" class="language-option" data-lang="pt" title="Portugues">
-                    <img src="../../img/flags/br.png" alt="Portugues">
+                    <img src="../img/flags/br.png" alt="Portugues">
                 </button>
                 <button type="button" class="language-option" data-lang="es" title="Espanol">
-                    <img src="../../img/flags/es.png" alt="Espanol">
+                    <img src="../img/flags/es.png" alt="Espanol">
                 </button>
             </div>
         </div>
@@ -120,7 +131,7 @@
 
 <div class="breadcrumb-section">
     <div class="breadcrumb">
-        <a href="#">Incentive Area</a> › <a href="#">Venues</a> › <strong>Rio de Janeiro</strong>
+        <a href="#">Incentive Area</a> &#8250; <a href="#">Venues</a> &#8250; <strong>Rio de Janeiro</strong>
     </div>
 </div>
 
@@ -147,9 +158,9 @@
         var flag = document.getElementById('currentLanguageFlag');
         var options = document.querySelectorAll('.language-option[data-lang]');
         var flagMap = {
-            pt: '../../img/flags/br.png',
-            en: '../../img/flags/us.png',
-            es: '../../img/flags/es.png'
+            pt: '../img/flags/br.png',
+            en: '../img/flags/us.png',
+            es: '../img/flags/es.png'
         };
 
         if (flag && flagMap[current]) {
@@ -173,6 +184,19 @@
             combo.dispatchEvent(new Event('change'));
         } else {
             window.location.reload();
+        }
+    }
+
+    function hideGoogleIframes() {
+        var selectors = ['.goog-te-banner-frame', '.goog-te-menu-frame', 'iframe.skiptranslate'];
+        selectors.forEach(function (selector) {
+            document.querySelectorAll(selector).forEach(function (el) {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+            });
+        });
+        if (document.body) {
+            document.body.style.top = '0px';
         }
     }
 
@@ -202,6 +226,8 @@
 
         updateLanguageUi();
         setTimeout(updateLanguageUi, 1200);
+        hideGoogleIframes();
+        setInterval(hideGoogleIframes, 800);
     });
 </script>
 <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>

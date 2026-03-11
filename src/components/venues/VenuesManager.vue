@@ -86,12 +86,93 @@
           ></v-progress-linear>
           <v-form>
             <v-tabs v-model="activeTab" background-color="transparent" grow>
+              <v-tab>Banners</v-tab>
               <v-tab>Dados</v-tab>
               <v-tab>Localizacao</v-tab>
-              <v-tab>Imagens</v-tab>
+              <v-tab>Galeria</v-tab>
             </v-tabs>
 
             <v-tabs-items v-model="activeTab" class="mt-4">
+              <v-tab-item>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="editedItem.banner_main"
+                      label="Banner principal (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                    <v-img
+                      v-if="editedItem.banner_main"
+                      :src="previewImageUrl(editedItem.banner_main)"
+                      height="120"
+                      cover
+                    ></v-img>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="editedItem.banner_2"
+                      label="Banner 2 (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                    <v-img
+                      v-if="editedItem.banner_2"
+                      :src="previewImageUrl(editedItem.banner_2)"
+                      height="120"
+                      cover
+                    ></v-img>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="editedItem.banner_3"
+                      label="Banner 3 (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                    <v-img
+                      v-if="editedItem.banner_3"
+                      :src="previewImageUrl(editedItem.banner_3)"
+                      height="120"
+                      cover
+                    ></v-img>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="editedItem.banner_4"
+                      label="Banner 4 (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                    <v-img
+                      v-if="editedItem.banner_4"
+                      :src="previewImageUrl(editedItem.banner_4)"
+                      height="120"
+                      cover
+                    ></v-img>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-divider class="my-2"></v-divider>
+                  </v-col>
+                  <v-col cols="12" md="8">
+                    <v-text-field
+                      v-model="editedItem.planta_img"
+                      label="planta_img (URL)"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-img
+                      v-if="editedItem.planta_img"
+                      :src="previewImageUrl(editedItem.planta_img)"
+                      height="120"
+                      contain
+                    ></v-img>
+                  </v-col>
+                </v-row>
+              </v-tab-item>
+
               <v-tab-item>
                 <v-row>
                   <v-col cols="12" md="8">
@@ -202,32 +283,53 @@
               </v-tab-item>
 
               <v-tab-item>
-                <div class="venues-manager__tab-head">
-                  <div>Imagens</div>
-                  <v-btn small outlined color="primary" @click="addImage">Adicionar</v-btn>
-                </div>
-                <v-row v-for="(img, index) in editedItem.images" :key="`img-${index}`">
+                <v-row>
+                  <v-col cols="12" class="d-flex align-center justify-space-between">
+                    <span>Imagens da galeria</span>
+                    <v-btn small outlined color="primary" @click="addGalleryImage">Adicionar imagem</v-btn>
+                  </v-col>
+                </v-row>
+
+                <v-row
+                  v-for="(img, index) in editedItem.gallery_images"
+                  :key="`gallery-${index}`"
+                >
                   <v-col cols="12" md="6">
-                    <v-text-field v-model="img.image_url" label="URL" outlined dense></v-text-field>
+                    <v-text-field
+                      v-model="img.image_url"
+                      label="URL da galeria"
+                      outlined
+                      dense
+                    ></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field v-model="img.alt_text" label="Alt text" outlined dense></v-text-field>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="img.alt_text"
+                      label="Descricao (alt)"
+                      outlined
+                      dense
+                    ></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="2">
-                    <v-switch v-model="img.is_primary" label="Principal" inset></v-switch>
-                  </v-col>
-                  <v-col cols="12" md="1" class="d-flex align-center">
-                    <v-btn icon color="error" @click="removeImage(index)">
+                  <v-col cols="12" md="2" class="d-flex align-center justify-end">
+                    <v-btn icon color="error" @click="removeGalleryImage(index)">
                       <v-icon>mdi-delete</v-icon>
                     </v-btn>
                   </v-col>
                   <v-col cols="12" md="4">
                     <v-img
                       v-if="img.image_url"
-                      :src="img.image_url"
+                      :src="previewImageUrl(img.image_url)"
                       height="120"
                       cover
                     ></v-img>
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="!editedItem.gallery_images.length">
+                  <v-col cols="12">
+                    <v-alert type="info" dense text>
+                      Nenhuma imagem na galeria. Clique em "Adicionar imagem".
+                    </v-alert>
                   </v-col>
                 </v-row>
               </v-tab-item>
@@ -289,7 +391,12 @@ const blankVenue = () => ({
   latitude: null,
   longitude: null,
   insight: '',
-  images: []
+  planta_img: '',
+  banner_main: '',
+  banner_2: '',
+  banner_3: '',
+  banner_4: '',
+  gallery_images: []
 })
 
 export default {
@@ -355,6 +462,14 @@ export default {
     },
     normalizeVenue(item) {
       if (!item) return blankVenue()
+      const apiImages = Array.isArray(item.imagens)
+        ? item.imagens
+        : Array.isArray(item.images)
+        ? item.images
+        : []
+
+      const getImageUrl = (index) => (apiImages[index] && apiImages[index].image_url ? apiImages[index].image_url : '')
+
       return {
         cod_venues: item.cod_venues || item.id || null,
         name: item.name || item.nome || '',
@@ -372,15 +487,15 @@ export default {
         latitude: item.latitude ?? null,
         longitude: item.longitude ?? null,
         insight: item.insight || item.insight_pt || '',
-        images: Array.isArray(item.imagens)
-          ? item.imagens.map((img) => ({
-              image_url: img.image_url || '',
-              is_primary: !!img.is_primary,
-              alt_text: img.alt_text || ''
-            }))
-          : Array.isArray(item.images)
-          ? item.images
-          : []
+        planta_img: item.planta_img || item.floor_plan_image || '',
+        banner_main: getImageUrl(0),
+        banner_2: getImageUrl(1),
+        banner_3: getImageUrl(2),
+        banner_4: getImageUrl(3),
+        gallery_images: apiImages.slice(4).map((img) => ({
+          image_url: img.image_url || '',
+          alt_text: img.alt_text || ''
+        }))
       }
     },
     buildQuery() {
@@ -431,11 +546,39 @@ export default {
       }
       this.fetchVenues()
     },
-    addImage() {
-      this.editedItem.images.push({ image_url: '', is_primary: false, alt_text: '' })
+    previewImageUrl(url) {
+      const raw = (url || '').trim()
+      if (!raw) return ''
+      if (/^https?:\/\//i.test(raw) || raw.startsWith('//')) return raw
+      return `https://www.blumar.com.br/${raw.replace(/^\/+/, '')}`
     },
-    removeImage(index) {
-      this.editedItem.images.splice(index, 1)
+    addGalleryImage() {
+      this.editedItem.gallery_images.push({ image_url: '', alt_text: '' })
+    },
+    removeGalleryImage(index) {
+      this.editedItem.gallery_images.splice(index, 1)
+    },
+    buildImagesPayload() {
+      const banners = [
+        { image_url: (this.editedItem.banner_main || '').trim(), alt_text: 'Banner principal' },
+        { image_url: (this.editedItem.banner_2 || '').trim(), alt_text: 'Banner 2' },
+        { image_url: (this.editedItem.banner_3 || '').trim(), alt_text: 'Banner 3' },
+        { image_url: (this.editedItem.banner_4 || '').trim(), alt_text: 'Banner 4' }
+      ].filter((img) => img.image_url !== '')
+
+      const gallery = (this.editedItem.gallery_images || [])
+        .map((img) => ({
+          image_url: (img.image_url || '').trim(),
+          alt_text: (img.alt_text || '').trim() || 'Galeria'
+        }))
+        .filter((img) => img.image_url !== '')
+
+      const combined = [...banners, ...gallery]
+      return combined.map((img, idx) => ({
+        image_url: img.image_url,
+        alt_text: img.alt_text,
+        is_primary: idx === 0
+      }))
     },
     openCreate() {
       this.editedIndex = -1
@@ -516,7 +659,9 @@ export default {
           latitude: this.editedItem.latitude,
           longitude: this.editedItem.longitude,
           insight: this.editedItem.insight,
-          images: this.editedItem.images
+          planta_img: this.editedItem.planta_img,
+          floor_plan_image: this.editedItem.planta_img,
+          images: this.buildImagesPayload()
         }
 
         const response = await fetch(url, {
@@ -576,10 +721,4 @@ export default {
   align-items: center;
 }
 
-.venues-manager__tab-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
 </style>

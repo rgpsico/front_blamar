@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/estilo.css">
-    <link rel="stylesheet" href="css/index.css">
-    <title>Document</title>
+    <link rel="stylesheet" href="css/estilo.css?v=1.0.1">
+    <link rel="stylesheet" href="css/estilo_mobile.css">
+    <title>Blumar | Incentives</title>
 </head>
 <body>
 
@@ -40,39 +40,49 @@ We have created a special area that will allow you to navigate through all the i
         <div class="container_menu_grid">
             <div class="menu_grid">
                 <div class="menu_grid_container">
-                    <a href="hotels.php" class="box_menu_grid bmg01">
+                    <a href="hotel/hotel_list.php">
+                    <div class="box_menu_grid bmg01">
                         <h3>Hotels</h3>
                         <div class="line"></div>
                         <p>Um breve texto introdutorio sobre</p>
+                    </div>
                     </a>
+                    <a href="activities.html">
                     <div class="box_menu_grid bmg02">
                         <h3>Activities</h3>
                         <div class="line"></div>
                         <p>Um breve texto introdutorio sobre</p>
                     </div>
+                    </a>
                     <div class="box_menu_grid bmg03">
                         
                     </div>
+                    <a href="venues/venues.php">
                     <div class="box_menu_grid bmg04">
                         <h3>Venues</h3>
                         <div class="line"></div>
                         <p>Um breve texto introdutorio sobre</p>
                     </div>
+                    </a>
                 </div>
                 <div class="menu_grid_container">
                     <div class="box_menu_grid bmg05">
                         
                     </div>
+                    <a href="entertainment.html">
                     <div class="box_menu_grid bmg06">
                         <h3>Entertainment</h3>
                         <div class="line"></div>
                         <p>Um breve texto introdutorio sobre</p>
                     </div>
+                    </a>
+                    <a href="restaurants.html">
                     <div class="box_menu_grid bmg07">
                         <h3>Restaurants</h3>
                         <div class="line"></div>
                         <p>Um breve texto introdutorio sobre</p>
                     </div>
+                    </a>
                     <div class="box_menu_grid bmg08">
                         <h3>Gifts</h3>
                         <div class="line"></div>
@@ -103,8 +113,6 @@ Blumar</h3>
 
         </div>
     </section>
-    
- 
     
 </body>
 </html>
