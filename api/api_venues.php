@@ -51,6 +51,151 @@ function montarUrlImagem($imageUrl) {
     return rtrim(BASE_URL_IMAGEM, '/') . '/' . ltrim($raw, '/');
 }
 
+function normalizeImageType($type) {
+    $raw = strtolower(trim((string)$type));
+    $aliases = [
+        'planta' => 'floor_plan',
+        'floorplan' => 'floor_plan',
+        'banner_principal' => 'banner',
+        'main_banner' => 'banner',
+    ];
+    if (isset($aliases[$raw])) {
+        $raw = $aliases[$raw];
+    }
+    if (!in_array($raw, ['gallery', 'banner', 'floor_plan'], true)) {
+        return 'gallery';
+    }
+    return $raw;
+}
+
+function resolveInputImageUrl($img) {
+    if (!is_array($img)) {
+        return '';
+    }
+    $candidate = '';
+    if (!empty($img['image_url'])) {
+        $candidate = $img['image_url'];
+    } elseif (!empty($img['url'])) {
+        $candidate = $img['url'];
+    }
+    return montarUrlImagem($candidate);
+}
+
+function buildMapEmbedUrl($lat, $lng) {
+    if (!is_numeric($lat) || !is_numeric($lng)) {
+        return null;
+    }
+    return 'https://maps.google.com/maps?q=' . urlencode($lat . ',' . $lng) . '&z=15&output=embed';
+}
+
+function toIntOrNull($value) {
+    if ($value === null || $value === '') {
+        return null;
+    }
+    if (is_numeric($value)) {
+        return (int)$value;
+    }
+    return null;
+}
+
+function resolveVenueCityId($conn, $input) {
+    $rawDirect = $input['fk_cod_cidade'] ?? null;
+    $direct = toIntOrNull($rawDirect);
+    if ($direct !== null) {
+        return $direct;
+    }
+
+    $rawAlt = $input['city_id'] ?? null;
+    $directAlt = toIntOrNull($rawAlt);
+    if ($directAlt !== null) {
+        return $directAlt;
+    }
+
+    $cityName = trim((string)($input['location']['city'] ?? $input['city_name'] ?? $input['city'] ?? ''));
+    if ($cityName === '') {
+        $cityName = trim((string)$rawDirect);
+    }
+    if ($cityName === '') {
+        $cityName = trim((string)$rawAlt);
+    }
+    if ($cityName === '') {
+        return null;
+    }
+
+    $sql = "
+        SELECT *
+        FROM tarifario.cidade_tpo
+        WHERE cidade_cod::text ILIKE $1
+           OR nome_en ILIKE $1
+           OR nome_pt ILIKE $1
+        ORDER BY
+            CASE
+                WHEN lower(cidade_cod::text) = lower($2) THEN 0
+                WHEN lower(nome_en) = lower($2) THEN 0
+                WHEN lower(nome_pt) = lower($2) THEN 1
+                ELSE 2
+            END,
+            nome_en
+        LIMIT 1
+    ";
+    $res = pg_query_params($conn, $sql, ["%{$cityName}%", $cityName]);
+    if ($res && pg_num_rows($res) > 0) {
+        $row = pg_fetch_assoc($res);
+        $cidadeCod = toIntOrNull($row['cidade_cod'] ?? null);
+        if ($cidadeCod !== null) {
+            return $cidadeCod;
+        }
+        $codCid = toIntOrNull($row['cod_cid'] ?? null);
+        if ($codCid !== null) {
+            return $codCid;
+        }
+        $pkCidade = toIntOrNull($row['pk_cidade_tpo'] ?? null);
+        if ($pkCidade !== null) {
+            return $pkCidade;
+        }
+        $cid = toIntOrNull($row['cid'] ?? null);
+        if ($cid !== null) {
+            return $cid;
+        }
+        return toIntOrNull($row['cidade_cod'] ?? null);
+    }
+
+    return null;
+}
+
+function enrichVenuePayload($venue) {
+    $images = isset($venue['images']) && is_array($venue['images']) ? $venue['images'] : [];
+    $bannerImages = [];
+    $galleryImages = [];
+    $floorPlanImage = null;
+
+    foreach ($images as $img) {
+        $imgType = normalizeImageType($img['tipo'] ?? '');
+        $img['tipo'] = $imgType;
+
+        if ($imgType === 'floor_plan' && $floorPlanImage === null && !empty($img['url'])) {
+            $floorPlanImage = $img['url'];
+        }
+        if ($imgType === 'banner') {
+            $bannerImages[] = $img;
+        }
+        $galleryImages[] = $img;
+    }
+
+    $lat = $venue['location']['latitude'] ?? null;
+    $lng = $venue['location']['longitude'] ?? null;
+    $googleMapsUrl = trim((string)($venue['location']['google_maps_url'] ?? ''));
+    $mapEmbedUrl = $googleMapsUrl !== '' ? $googleMapsUrl : buildMapEmbedUrl($lat, $lng);
+
+    $venue['images'] = $galleryImages;
+    $venue['banner_images'] = $bannerImages;
+    $venue['floor_plan_image'] = $floorPlanImage;
+    $venue['map_embed_url'] = $mapEmbedUrl;
+    $venue['google_maps_url'] = $googleMapsUrl !== '' ? $googleMapsUrl : null;
+
+    return $venue;
+}
+
 function respond($data, $status = 200) {
     http_response_code($status);
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE);
@@ -59,6 +204,33 @@ function respond($data, $status = 200) {
 
 function error($message, $status = 400) {
     respond(["error" => $message], $status);
+}
+
+function execQueryParamsOrThrow($conn, $sql, $params = []) {
+    $res = pg_query_params($conn, $sql, $params);
+    if (!$res) {
+        throw new Exception(pg_last_error($conn));
+    }
+    return $res;
+}
+
+function hasColumn($conn, $schema, $table, $column) {
+    static $cache = [];
+    $key = $schema . '.' . $table . '.' . $column;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+    $sql = "
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = $1
+          AND table_name = $2
+          AND column_name = $3
+        LIMIT 1
+    ";
+    $res = pg_query_params($conn, $sql, [$schema, $table, $column]);
+    $cache[$key] = $res && pg_num_rows($res) > 0;
+    return $cache[$key];
 }
 
 // Leitura de input
@@ -112,6 +284,7 @@ try {
                     v.venue_id,
                     v.nome,
                     v.especialidade,
+                    v.fk_cod_cidade,
                     v.price_range,
                     v.capacity_min,
                     v.capacity_max,
@@ -122,7 +295,8 @@ try {
                     l.state,
                     l.country,
                     l.latitude,
-                    l.longitude
+                    l.longitude,
+                    l.google_maps_url
                 FROM incentive.venues v
                 LEFT JOIN incentive.venues_location l ON l.venue_id = v.venue_id
                 $whereSql
@@ -152,9 +326,11 @@ try {
                     'venue_id'       => $id,
                     'nome'           => $row['nome'],
                     'especialidade'  => $row['especialidade'],
+                    'fk_cod_cidade'  => toIntOrNull($row['fk_cod_cidade'] ?? null),
+                    'city_id'        => toIntOrNull($row['fk_cod_cidade'] ?? null),
                     'price_range'    => $row['price_range'],
-                    'capacity_min'   => (int)$row['capacity_min'],
-                    'capacity_max'   => (int)$row['capacity_max'],
+                    'capacity_min'   => $row['capacity_min'] !== null ? (int)$row['capacity_min'] : null,
+                    'capacity_max'   => $row['capacity_max'] !== null ? (int)$row['capacity_max'] : null,
                     'ativo'          => $row['ativo'] === 't',
                     'created_at'     => $row['created_at'],
                     'location'       => [
@@ -164,6 +340,7 @@ try {
                         'country'      => $row['country'],
                         'latitude'     => $row['latitude'] ? (float)$row['latitude'] : null,
                         'longitude'    => $row['longitude'] ? (float)$row['longitude'] : null,
+                        'google_maps_url' => $row['google_maps_url'] ?? null,
                     ],
                     'translations'   => [],
                     'images'         => []
@@ -186,9 +363,13 @@ try {
                     $venues[$vid]['images'][] = [
                         'url'   => montarUrlImagem($img['image_url']),
                         'ordem' => (int)$img['ordem'],
-                        'tipo'  => $img['tipo'] ?: 'gallery',
+                        'tipo'  => normalizeImageType($img['tipo'] ?? ''),
                     ];
                 }
+            }
+
+            foreach ($venues as $venueId => $venueData) {
+                $venues[$venueId] = enrichVenuePayload($venueData);
             }
 
             respond(array_values($venues));
@@ -233,7 +414,7 @@ try {
                 $images[] = [
                     'url'   => montarUrlImagem($img['image_url']),
                     'ordem' => (int)$img['ordem'],
-                    'tipo'  => $img['tipo'] ?: 'gallery',
+                    'tipo'  => normalizeImageType($img['tipo'] ?? ''),
                 ];
             }
 
@@ -241,9 +422,11 @@ try {
                 'venue_id'      => (int)$venue['venue_id'],
                 'nome'          => $venue['nome'],
                 'especialidade' => $venue['especialidade'],
+                'fk_cod_cidade' => toIntOrNull($venue['fk_cod_cidade'] ?? null),
+                'city_id'       => toIntOrNull($venue['fk_cod_cidade'] ?? null),
                 'price_range'   => $venue['price_range'],
-                'capacity_min'  => (int)$venue['capacity_min'],
-                'capacity_max'  => (int)$venue['capacity_max'],
+                'capacity_min'  => $venue['capacity_min'] !== null ? (int)$venue['capacity_min'] : null,
+                'capacity_max'  => $venue['capacity_max'] !== null ? (int)$venue['capacity_max'] : null,
                 'ativo'         => $venue['ativo'] === 't',
                 'created_at'    => $venue['created_at'],
                 'location'      => [
@@ -253,12 +436,13 @@ try {
                     'country'      => $venue['country'],
                     'latitude'     => $venue['latitude'] ? (float)$venue['latitude'] : null,
                     'longitude'    => $venue['longitude'] ? (float)$venue['longitude'] : null,
+                    'google_maps_url' => $venue['google_maps_url'] ?? null,
                 ],
                 'translations'  => $translations,
                 'images'        => $images,
             ];
 
-            respond($response);
+            respond(enrichVenuePayload($response));
             break;
 
 
@@ -281,34 +465,61 @@ try {
                 $input['nome'] ?? null,
                 $input['especialidade'] ?? null,
                 isset($input['ativo']) ? (filter_var($input['ativo'], FILTER_VALIDATE_BOOLEAN) ? 'TRUE' : 'FALSE') : 'TRUE',
-                $input['fk_cod_cidade'] ?? null,
+                resolveVenueCityId($conn, $input),
                 $input['price_range'] ?? null,
                 $input['capacity_min'] ?? null,
                 $input['capacity_max'] ?? null,
                 $input['product_link_url'] ?? null,
             ];
 
-            $resV = pg_query_params($conn, $sqlV, $paramsV);
+            $cityRawInputCreate = trim((string)($input['fk_cod_cidade'] ?? $input['city_id'] ?? $input['city_name'] ?? $input['city'] ?? $input['location']['city'] ?? ''));
+            if ($cityRawInputCreate !== '' && $paramsV[3] === null) {
+                throw new Exception('Cidade inválida: não foi possível resolver fk_cod_cidade para ID numérico');
+            }
+
+            $resV = execQueryParamsOrThrow($conn, $sqlV, $paramsV);
             if (!$resV) throw new Exception(pg_last_error($conn));
             $venue_id = (int) pg_fetch_result($resV, 0, 0);
 
             // Localização
-            if (!empty($input['location']) && is_array($input['location'])) {
-                $loc = $input['location'];
-                $sqlL = "
-                    INSERT INTO incentive.venues_location 
-                    (venue_id, address_line, city, state, country, latitude, longitude)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ";
-                pg_query_params($conn, $sqlL, [
-                    $venue_id,
-                    $loc['address_line'] ?? null,
-                    $loc['city'] ?? null,
-                    $loc['state'] ?? null,
-                    $loc['country'] ?? null,
-                    $loc['latitude'] ?? null,
-                    $loc['longitude'] ?? null,
-                ]);
+            $loc = (!empty($input['location']) && is_array($input['location'])) ? $input['location'] : [];
+            if (!array_key_exists('google_maps_url', $loc) && array_key_exists('google_maps_url', $input)) {
+                $loc['google_maps_url'] = $input['google_maps_url'];
+            }
+            if (!empty($loc)) {
+                $mapsUrl = isset($loc['google_maps_url']) && trim((string)$loc['google_maps_url']) !== '' ? trim((string)$loc['google_maps_url']) : null;
+                if (hasColumn($conn, 'incentive', 'venues_location', 'google_maps_url')) {
+                    $sqlL = "
+                        INSERT INTO incentive.venues_location 
+                        (venue_id, address_line, city, state, country, latitude, longitude, google_maps_url)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ";
+                    execQueryParamsOrThrow($conn, $sqlL, [
+                        $venue_id,
+                        $loc['address_line'] ?? null,
+                        $loc['city'] ?? ($input['city_name'] ?? $input['city'] ?? null),
+                        $loc['state'] ?? null,
+                        $loc['country'] ?? null,
+                        $loc['latitude'] ?? null,
+                        $loc['longitude'] ?? null,
+                        $mapsUrl,
+                    ]);
+                } else {
+                    $sqlL = "
+                        INSERT INTO incentive.venues_location 
+                        (venue_id, address_line, city, state, country, latitude, longitude)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ";
+                    execQueryParamsOrThrow($conn, $sqlL, [
+                        $venue_id,
+                        $loc['address_line'] ?? null,
+                        $loc['city'] ?? ($input['city_name'] ?? $input['city'] ?? null),
+                        $loc['state'] ?? null,
+                        $loc['country'] ?? null,
+                        $loc['latitude'] ?? null,
+                        $loc['longitude'] ?? null,
+                    ]);
+                }
             }
 
             // Traduções
@@ -320,7 +531,7 @@ try {
                 ";
                 foreach ($input['translations'] as $lang => $data) {
                     if (!in_array($lang, ['pt','en','es'])) continue;
-                    pg_query_params($conn, $sqlT, [
+                    execQueryParamsOrThrow($conn, $sqlT, [
                         $venue_id,
                         $lang,
                         $data['descritivo']        ?? null,
@@ -339,13 +550,13 @@ try {
                 ";
                 $ordem = 1;
                 foreach ($input['images'] as $img) {
-                    if (empty($img['image_url'])) continue;
-                    $cleanImageUrl = montarUrlImagem($img['image_url']);
-                    pg_query_params($conn, $sqlI, [
+                    $cleanImageUrl = resolveInputImageUrl($img);
+                    if ($cleanImageUrl === '') continue;
+                    execQueryParamsOrThrow($conn, $sqlI, [
                         $venue_id,
                         $cleanImageUrl,
-                        $img['ordem'] ?? $ordem++,
-                        $img['tipo']  ?? 'gallery',
+                        isset($img['ordem']) ? (int)$img['ordem'] : $ordem++,
+                        normalizeImageType($img['tipo'] ?? 'gallery'),
                     ]);
                 }
             }
@@ -385,10 +596,27 @@ try {
                     $value = $input[$field];
                     if ($field === 'ativo') {
                         $params[] = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'TRUE' : 'FALSE';
+                    } elseif ($field === 'fk_cod_cidade') {
+                        $params[] = resolveVenueCityId($conn, $input);
                     } else {
                         $params[] = $value;
                     }
                     $updated = true;
+                }
+            }
+
+            if (!array_key_exists('fk_cod_cidade', $input)) {
+                $resolvedCityId = resolveVenueCityId($conn, $input);
+                if ($resolvedCityId !== null) {
+                    $sets[] = "fk_cod_cidade = $" . $idx++;
+                    $params[] = $resolvedCityId;
+                    $updated = true;
+                }
+            } else {
+                $resolvedCityId = resolveVenueCityId($conn, $input);
+                $cityRawInputUpdate = trim((string)($input['fk_cod_cidade'] ?? $input['city_id'] ?? $input['city_name'] ?? $input['city'] ?? $input['location']['city'] ?? ''));
+                if ($cityRawInputUpdate !== '' && $resolvedCityId === null) {
+                    throw new Exception('Cidade inválida: não foi possível resolver fk_cod_cidade para ID numérico');
                 }
             }
 
@@ -401,30 +629,52 @@ try {
             }
 
             // Localização (substitui)
-            if (!empty($input['location']) && is_array($input['location'])) {
-                $loc = $input['location'];
-                pg_query_params($conn, "DELETE FROM incentive.venues_location WHERE venue_id = $1", [$id]);
+            $loc = (!empty($input['location']) && is_array($input['location'])) ? $input['location'] : [];
+            if (!array_key_exists('google_maps_url', $loc) && array_key_exists('google_maps_url', $input)) {
+                $loc['google_maps_url'] = $input['google_maps_url'];
+            }
+            if (!empty($loc)) {
+                execQueryParamsOrThrow($conn, "DELETE FROM incentive.venues_location WHERE venue_id = $1", [$id]);
+                $mapsUrl = isset($loc['google_maps_url']) && trim((string)$loc['google_maps_url']) !== '' ? trim((string)$loc['google_maps_url']) : null;
 
-                $sqlL = "
-                    INSERT INTO incentive.venues_location 
-                    (venue_id, address_line, city, state, country, latitude, longitude)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ";
-                pg_query_params($conn, $sqlL, [
-                    $id,
-                    $loc['address_line'] ?? null,
-                    $loc['city'] ?? null,
-                    $loc['state'] ?? null,
-                    $loc['country'] ?? null,
-                    $loc['latitude'] ?? null,
-                    $loc['longitude'] ?? null,
-                ]);
+                if (hasColumn($conn, 'incentive', 'venues_location', 'google_maps_url')) {
+                    $sqlL = "
+                        INSERT INTO incentive.venues_location 
+                        (venue_id, address_line, city, state, country, latitude, longitude, google_maps_url)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ";
+                    execQueryParamsOrThrow($conn, $sqlL, [
+                        $id,
+                        $loc['address_line'] ?? null,
+                        $loc['city'] ?? ($input['city_name'] ?? $input['city'] ?? null),
+                        $loc['state'] ?? null,
+                        $loc['country'] ?? null,
+                        $loc['latitude'] ?? null,
+                        $loc['longitude'] ?? null,
+                        $mapsUrl,
+                    ]);
+                } else {
+                    $sqlL = "
+                        INSERT INTO incentive.venues_location 
+                        (venue_id, address_line, city, state, country, latitude, longitude)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ";
+                    execQueryParamsOrThrow($conn, $sqlL, [
+                        $id,
+                        $loc['address_line'] ?? null,
+                        $loc['city'] ?? ($input['city_name'] ?? $input['city'] ?? null),
+                        $loc['state'] ?? null,
+                        $loc['country'] ?? null,
+                        $loc['latitude'] ?? null,
+                        $loc['longitude'] ?? null,
+                    ]);
+                }
                 $updated = true;
             }
 
             // Traduções (substitui)
             if (!empty($input['translations']) && is_array($input['translations'])) {
-                pg_query_params($conn, "DELETE FROM incentive.venues_translations WHERE venue_id = $1", [$id]);
+                execQueryParamsOrThrow($conn, "DELETE FROM incentive.venues_translations WHERE venue_id = $1", [$id]);
 
                 $sqlT = "
                     INSERT INTO incentive.venues_translations 
@@ -433,7 +683,7 @@ try {
                 ";
                 foreach ($input['translations'] as $lang => $data) {
                     if (!in_array($lang, ['pt','en','es'])) continue;
-                    pg_query_params($conn, $sqlT, [
+                    execQueryParamsOrThrow($conn, $sqlT, [
                         $id,
                         $lang,
                         $data['descritivo']        ?? null,
@@ -446,7 +696,7 @@ try {
 
             // Imagens (substitui)
             if (!empty($input['images']) && is_array($input['images'])) {
-                pg_query_params($conn, "DELETE FROM incentive.venues_images WHERE venue_id = $1", [$id]);
+                execQueryParamsOrThrow($conn, "DELETE FROM incentive.venues_images WHERE venue_id = $1", [$id]);
 
                 $sqlI = "
                     INSERT INTO incentive.venues_images 
@@ -455,13 +705,13 @@ try {
                 ";
                 $ordem = 1;
                 foreach ($input['images'] as $img) {
-                    if (empty($img['image_url'])) continue;
-                    $cleanImageUrl = montarUrlImagem($img['image_url']);
-                    pg_query_params($conn, $sqlI, [
+                    $cleanImageUrl = resolveInputImageUrl($img);
+                    if ($cleanImageUrl === '') continue;
+                    execQueryParamsOrThrow($conn, $sqlI, [
                         $id,
                         $cleanImageUrl,
-                        $img['ordem'] ?? $ordem++,
-                        $img['tipo']  ?? 'gallery',
+                        isset($img['ordem']) ? (int)$img['ordem'] : $ordem++,
+                        normalizeImageType($img['tipo'] ?? 'gallery'),
                     ]);
                 }
                 $updated = true;

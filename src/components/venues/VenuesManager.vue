@@ -182,15 +182,21 @@
                     <v-switch v-model="editedItem.is_active" label="Ativo" inset></v-switch>
                   </v-col>
                   <v-col cols="12" md="6">
-                    <v-select
+                    <v-autocomplete
                       v-model="editedItem.city_id"
-                      :items="cityOptions"
+                      :items="citySelectItems"
+                      :loading="cityLoading"
+                      :search-input.sync="citySearch"
                       label="Cidade"
                       outlined
                       dense
-                      item-text="name"
-                      item-value="id"
-                    ></v-select>
+                      item-text="text"
+                      item-value="value"
+                      clearable
+                      hide-no-data
+                      @update:search-input="onCitySearch"
+                      no-data-text="Nenhuma cidade encontrada"
+                    ></v-autocomplete>
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-text-field
@@ -247,6 +253,27 @@
 
               <v-tab-item>
                 <v-row>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="editedItem.google_maps_url"
+                      label="URL Google Maps"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" v-if="mapPreviewUrl">
+                    <v-card outlined>
+                      <iframe
+                        :src="mapPreviewUrl"
+                        width="100%"
+                        height="260"
+                        style="border:0; display:block;"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        allowfullscreen
+                      ></iframe>
+                    </v-card>
+                  </v-col>
                   <v-col cols="12" md="8">
                     <v-text-field
                       v-model="editedItem.address_line"
@@ -391,6 +418,7 @@ const blankVenue = () => ({
   latitude: null,
   longitude: null,
   insight: '',
+  google_maps_url: '',
   planta_img: '',
   banner_main: '',
   banner_2: '',
@@ -425,6 +453,9 @@ export default {
       activeTab: 0,
       items: [],
       cities: [],
+      cityLoading: false,
+      citySearch: '',
+      citySearchDebounce: null,
       filters: {
         nome: '',
         cidade: '',
@@ -467,6 +498,24 @@ export default {
     },
     cityOptions() {
       return Array.isArray(this.cities) ? this.cities : []
+    },
+    citySelectItems() {
+      return this.cityOptions
+        .map((city) => ({
+          text: String(city.name || '').trim(),
+          value:
+            city.id !== null && city.id !== undefined && city.id !== ''
+              ? city.id
+              : String(city.name || '').trim()
+        }))
+        .filter((city) => city.text !== '' && city.value !== null && city.value !== undefined && city.value !== '')
+    },
+    mapPreviewUrl() {
+      return this.buildMapPreviewUrl(
+        this.editedItem.google_maps_url,
+        this.editedItem.latitude,
+        this.editedItem.longitude
+      )
     }
   },
   mounted() {
@@ -490,19 +539,37 @@ export default {
         : Array.isArray(item.images)
         ? item.images
         : []
+      const normalizedImages = apiImages
+        .map((img, index) => ({
+          image_url: this.sanitizeImageUrl(img.image_url || img.url || ''),
+          tipo: this.normalizeImageType(img.tipo),
+          ordem: Number.isFinite(Number(img.ordem)) ? Number(img.ordem) : index + 1,
+          alt_text: img.alt_text || ''
+        }))
+        .filter((img) => img.image_url !== '')
+        .sort((a, b) => a.ordem - b.ordem)
 
-      const getImageUrl = (index) => {
-        if (!apiImages[index]) return ''
-        return this.sanitizeImageUrl(apiImages[index].image_url || apiImages[index].url || '')
-      }
+      const bannerImages = normalizedImages.filter((img) => img.tipo === 'banner')
+      const floorPlanFromImages = normalizedImages.find((img) => img.tipo === 'floor_plan')?.image_url || ''
+      const galleryImages = normalizedImages.filter((img) => img.tipo === 'gallery')
+      const translations = item.translations && typeof item.translations === 'object' ? item.translations : {}
+      const translationPt = translations.pt || {}
+      const translationEn = translations.en || {}
+      const translationEs = translations.es || {}
+      const shortDescriptionTranslated =
+        translationPt.short_description || translationEn.short_description || translationEs.short_description || ''
+      const descriptionTranslated =
+        translationPt.descritivo || translationEn.descritivo || translationEs.descritivo || ''
+      const insightTranslated =
+        translationPt.insight || translationEn.insight || translationEs.insight || ''
 
       const location = item.location || {}
 
       return {
         cod_venues: item.cod_venues || item.venue_id || item.id || null,
         name: item.name || item.nome || '',
-        short_description: item.short_description || item.especialidade || '',
-        description: item.description || item.descritivo_pt || '',
+        short_description: item.short_description || shortDescriptionTranslated || item.especialidade || '',
+        description: item.description || descriptionTranslated || item.descritivo_pt || '',
         city_id: item.fk_cod_cidade || item.city_id || null,
         city_name: item.city_name || item.city || location.city || '',
         is_active: item.is_active ?? (item.ativo === true || item.ativo === 't'),
@@ -514,14 +581,15 @@ export default {
         country: item.country || location.country || '',
         latitude: item.latitude ?? location.latitude ?? null,
         longitude: item.longitude ?? location.longitude ?? null,
-        insight: item.insight || item.insight_pt || '',
-        planta_img: this.sanitizeImageUrl(item.planta_img || item.floor_plan_image || ''),
-        banner_main: getImageUrl(0),
-        banner_2: getImageUrl(1),
-        banner_3: getImageUrl(2),
-        banner_4: getImageUrl(3),
-        gallery_images: apiImages.slice(4).map((img) => ({
-          image_url: this.sanitizeImageUrl(img.image_url || img.url || ''),
+        insight: item.insight || insightTranslated || item.insight_pt || '',
+        google_maps_url: item.google_maps_url || item.map_embed_url || location.google_maps_url || '',
+        planta_img: this.sanitizeImageUrl(item.planta_img || item.floor_plan_image || floorPlanFromImages),
+        banner_main: bannerImages[0]?.image_url || '',
+        banner_2: bannerImages[1]?.image_url || '',
+        banner_3: bannerImages[2]?.image_url || '',
+        banner_4: bannerImages[3]?.image_url || '',
+        gallery_images: galleryImages.map((img) => ({
+          image_url: img.image_url,
           alt_text: img.alt_text || ''
         }))
       }
@@ -551,20 +619,43 @@ export default {
         this.loading = false
       }
     },
-    async fetchCities() {
+    async fetchCities(searchTerm = '') {
       const mapCity = (city) => ({
-        id: city.id ?? city.cod_cid ?? city.cidade_cod ?? city.city_id ?? null,
+        id:
+          city.id ??
+          city.cidade_cod ??
+          city.cod_cid ??
+          city.pk_cidade_tpo ??
+          city.city_id ??
+          city.name ??
+          city.nome_en ??
+          city.nome_pt ??
+          null,
         name: city.name || city.nome_en || city.nome_pt || city.nome_cid || city.city || ''
       })
+      const normalizeCitiesResponse = (data) => {
+        if (Array.isArray(data)) return data
+        if (Array.isArray(data?.data)) return data.data
+        if (Array.isArray(data?.items)) return data.items
+        return []
+      }
       const sortCities = (list) =>
         list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }))
 
+      this.cityLoading = true
+      const filtroNome = String(searchTerm || '').trim()
+      const query = new URLSearchParams()
+      query.append('request', 'listar_cidades')
+      query.append('limit', '100')
+      if (filtroNome) query.append('filtro_nome', filtroNome)
+
       try {
-        const response = await fetch(`${API_BASE}cidades.php?request=listar_cidades&limit=500`, {
+        const response = await fetch(`${API_BASE}cidades.php?${query.toString()}`, {
           headers: this.authHeaders()
         })
         const data = await response.json()
-        this.cities = Array.isArray(data) ? sortCities(data.map(mapCity).filter((c) => c.id && c.name)) : []
+        const list = normalizeCitiesResponse(data)
+        this.cities = sortCities(list.map(mapCity).filter((c) => c.id !== null && c.id !== undefined && c.name))
       } catch (error) {
         // fallback para APIs legadas de venues
         try {
@@ -572,11 +663,23 @@ export default {
             headers: this.authHeaders()
           })
           const data = await response.json()
-          this.cities = Array.isArray(data) ? sortCities(data.map(mapCity).filter((c) => c.id && c.name)) : []
+          const list = normalizeCitiesResponse(data)
+          this.cities = sortCities(list.map(mapCity).filter((c) => c.id !== null && c.id !== undefined && c.name))
         } catch (fallbackError) {
           this.cities = []
         }
+      } finally {
+        this.cityLoading = false
       }
+    },
+    onCitySearch(value) {
+      this.citySearch = value || ''
+      if (this.citySearchDebounce) {
+        clearTimeout(this.citySearchDebounce)
+      }
+      this.citySearchDebounce = setTimeout(() => {
+        this.fetchCities(this.citySearch)
+      }, 300)
     },
     applyFilters() {
       this.fetchVenues()
@@ -607,6 +710,13 @@ export default {
       }
       return raw
     },
+    normalizeImageType(tipo) {
+      const raw = String(tipo || '').trim().toLowerCase()
+      if (raw === 'planta' || raw === 'floorplan') return 'floor_plan'
+      if (raw === 'banner') return 'banner'
+      if (raw === 'floor_plan') return 'floor_plan'
+      return 'gallery'
+    },
     addGalleryImage() {
       this.editedItem.gallery_images.push({ image_url: '', alt_text: '' })
     },
@@ -614,25 +724,37 @@ export default {
       this.editedItem.gallery_images.splice(index, 1)
     },
     buildImagesPayload() {
-      const banners = [
-        { image_url: this.sanitizeImageUrl(this.editedItem.banner_main), alt_text: 'Banner principal' },
-        { image_url: this.sanitizeImageUrl(this.editedItem.banner_2), alt_text: 'Banner 2' },
-        { image_url: this.sanitizeImageUrl(this.editedItem.banner_3), alt_text: 'Banner 3' },
-        { image_url: this.sanitizeImageUrl(this.editedItem.banner_4), alt_text: 'Banner 4' }
-      ].filter((img) => img.image_url !== '')
+      const images = []
+      const bannerUrls = [
+        this.editedItem.banner_main,
+        this.editedItem.banner_2,
+        this.editedItem.banner_3,
+        this.editedItem.banner_4
+      ]
 
-      const gallery = (this.editedItem.gallery_images || [])
-        .map((img) => ({
-          image_url: this.sanitizeImageUrl(img.image_url),
-          alt_text: (img.alt_text || '').trim() || 'Galeria'
-        }))
-        .filter((img) => img.image_url !== '')
+      bannerUrls.forEach((url) => {
+        const clean = this.sanitizeImageUrl(url)
+        if (clean) {
+          images.push({ image_url: clean, tipo: 'banner' })
+        }
+      })
 
-      const combined = [...banners, ...gallery]
-      return combined.map((img, idx) => ({
+      const floorPlan = this.sanitizeImageUrl(this.editedItem.planta_img)
+      if (floorPlan) {
+        images.push({ image_url: floorPlan, tipo: 'floor_plan' })
+      }
+
+      ;(this.editedItem.gallery_images || []).forEach((img) => {
+        const clean = this.sanitizeImageUrl(img.image_url)
+        if (clean) {
+          images.push({ image_url: clean, tipo: 'gallery' })
+        }
+      })
+
+      return images.map((img, idx) => ({
         image_url: img.image_url,
-        alt_text: img.alt_text,
-        is_primary: idx === 0
+        tipo: img.tipo,
+        ordem: idx + 1
       }))
     },
     toIntOrNull(value) {
@@ -644,6 +766,72 @@ export default {
       if (value === null || value === undefined || value === '') return null
       const n = Number(value)
       return Number.isFinite(n) ? n : null
+    },
+    resolveCityName(value) {
+      const raw = value === null || value === undefined ? '' : String(value).trim()
+      if (!raw) return this.editedItem.city_name || ''
+      const match = this.citySelectItems.find((item) => String(item.value) === raw)
+      if (match && match.text) return match.text
+      return raw
+    },
+    reconcileEditedCitySelection() {
+      const current = this.editedItem.city_id
+      const currentRaw = current === null || current === undefined ? '' : String(current).trim()
+      const hasDirectMatch =
+        currentRaw !== '' && this.citySelectItems.some((item) => String(item.value) === currentRaw)
+      if (hasDirectMatch) return
+
+      const cityNameRaw = String(this.editedItem.city_name || '').trim().toLowerCase()
+      if (!cityNameRaw) return
+
+      const byName = this.citySelectItems.find((item) => String(item.text || '').trim().toLowerCase() === cityNameRaw)
+      if (byName) {
+        this.editedItem.city_id = byName.value
+      }
+    },
+    extractLatLngFromGoogleMapsUrl(url) {
+      const raw = String(url || '').trim()
+      if (!raw) return { latitude: null, longitude: null }
+
+      let m = raw.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
+      if (m) return { latitude: Number(m[1]), longitude: Number(m[2]) }
+
+      m = raw.match(/[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
+      if (m) return { latitude: Number(m[1]), longitude: Number(m[2]) }
+
+      m = raw.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/)
+      if (m) return { latitude: Number(m[1]), longitude: Number(m[2]) }
+
+      return { latitude: null, longitude: null }
+    },
+    buildMapPreviewUrl(url, latitude, longitude) {
+      const raw = String(url || '').trim()
+      if (raw) {
+        if (raw.includes('/maps/embed') || raw.includes('output=embed')) {
+          return raw
+        }
+
+        const parsed = this.extractLatLngFromGoogleMapsUrl(raw)
+        if (parsed.latitude !== null && parsed.longitude !== null) {
+          return `https://maps.google.com/maps?q=${encodeURIComponent(
+            `${parsed.latitude},${parsed.longitude}`
+          )}&z=15&output=embed`
+        }
+
+        const queryMatch = raw.match(/[?&]q=([^&]+)/)
+        if (queryMatch && queryMatch[1]) {
+          const q = decodeURIComponent(queryMatch[1])
+          return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed`
+        }
+      }
+
+      const lat = this.toNumberOrNull(latitude)
+      const lng = this.toNumberOrNull(longitude)
+      if (lat !== null && lng !== null) {
+        return `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=15&output=embed`
+      }
+
+      return ''
     },
     openCreate() {
       this.editedIndex = -1
@@ -657,12 +845,14 @@ export default {
       this.dialog = true
       this.loadingDetail = true
       try {
+        await this.fetchCities()
         const requestName = this.isIncentiveApi ? 'obter_venue' : 'buscar_venue'
         const response = await fetch(`${API_BASE}${this.apiFile}?request=${requestName}&id=${item.cod_venues}`, {
           headers: this.authHeaders()
         })
         const data = await response.json()
         this.editedItem = this.normalizeVenue(data)
+        this.reconcileEditedCitySelection()
       } catch (error) {
         this.showMessage(`Erro ao carregar venue: ${error.message}`, 'error')
       } finally {
@@ -705,33 +895,53 @@ export default {
       try {
         const isEdit = this.editedIndex > -1
         const request = isEdit ? 'atualizar_venue' : 'criar_venue'
-        const method = isEdit ? 'PUT' : 'POST'
-        const url = isEdit
+        let method = isEdit ? 'PUT' : 'POST'
+        let url = isEdit
           ? `${API_BASE}${this.apiFile}?request=${request}&id=${this.editedItem.cod_venues}`
           : `${API_BASE}${this.apiFile}?request=${request}`
 
-        const payload = this.isIncentiveApi
+        let payload = this.isIncentiveApi
           ? {
+              city_name: this.resolveCityName(this.editedItem.city_id),
               nome: this.editedItem.name,
               especialidade: this.editedItem.short_description,
               ativo: this.editedItem.is_active,
-              fk_cod_cidade: this.toIntOrNull(this.editedItem.city_id),
+              fk_cod_cidade: this.editedItem.city_id,
               price_range: this.editedItem.price_range,
               capacity_min: this.toIntOrNull(this.editedItem.capacity_min),
               capacity_max: this.toIntOrNull(this.editedItem.capacity_max),
               product_link_url: '',
+              google_maps_url: this.editedItem.google_maps_url,
               location: {
                 address_line: this.editedItem.address_line,
-                city: this.editedItem.city_name,
+                city: this.resolveCityName(this.editedItem.city_id),
                 state: this.editedItem.state,
                 country: this.editedItem.country,
                 latitude: this.toNumberOrNull(this.editedItem.latitude),
-                longitude: this.toNumberOrNull(this.editedItem.longitude)
+                longitude: this.toNumberOrNull(this.editedItem.longitude),
+                google_maps_url: this.editedItem.google_maps_url
+              },
+              translations: {
+                pt: {
+                  descritivo: this.editedItem.description || '',
+                  short_description: this.editedItem.short_description || '',
+                  insight: this.editedItem.insight || ''
+                },
+                en: {
+                  descritivo: this.editedItem.description || '',
+                  short_description: this.editedItem.short_description || '',
+                  insight: this.editedItem.insight || ''
+                },
+                es: {
+                  descritivo: this.editedItem.description || '',
+                  short_description: this.editedItem.short_description || '',
+                  insight: this.editedItem.insight || ''
+                }
               },
               images: this.buildImagesPayload().map((img, idx) => ({
                 image_url: img.image_url,
-                ordem: idx + 1,
-                tipo: idx < 4 ? 'banner' : 'gallery'
+                ordem: img.ordem ?? idx + 1,
+                tipo: img.tipo || 'gallery'
               }))
             }
           : {
@@ -749,17 +959,77 @@ export default {
               latitude: this.editedItem.latitude,
               longitude: this.editedItem.longitude,
               insight: this.editedItem.insight,
+              google_maps_url: this.editedItem.google_maps_url,
               planta_img: this.editedItem.planta_img,
               floor_plan_image: this.editedItem.planta_img,
               images: this.buildImagesPayload()
             }
+
+        if (this.isIncentiveApi && isEdit && this.activeTab === 1) {
+          url = `${API_BASE}api_venues_atualizar_dados.php?id=${this.editedItem.cod_venues}`
+          method = 'PUT'
+          payload = {
+            city_name: this.resolveCityName(this.editedItem.city_id),
+            nome: this.editedItem.name,
+            especialidade: this.editedItem.short_description,
+            ativo: this.editedItem.is_active,
+            fk_cod_cidade: this.editedItem.city_id,
+            price_range: this.editedItem.price_range,
+            capacity_min: this.toIntOrNull(this.editedItem.capacity_min),
+            capacity_max: this.toIntOrNull(this.editedItem.capacity_max),
+            description: this.editedItem.description || '',
+            short_description: this.editedItem.short_description || '',
+            insight: this.editedItem.insight || '',
+            translations: {
+              pt: {
+                descritivo: this.editedItem.description || '',
+                short_description: this.editedItem.short_description || '',
+                insight: this.editedItem.insight || ''
+              },
+              en: {
+                descritivo: this.editedItem.description || '',
+                short_description: this.editedItem.short_description || '',
+                insight: this.editedItem.insight || ''
+              },
+              es: {
+                descritivo: this.editedItem.description || '',
+                short_description: this.editedItem.short_description || '',
+                insight: this.editedItem.insight || ''
+              }
+            }
+          }
+        }
+
+        if (this.isIncentiveApi && payload.location) {
+          const hasLat = payload.location.latitude !== null && payload.location.latitude !== undefined
+          const hasLng = payload.location.longitude !== null && payload.location.longitude !== undefined
+          if ((!hasLat || !hasLng) && this.editedItem.google_maps_url) {
+            const parsed = this.extractLatLngFromGoogleMapsUrl(this.editedItem.google_maps_url)
+            if (parsed.latitude !== null && parsed.longitude !== null) {
+              payload.location.latitude = parsed.latitude
+              payload.location.longitude = parsed.longitude
+            }
+          }
+        }
 
         const response = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
           body: JSON.stringify(payload)
         })
-        const data = await response.json()
+        const raw = await response.text()
+        let data = null
+        try {
+          data = raw ? JSON.parse(raw) : null
+        } catch (parseError) {
+          throw new Error(`Resposta inválida da API (${response.status}): ${raw || 'sem conteúdo'}`)
+        }
+        if (!response.ok) {
+          throw new Error(
+            (data && (data.error || data.message)) ||
+              `Erro HTTP ${response.status}: ${raw || 'sem detalhes'}`
+          )
+        }
         if (data && data.error) throw new Error(data.error)
         if (data && data.success === false) throw new Error(data.message || 'Erro ao salvar')
         this.showMessage('Venue salvo.')

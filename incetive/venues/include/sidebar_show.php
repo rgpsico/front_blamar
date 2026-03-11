@@ -9,6 +9,37 @@ if (!function_exists('h')) {
     }
 }
 
+if (!function_exists('toEmbedGoogleMapsUrl')) {
+    function toEmbedGoogleMapsUrl($value)
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (stripos($raw, '/maps/embed') !== false || stripos($raw, 'output=embed') !== false) {
+            return $raw;
+        }
+
+        if (preg_match('/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/', $raw, $m)) {
+            return 'https://maps.google.com/maps?q=' . urlencode($m[1] . ',' . $m[2]) . '&z=15&output=embed';
+        }
+
+        if (preg_match('/[?&]q=([^&]+)/', $raw, $m)) {
+            $q = urldecode($m[1]);
+            if ($q !== '') {
+                return 'https://maps.google.com/maps?q=' . urlencode($q) . '&output=embed';
+            }
+        }
+
+        if (preg_match('/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/', $raw, $m)) {
+            return 'https://maps.google.com/maps?q=' . urlencode($m[1] . ',' . $m[2]) . '&z=15&output=embed';
+        }
+
+        return '';
+    }
+}
+
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $price_range = '';
 $capacity_min = null;
@@ -48,7 +79,8 @@ if ($id > 0) {
             ) AS insight,
             v.product_link_url,
             l.latitude,
-            l.longitude
+            l.longitude,
+            l.google_maps_url
         FROM incentive.venues v
         LEFT JOIN incentive.venues_location l ON l.venue_id = v.venue_id
         WHERE v.venue_id = $1
@@ -63,10 +95,23 @@ if ($id > 0) {
         $personal_note = $row['insight'] ?? '';
         $product_link_url = trim((string)($row['product_link_url'] ?? ''));
 
-        $lat = $row['latitude'] ?? null;
-        $lng = $row['longitude'] ?? null;
-        if (is_numeric($lat) && is_numeric($lng)) {
-            $map_embed_url = 'https://maps.google.com/maps?q=' . urlencode($lat . ',' . $lng) . '&z=15&output=embed';
+        $google_maps_url = trim((string)($row['google_maps_url'] ?? ''));
+        if ($google_maps_url !== '') {
+            $map_embed_url = toEmbedGoogleMapsUrl($google_maps_url);
+        } else {
+            $lat = $row['latitude'] ?? null;
+            $lng = $row['longitude'] ?? null;
+            if (is_numeric($lat) && is_numeric($lng)) {
+                $map_embed_url = 'https://maps.google.com/maps?q=' . urlencode($lat . ',' . $lng) . '&z=15&output=embed';
+            }
+        }
+
+        if ($map_embed_url === '') {
+            $lat = $row['latitude'] ?? null;
+            $lng = $row['longitude'] ?? null;
+            if (is_numeric($lat) && is_numeric($lng)) {
+                $map_embed_url = 'https://maps.google.com/maps?q=' . urlencode($lat . ',' . $lng) . '&z=15&output=embed';
+            }
         }
     }
 }

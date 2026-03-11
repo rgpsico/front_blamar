@@ -17,7 +17,6 @@ CREATE TABLE incentive.venues_translations (
     id BIGSERIAL PRIMARY KEY,
     venue_id BIGINT REFERENCES incentive.venues(venue_id) ON DELETE CASCADE,
     language VARCHAR(5) NOT NULL,
-
     descritivo TEXT,
     short_description TEXT,
     insight TEXT
@@ -44,3 +43,7 @@ CREATE TABLE incentive.venues_location (
     latitude NUMERIC,
     longitude NUMERIC
 );
+
+
+ALTER TABLE incentive.venues_location
+ADD COLUMN google_maps_url TEXT;
