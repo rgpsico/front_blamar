@@ -47,3 +47,6 @@ CREATE TABLE incentive.venues_location (
 
 ALTER TABLE incentive.venues_location
 ADD COLUMN google_maps_url TEXT;
+
+alter table incentive.venues
+add column fk_cod_cidade int;

@@ -78,6 +78,9 @@
           </v-chip>
         </template>
         <template slot="item.actions" slot-scope="{ item }">
+          <v-btn small outlined color="info" class="mr-2" @click="openShowPage(item)">
+            Ver
+          </v-btn>
           <v-btn icon small color="primary" @click="openEdit(item)">
             <v-icon>mdi-pencil</v-icon>
           </v-btn>
@@ -325,32 +328,6 @@
                   <v-col cols="12" md="3">
                     <v-switch v-model="editedItem.inc_is_active" label="Ativo" inset></v-switch>
                   </v-col>
-                  <v-col cols="12" md="2">
-                    <v-text-field
-                      v-model.number="editedItem.star_rating"
-                      label="Estrelas"
-                      type="number"
-                      outlined
-                      dense
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field
-                      v-model.number="editedItem.total_rooms"
-                      label="Total de quartos"
-                      type="number"
-                      outlined
-                      dense
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="7">
-                    <v-text-field
-                      v-model="editedItem.floor_plan_url"
-                      label="URL planta"
-                      outlined
-                      dense
-                    ></v-text-field>
-                  </v-col>
                 </v-row>
               </v-tab-item>
 
@@ -422,31 +399,6 @@
                   </v-col>
                   <v-col cols="12" md="4">
                     <v-text-field v-model="editedItem.hotel_contact.website_url" label="Website" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="8">
-                    <v-text-field v-model="editedItem.hotel_contact.google_maps_url" label="Google Maps URL" outlined dense></v-text-field>
-                  </v-col>
-                  <v-col cols="12" md="8" class="pt-0">
-                    <div class="text-caption text--secondary">
-                      Informe um link do Google Maps com latitude e longitude (ex.: https://www.google.com/maps?q=-22.9068,-43.1729).
-                    </div>
-                  </v-col>
-                  <v-col cols="12" md="8">
-                    <div class="incentivos-manager__map-embed">
-                      <iframe
-                        v-if="mapEmbedUrl"
-                        :src="mapEmbedUrl"
-                        width="100%"
-                        height="160"
-                        frameborder="0"
-                        style="border:0;"
-                        allowfullscreen
-                        loading="lazy"
-                      ></iframe>
-                      <div v-else class="incentivos-manager__map-placeholder">
-                        Mapa nao disponivel
-                      </div>
-                    </div>
                   </v-col>
                 </v-row>
               </v-tab-item>
@@ -1335,6 +1287,17 @@ export default {
       if (item && item.inc_id) {
         await this.fetchIncentiveDetail(item.inc_id)
       }
+    },
+    openShowPage(item) {
+      const id = item?.inc_id
+      if (!id) {
+        this.showMessage('ID do incentivo nao encontrado.', 'warning')
+        return
+      }
+      const url = `https://webdeveloper.blumar.com.br/desenv/roger/client_area_incentive/hotel/hotel_show_section.php?id=${encodeURIComponent(
+        id
+      )}`
+      window.open(url, '_blank')
     },
     openDelete(item) {
       this.editedItem = this.normalizeItem(item)

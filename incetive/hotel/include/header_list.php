@@ -168,7 +168,7 @@
     <div class="container_max ct02">
         <div class="container">
             <div class="breadcrumb">
-                <a href="../index.html">Incentive Area</a><i class="material-icons">&#xe315;</i><a href="../hotels.html">Hotel</a><i class="material-icons">&#xe315;</i><a href="">Rio de Janeiro</a><i class="material-icons">&#xe315;</i><a href="">Copacabana Palace</a>
+                <a href="../index.php">Incentive Area</a><i class="material-icons">&#xe315;</i><a href="../hotels.html">Hotel</a><i class="material-icons">&#xe315;</i><a href="">Rio de Janeiro</a><i class="material-icons">&#xe315;</i><a href="">Copacabana Palace</a>
             </div>
         </div>
     </div>
@@ -248,7 +248,7 @@
         if (backBtn) {
             backBtn.style.cursor = 'pointer';
             backBtn.addEventListener('click', function () {
-                window.location.href = '../index.html';
+                window.location.href = '../index.php';
             });
         }
 

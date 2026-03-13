@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../session_middleware.php';
-requireAuthenticatedSession();
+// requireAuthenticatedSession();
 include __DIR__ . '/include/header_show.php';
 ?>
 

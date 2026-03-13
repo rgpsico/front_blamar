@@ -109,7 +109,7 @@
                 </button>
             </div>
         </div>
-        <button class="back-btn">Back to Main Site</button>
+        <button class="back-btn" style="cursor: pointer;">Back to Main Site</button>
     </div>
 </header>
 
@@ -229,5 +229,12 @@
         hideGoogleIframes();
         setInterval(hideGoogleIframes, 800);
     });
+
+   addEventListener('click', function (e) {
+        if (e.target.closest('.back-btn')) {    
+        window.location.href = '../index.php';
+    }
+    });
+
 </script>
 <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
