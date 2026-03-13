@@ -40,7 +40,7 @@ We have created a special area that will allow you to navigate through all the i
         <div class="container_menu_grid">
             <div class="menu_grid">
                 <div class="menu_grid_container">
-                    <a href="hotel/hotel_list.php">
+                    <a href="pages/hotel/hotel_list.php">
                     <div class="box_menu_grid bmg01">
                         <h3>Hotels</h3>
                         <div class="line"></div>
@@ -57,7 +57,7 @@ We have created a special area that will allow you to navigate through all the i
                     <div class="box_menu_grid bmg03">
                         
                     </div>
-                    <a href="venues/venues.php">
+                    <a href="pages/venues/venues.php">
                     <div class="box_menu_grid bmg04">
                         <h3>Venues</h3>
                         <div class="line"></div>
