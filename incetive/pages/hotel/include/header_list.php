@@ -1,281 +1,262 @@
-<style>
-    #read_more {
-        cursor: pointer;
-    }
+<!-- ══════════════════════════════════════════
+     HEADER — Language Switcher + Back Button
+     Colar dentro do <head>: o bloco <style>
+     Colar no <body>: o bloco <header>
+     ══════════════════════════════════════════ -->
 
+
+     <?php
+require_once '../../session_middleware.php';
+requireAuthenticatedSession('Acesso negado. Por favor, faça login.');
+?>
+
+<!-- ── STYLES: colar dentro do <head> ou no estilo.css ── -->
+<style>
+    /* ── Menu interno: alinha switcher + botão ── */
     .menu_interno {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
+        margin-left: auto;
     }
 
+    /* ── Language Switcher ── */
     .language-switcher {
         position: relative;
     }
 
-    .language-switcher img {
-        width: 24px;
-        height: 18px;
+    .lang-btn {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        padding: 0 10px;
+        height: 2.2vw;
+        min-height: 30px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .lang-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+    .lang-btn img {
+        width: 1.3vw;
+        min-width: 18px;
+        height: auto;
+        aspect-ratio: 4/3;
         object-fit: cover;
-        border-radius: 3px;
-        border: 1px solid #d0d0d0;
+        border-radius: 2px;
+        display: block;
+    }
+    .lang-btn .lang-label {
+        color: #fff;
+        font-size: 0.75vw;
+        font-weight: 500;
+        letter-spacing: 0.4px;
+        min-font-size: 11px;
+    }
+    .lang-btn .lang-arrow {
+        transition: transform 0.2s;
+        display: block;
+    }
+    .lang-btn.open .lang-arrow {
+        transform: rotate(180deg);
     }
 
-    .language-toggle {
-        border: 1px solid #d0d0d0;
+    /* ── Dropdown ── */
+    .lang-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
         background: #fff;
-        border-radius: 4px;
-        padding: 4px 6px;
-        height: 30px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        min-width: 150px;
+        z-index: 100;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .lang-menu.open {
+        display: block;
+    }
+    .lang-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
         cursor: pointer;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        transition: background 0.15s;
+    }
+    .lang-option:hover {
+        background: #f4f7fa;
+    }
+    .lang-option.active {
+        background: #eef4f9;
+    }
+    .lang-option img {
+        width: 22px;
+        height: auto;
+        aspect-ratio: 4/3;
+        object-fit: cover;
+        border-radius: 2px;
+        display: block;
+    }
+    .lang-option .lang-name {
+        font-size: 13px;
+        color: #2c2c2c;
+        font-weight: 400;
+        flex: 1;
+    }
+    .lang-option .lang-check {
+        visibility: hidden;
+        flex-shrink: 0;
+    }
+    .lang-option.active .lang-check {
+        visibility: visible;
+    }
+    .lang-sep {
+        height: 1px;
+        background: #eee;
+    }
+
+    /* ── Back button ── */
+    .btn_back_site {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-    }
-
-    .language-toggle .material-icons {
-        font-size: 16px;
-        color: #666;
-    }
-
-    .language-menu {
-        position: absolute;
-        top: 34px;
-        left: 0;
-        display: none;
-        background: #fff;
-        border: 1px solid #d0d0d0;
+        background: #78AAC3;
+        border: none;
         border-radius: 6px;
-        padding: 6px;
-        z-index: 20;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-    }
-
-    .language-menu.is-open {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .language-option {
-        border: 1px solid transparent;
-        background: transparent;
-        padding: 2px;
-        border-radius: 4px;
+        padding: 0 1vw;
+        height: 2.2vw;
+        min-height: 30px;
+        color: #fff;
+        font-size: 0.75vw;
+        font-weight: 500;
         cursor: pointer;
+        letter-spacing: 0.3px;
+        transition: background 0.2s;
+        text-decoration: none;
+        white-space: nowrap;
     }
-
-    .language-option:hover,
-    .language-option.is-active {
-        border-color: #e69928;
+    .btn_back_site:hover {
+        background: #6399b2;
     }
-
-    #google_translate_element {
-        display: none;
-    }
-
-    .goog-te-banner-frame.skiptranslate {
-        display: none !important;
-    }
-
-    iframe.goog-te-banner-frame,
-    iframe.goog-te-menu-frame,
-    iframe.skiptranslate {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    body > .skiptranslate {
-        display: none !important;
-    }
-
-    body {
-        top: 0 !important;
-    }
-
-    .goog-tooltip,
-    .goog-tooltip:hover,
-    .goog-text-highlight {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    #goog-gt-tt,
-    .goog-te-balloon-frame {
-        display: none !important;
+    .btn_back_site svg {
+        flex-shrink: 0;
     }
 </style>
 
+<!-- ── HEADER: substituir o <header> atual ── -->
 <header>
     <div class="container">
         <div class="logo_topo">
-            <img src="../../img/logo_blumar.png" alt="Blumar Logo">
+            <img src="../../img/logo_blumar.png" alt="Blumar">
         </div>
         <div class="menu_interno">
-            <div class="language-switcher" aria-label="Language switcher">
-                <button type="button" id="languageToggle" class="language-toggle" title="Language">
-                    <img id="currentLanguageFlag" src="../../img/flags/us.png" alt="Language">
-                    <span class="material-icons">expand_more</span>
+
+            <!-- Language Switcher -->
+            <div class="language-switcher" id="langSwitcher">
+                <button type="button" class="lang-btn" id="langBtn">
+                    <img id="currentFlag" src="../../img/flags/us.png" alt="EN">
+                    <span class="lang-label" id="currentLabel">EN</span>
+                    <svg class="lang-arrow" width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <path d="M2 3.5l3.5 3.5 3.5-3.5" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </button>
-                <div id="languageMenu" class="language-menu" role="listbox" aria-label="Language options">
-                    <button type="button" class="language-option" data-lang="en" title="English">
+                <div class="lang-menu" id="langMenu">
+                    <button type="button" class="lang-option active" data-lang="en" data-label="EN" data-flag="../../img/flags/us.png">
                         <img src="../../img/flags/us.png" alt="English">
+                        <span class="lang-name">English</span>
+                        <svg class="lang-check" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 7l3.5 3.5L12 4" stroke="#E89127" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                     </button>
-                    <button type="button" class="language-option" data-lang="pt" title="Portugues">
-                        <img src="../../img/flags/br.png" alt="Portugues">
+                    <div class="lang-sep"></div>
+                    <button type="button" class="lang-option" data-lang="pt" data-label="PT" data-flag="../../img/flags/br.png">
+                        <img src="../../img/flags/br.png" alt="Português">
+                        <span class="lang-name">Português</span>
+                        <svg class="lang-check" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 7l3.5 3.5L12 4" stroke="#E89127" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                     </button>
-                    <button type="button" class="language-option" data-lang="es" title="Espanol">
-                        <img src="../../img/flags/es.png" alt="Espanol">
+                    <div class="lang-sep"></div>
+                    <button type="button" class="lang-option" data-lang="es" data-label="ES" data-flag="../../img/flags/es.png">
+                        <img src="../../img/flags/es.png" alt="Español">
+                        <span class="lang-name">Español</span>
+                        <svg class="lang-check" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 7l3.5 3.5L12 4" stroke="#E89127" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                     </button>
                 </div>
             </div>
-            <button type="button" id="backToMainSite">Back to main site</button>
+
+            <!-- Back to main site -->
+            <a href="../../index.php" class="btn_back_site">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M8.5 2L4 6.5l4.5 4.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Back to main site
+            </a>
+
         </div>
     </div>
 </header>
 
-<section id="header_page">
-    <div class="container">
-        <div class="page_title">
-            <h2>Hotels</h2>
-            <h3>Rio de Janeiro's</h3>
-        </div>
-        <div class="chose_city"></div>
-    </div>
-    <div class="container_max ct01">
-        <div class="container">
-            <div class="filter_box01">
-                <div class="filters_hotel"><h3>Filters</h3> <i class="material-icons">&#xe152;</i></div>
-            </div>
-            <div class="filter_box02">
-                <div class="filters_hotel">
-                    <select class="select_hotel" name="city">
-                        <option value="">select the location</option>
-                    </select>
-                    <select class="select_stars" name="stars">
-                        <option value="">Selecione as estrelas</option>
-                        <option value="1">â˜…â˜†â˜†â˜†â˜†</option>
-                        <option value="2">â˜…â˜…â˜†â˜†â˜†</option>
-                        <option value="3">â˜…â˜…â˜…â˜†â˜†</option>
-                        <option value="4">â˜…â˜…â˜…â˜…â˜†</option>
-                        <option value="5">â˜…â˜…â˜…â˜…â˜…</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container_max ct02">
-        <div class="container">
-            <div class="breadcrumb">
-                <a href="../../index.php">Incentive Area</a><i class="material-icons">&#xe315;</i><a href="hotel_list.php">Hotel</a><i class="material-icons">&#xe315;</i><a href="">Rio de Janeiro</a><i class="material-icons">&#xe315;</i><a href="">Copacabana Palace</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<div id="google_translate_element"></div>
+<!-- ── SCRIPT: colar antes do </body> ── -->
 <script>
-    function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-            pageLanguage: 'en',
-            includedLanguages: 'pt,en,es',
-            autoDisplay: false
-        }, 'google_translate_element');
-    }
+(function () {
+    var btn    = document.getElementById('langBtn');
+    var menu   = document.getElementById('langMenu');
+    var flag   = document.getElementById('currentFlag');
+    var label  = document.getElementById('currentLabel');
 
-    function getCurrentLang() {
-        var match = document.cookie.match(/(?:^|; )googtrans=([^;]+)/);
-        if (!match || !match[1]) return 'en';
-        var parts = decodeURIComponent(match[1]).split('/');
-        return parts.length >= 3 && parts[2] ? parts[2] : 'en';
-    }
+    if (!btn) return;
 
-    function setLanguage(lang) {
-        var cookieValue = '/en/' + lang;
-        document.cookie = 'googtrans=' + cookieValue + '; path=/';
-        document.cookie = 'googtrans=' + cookieValue + '; path=/; domain=' + window.location.hostname;
-        updateLanguageUi();
-
-        var combo = document.querySelector('.goog-te-combo');
-        if (combo) {
-            combo.value = lang;
-            combo.dispatchEvent(new Event('change'));
-        } else {
-            window.location.reload();
-        }
-    }
-
-    function updateLanguageUi() {
-        var current = getCurrentLang();
-        var flag = document.getElementById('currentLanguageFlag');
-        var options = document.querySelectorAll('.language-option[data-lang]');
-        var flagMap = {
-            pt: '../../img/flags/br.png',
-            en: '../../img/flags/us.png',
-            es: '../../img/flags/es.png'
-        };
-
-        if (flag && flagMap[current]) {
-            flag.src = flagMap[current];
-        }
-
-        options.forEach(function (btn) {
-            btn.classList.toggle('is-active', btn.getAttribute('data-lang') === current);
-        });
-    }
-
-    function hideGoogleIframes() {
-        var selectors = ['.goog-te-banner-frame', '.goog-te-menu-frame', 'iframe.skiptranslate'];
-        selectors.forEach(function (selector) {
-            document.querySelectorAll(selector).forEach(function (el) {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
-            });
-        });
-
-        if (document.body) {
-            document.body.style.top = '0px';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var backBtn = document.getElementById('backToMainSite');
-        var toggle = document.getElementById('languageToggle');
-        var menu = document.getElementById('languageMenu');
-        var options = document.querySelectorAll('.language-option[data-lang]');
-
-        if (backBtn) {
-            backBtn.style.cursor = 'pointer';
-            backBtn.addEventListener('click', function () {
-                window.location.href = '../../index.php';
-            });
-        }
-
-        if (toggle && menu) {
-            toggle.addEventListener('click', function (e) {
-                e.stopPropagation();
-                menu.classList.toggle('is-open');
-            });
-        }
-
-        options.forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                if (menu) menu.classList.remove('is-open');
-                setLanguage(btn.getAttribute('data-lang'));
-            });
-        });
-
-        document.addEventListener('click', function () {
-            if (menu) menu.classList.remove('is-open');
-        });
-
-        updateLanguageUi();
-        setTimeout(updateLanguageUi, 1200);
-        hideGoogleIframes();
-        setInterval(hideGoogleIframes, 800);
+    btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        btn.classList.toggle('open');
+        menu.classList.toggle('open');
     });
-</script>
-<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
+    menu.querySelectorAll('.lang-option').forEach(function (opt) {
+        opt.addEventListener('click', function () {
+            /* atualiza botão */
+            flag.src           = opt.dataset.flag;
+            flag.alt           = opt.dataset.label;
+            label.textContent  = opt.dataset.label;
+
+            /* atualiza active */
+            menu.querySelectorAll('.lang-option').forEach(function (o) {
+                o.classList.remove('active');
+            });
+            opt.classList.add('active');
+
+            /* fecha */
+            btn.classList.remove('open');
+            menu.classList.remove('open');
+
+            /* ── Google Translate (se estiver em uso) ── */
+            var sel = document.querySelector('.goog-te-combo');
+            if (sel) {
+                var map = { en: 'en', pt: 'pt', es: 'es' };
+                sel.value = map[opt.dataset.lang] || 'en';
+                sel.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    /* fecha ao clicar fora */
+    document.addEventListener('click', function () {
+        btn.classList.remove('open');
+        menu.classList.remove('open');
+    });
+})();
+</script>

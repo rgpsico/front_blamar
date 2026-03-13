@@ -3,26 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="css/estilo.css?v=1.0.1">
     <link rel="stylesheet" href="css/estilo_mobile.css">
     <title>Blumar | Incentives</title>
 </head>
 <body>
-
-    <header>
-        
-        <div class="container">
-            <div class="logo_topo">
-                <img src="img/logo_blumar.png" alt="">
-            </div>
-            <div class="menu_interno">
-                <a href="">
-                    <button>Back to main site</button>
-                </a>
-            </div>
-        </div>
-
-    </header>
+    <?php include __DIR__ . '/include/header_index.php'; ?>
 
     <section id="incentive_area">
         <div class="container">
@@ -113,6 +100,100 @@ Blumar</h3>
 
         </div>
     </section>
-    
+    <div id="google_translate_element"></div>
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'pt,en,es',
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+
+        function getCurrentLang() {
+            var match = document.cookie.match(/(?:^|; )googtrans=([^;]+)/);
+            if (!match || !match[1]) return 'en';
+            var parts = decodeURIComponent(match[1]).split('/');
+            return parts.length >= 3 && parts[2] ? parts[2] : 'en';
+        }
+
+        function updateLanguageUi() {
+            var current = getCurrentLang();
+            var flag = document.getElementById('currentLanguageFlag');
+            var options = document.querySelectorAll('.language-option[data-lang]');
+            var flagMap = {
+                pt: 'img/flags/br.png',
+                en: 'img/flags/us.png',
+                es: 'img/flags/es.png'
+            };
+
+            if (flag && flagMap[current]) {
+                flag.src = flagMap[current];
+            }
+
+            options.forEach(function (btn) {
+                btn.classList.toggle('is-active', btn.getAttribute('data-lang') === current);
+            });
+        }
+
+        function setLanguage(lang) {
+            var cookieValue = '/en/' + lang;
+            document.cookie = 'googtrans=' + cookieValue + '; path=/';
+            document.cookie = 'googtrans=' + cookieValue + '; path=/; domain=' + window.location.hostname;
+            updateLanguageUi();
+
+            var combo = document.querySelector('.goog-te-combo');
+            if (combo) {
+                combo.value = lang;
+                combo.dispatchEvent(new Event('change'));
+            } else {
+                window.location.reload();
+            }
+        }
+
+        function hideGoogleIframes() {
+            var selectors = ['.goog-te-banner-frame', '.goog-te-menu-frame', 'iframe.skiptranslate'];
+            selectors.forEach(function (selector) {
+                document.querySelectorAll(selector).forEach(function (el) {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                });
+            });
+            if (document.body) {
+                document.body.style.top = '0px';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var toggle = document.getElementById('languageToggle');
+            var menu = document.getElementById('languageMenu');
+            var options = document.querySelectorAll('.language-option[data-lang]');
+
+            if (toggle && menu) {
+                toggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('is-open');
+                });
+            }
+
+            options.forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (menu) menu.classList.remove('is-open');
+                    setLanguage(btn.getAttribute('data-lang'));
+                });
+            });
+
+            document.addEventListener('click', function () {
+                if (menu) menu.classList.remove('is-open');
+            });
+
+            updateLanguageUi();
+            setTimeout(updateLanguageUi, 1200);
+            hideGoogleIframes();
+            setInterval(hideGoogleIframes, 800);
+        });
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>

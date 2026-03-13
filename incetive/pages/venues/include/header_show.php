@@ -1,4 +1,10 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+require_once '../../session_middleware.php';
+requireAuthenticatedSession();
+
+
 require_once __DIR__ . '/../../../util/connection.php';
 
 if (!function_exists('h')) {

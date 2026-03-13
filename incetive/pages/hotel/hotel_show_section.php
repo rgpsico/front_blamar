@@ -19,3 +19,4 @@
 </section>
 <?php include __DIR__ . '/include/gallery_modal.php'; ?>
 <?php include __DIR__ . '/include/footer_show.php'; ?>
+

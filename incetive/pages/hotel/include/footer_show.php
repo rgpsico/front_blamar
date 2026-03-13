@@ -149,6 +149,7 @@
         </div>
     </div>
 </footer>
+ <script src="../../js/tradutor.js"></script>
 <?php if (!isset($is_public_proposal) || !$is_public_proposal) : ?>
     <script src="../../js/photo_gallery.js"></script>
 <?php endif; ?>

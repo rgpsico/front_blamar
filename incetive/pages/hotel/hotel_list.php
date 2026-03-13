@@ -22,7 +22,7 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
-        const API_URL = '../api/api_incentives_hotels_list.php';
+        const API_URL = '../../api/api_incentives_hotels_list.php?request=listar_hoteis_incentives&per_page=200';
         const DEFAULT_IMAGE = '../../img/hotel_01.png';
 
         const $citySelect = $('.select_hotel');
@@ -140,5 +140,6 @@
     </script>
 </body>
 </html>
+
 
 
