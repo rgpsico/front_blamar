@@ -1,6 +1,6 @@
 // URL da nova API
-const API_BASE_URL = 'https://webdeveloper.blumar.com.br/desenv/roger/client_area_incentive/api/api_venues.php';
-const DEFAULT_IMAGE = '../../img/hotel_01.png';
+const API_BASE_URL = 'https://webdeveloper.blumar.com.br/desenv/roger/conteudo/api/api_venues.php';
+const DEFAULT_IMAGE = '../img/hotel_01.png';
 
 // Seletores
 const $locationSelect = $('#locationSelect');

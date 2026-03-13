@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../../util/connection.php';
+require_once __DIR__ . '/../../../util/connection.php';
 
 if (!function_exists('h')) {
     function h($value)
@@ -291,3 +291,4 @@ if ($product_link_url !== '' && !preg_match('/^https?:\/\//i', $product_link_url
         </div>
     </div>
 </div>
+
