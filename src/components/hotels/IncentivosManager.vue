@@ -72,6 +72,12 @@
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
       >
+        <template slot="item.thumnail" slot-scope="{ item }">
+          <v-avatar v-if="item.thumnail" size="42" tile>
+            <v-img :src="item.thumnail" :alt="item.inc_name || 'Thumbnail'"></v-img>
+          </v-avatar>
+          <span v-else>-</span>
+        </template>
         <template slot="item.inc_is_active" slot-scope="{ item }">
           <v-chip :color="item.inc_is_active ? 'success' : 'grey'" small>
             {{ item.inc_is_active ? 'Ativo' : 'Inativo' }}
@@ -313,6 +319,19 @@
                       outlined
                       dense
                     ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="editedItem.thumnail"
+                      label="Thumnail"
+                      outlined
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" class="pt-0">
+                    <div class="text-caption text--secondary">
+                      Esta imagem aparecera na listagem dos hoteis.
+                    </div>
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-text-field v-model="editedItem.city_name" label="Cidade" outlined dense></v-text-field>
@@ -824,6 +843,7 @@ const blankItem = () => ({
   inc_description: '',
   hotel_ref_id: null,
   hotel_name_snapshot: '',
+  thumnail: '',
   city_name: '',
   country_code: '',
   inc_status: 'active',
@@ -891,6 +911,7 @@ export default {
       },
       headers: [
         { text: 'ID', value: 'inc_id' },
+        { text: 'Thumb', value: 'thumnail', sortable: false },
         { text: 'Nome', value: 'inc_name' },
         { text: 'Status', value: 'inc_status' },
         { text: 'Cidade', value: 'city_name' },
@@ -1126,6 +1147,7 @@ export default {
         inc_description: program.inc_description || program.description || '',
         hotel_ref_id: program.hotel_ref_id || null,
         hotel_name_snapshot: program.hotel_name_snapshot || '',
+        thumnail: program.thumnail || '',
         city_name: program.city_name || '',
         country_code: program.country_code || '',
         inc_status: program.inc_status || 'active',
@@ -1544,6 +1566,7 @@ export default {
           inc_description: this.editedItem.inc_description,
           hotel_ref_id: this.editedItem.hotel_ref_id,
           hotel_name_snapshot: this.editedItem.hotel_name_snapshot,
+          thumnail: this.editedItem.thumnail,
           city_name: this.editedItem.city_name,
           country_code: this.editedItem.country_code,
           inc_status: this.editedItem.inc_status,

@@ -22,7 +22,7 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
-        const API_URL = '../../api/api_incentives_hotels_list.php?request=listar_hoteis_incentives&per_page=200';
+        const API_URL = '../../api_incentives.php';
         const DEFAULT_IMAGE = '../../img/hotel_01.png';
 
         const $citySelect = $('.select_hotel');
@@ -39,15 +39,17 @@
         }
 
         function createHotelCard(hotel) {
+            console.log('Hotel data:', hotel); // Log para depuração
             const city = formatText(hotel.city_name, 'Cidade');
             const name = formatText(hotel.inc_name, 'Hotel');
             const stars = hotel.star_rating ? hotel.star_rating : '-';
             const rooms = hotel.total_rooms ? hotel.total_rooms : '-';
             const totalIncentives = hotel.total_incentives ? hotel.total_incentives : 0;
+            const thumb = formatText(hotel.thumnail || hotel.thumbnail || '', DEFAULT_IMAGE);
 
             return `
                 <div class="box_hotels">
-                    <img src="${DEFAULT_IMAGE}" alt="${name}" onerror="this.src='${DEFAULT_IMAGE}'">
+                    <img src="${thumb}" alt="${name}" onerror="this.src='${DEFAULT_IMAGE}'">
                     <div class="box_hotels_conteudo">
                         <div class="line"></div>
                         <h3>${city}<br><span>Hotel</span></h3>
@@ -83,7 +85,7 @@
                 method: 'GET',
                 dataType: 'json',
                 data: {
-                    request: 'listar_hoteis_incentives',
+                    request: 'listar_incentives_simples',
                     per_page: 200
                 }
             })
@@ -140,6 +142,4 @@
     </script>
 </body>
 </html>
-
-
 

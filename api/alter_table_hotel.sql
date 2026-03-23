@@ -139,3 +139,9 @@ ADD COLUMN room_description TEXT;
 
 ALTER TABLE incentive.inc_program
 ADD COLUMN rooms_categories_text TEXT;
+
+ALTER TABLE incentive.inc_program
+ADD COLUMN thumbnail TEXT;
+
+ALTER TABLE incentive.inc_program 
+RENAME COLUMN thumnail TO thumbnail;
