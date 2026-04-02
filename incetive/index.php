@@ -6,6 +6,7 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="css/estilo.css?v=1.0.1">
     <link rel="stylesheet" href="css/estilo_mobile.css">
+        <link rel="stylesheet" href="css/index.css">
     <title>Blumar | Incentives</title>
 </head>
 <body>
@@ -56,7 +57,7 @@ We have created a special area that will allow you to navigate through all the i
                     <div class="box_menu_grid bmg05">
                         
                     </div>
-                    <a href="entertainment.html">
+                    <a href="pages/entertainment/entertainment_list.php">
                     <div class="box_menu_grid bmg06">
                         <h3>Entertainment</h3>
                         <div class="line"></div>

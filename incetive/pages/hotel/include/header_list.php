@@ -6,8 +6,8 @@
 
 
      <?php
-require_once '../../session_middleware.php';
-requireAuthenticatedSession('Acesso negado. Por favor, faça login.');
+//require_once '../../session_middleware.php';
+//requireAuthenticatedSession('Acesso negado. Por favor, faça login.');
 ?>
 
 <!-- ── STYLES: colar dentro do <head> ou no estilo.css ── -->

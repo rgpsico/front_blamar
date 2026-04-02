@@ -63,6 +63,18 @@
           ></v-select>
         </v-col>
 
+        <v-col cols="12" md="3">
+          <v-select
+            v-model="visibilityFilter"
+            :items="visibilityOptions"
+            item-text="text"
+            item-value="value"
+            label="Visibilidade"
+            dense
+            outlined
+          ></v-select>
+        </v-col>
+
         <v-col cols="12" md="2" v-if="typeFilter === 'custom'">
           <v-text-field
             v-model="customType"
@@ -84,6 +96,10 @@
         <strong>{{ typeLabel(typeFilterValue) }}</strong>
       </div>
       <div class="image-bank__summary-item">
+        <span>Visibilidade</span>
+        <strong>{{ visibilityLabel }}</strong>
+      </div>
+      <div class="image-bank__summary-item">
         <span>Cidade</span>
         <strong>{{ selectedCity?.nome_en || 'Sem cidade' }}</strong>
       </div>
@@ -102,7 +118,11 @@
         md="4"
         lg="3"
       >
-        <v-card class="image-bank__card" elevation="4">
+        <v-card
+          class="image-bank__card"
+          :class="{ 'image-bank__card--hidden': image && (image.ocultar_imagem === true || image.ocultar_imagem === 't') }"
+          elevation="4"
+        >
           <v-img :src="imagePreview(image)" height="180" class="image-bank__img">
             <div class="image-bank__chip">
               <v-chip small color="primary" text-color="white">
@@ -113,6 +133,21 @@
           <div class="image-bank__card-body">
             <div class="image-bank__card-title">
               {{ image.legenda || 'Sem legenda' }}
+            </div>
+            <div class="image-bank__visibility">
+              <v-switch
+                :input-value="image && (image.ocultar_imagem === true || image.ocultar_imagem === 't')"
+                :loading="hideSaving[image.pk_bco_img]"
+                inset
+                dense
+                hide-details
+                label="Ocultar"
+                @change="toggleHideImage(image, $event)"
+              ></v-switch>
+              <span
+                v-if="image && (image.ocultar_imagem === true || image.ocultar_imagem === 't')"
+                class="image-bank__visibility-status"
+              >Oculta</span>
             </div>
             <div class="image-bank__meta">
               <span>PK: {{ image.pk_bco_img }}</span>
@@ -253,6 +288,18 @@
                   <div class="image-bank__dialog-field-label">AV3</div>
                   <div class="image-bank__dialog-field-value">
                     {{ previewImage?.av3 ? 'Sim' : 'Não' }}
+                  </div>
+                </div>
+                <div class="image-bank__dialog-field">
+                  <div class="image-bank__dialog-field-label">Ocultar</div>
+                  <div class="image-bank__dialog-field-value">
+                    {{ previewImage && (previewImage.ocultar_imagem === true || previewImage.ocultar_imagem === 't') ? 'Sim' : 'Não' }}
+                  </div>
+                </div>
+                <div class="image-bank__dialog-field">
+                  <div class="image-bank__dialog-field-label">Data ocultação</div>
+                  <div class="image-bank__dialog-field-value">
+                    {{ previewImage?.data_ocultacao || 'Não informado' }}
                   </div>
                 </div>
                 <div class="image-bank__dialog-field">
@@ -520,6 +567,9 @@
             <v-col cols="12" md="3">
               <v-switch v-model="editForm.av3" label="AV3"></v-switch>
             </v-col>
+            <v-col cols="12" md="3">
+              <v-switch v-model="editForm.ocultar_imagem" label="Ocultar"></v-switch>
+            </v-col>
             <v-col cols="12">
               <div class="image-bank__dialog-section-title">Links atuais</div>
               <div class="image-bank__dialog-links-grid">
@@ -696,6 +746,7 @@ export default {
       hotelOptions: [],
       selectedHotel: null,
       typeFilter: 'all',
+      visibilityFilter: 'all',
       customType: '',
       loading: false,
       images: [],
@@ -749,6 +800,7 @@ export default {
         tam_4: '',
         tam_5: '',
         zip: '',
+        ocultar_imagem: false,
         novo_caminho: ''
       },
       snackbar: {
@@ -757,22 +809,40 @@ export default {
         color: 'success'
       },
       orderSaving: {},
+      hideSaving: {},
       typeOptions: [
         { text: 'Todos', value: 'all' },
         { text: 'Hotel (1)', value: 1 },
         { text: 'Tour (5)', value: 5 },
         { text: 'Cidade (10)', value: 10 },
         { text: 'Outro (custom)', value: 'custom' }
+      ],
+      visibilityOptions: [
+        { text: 'Todas', value: 'all' },
+        { text: 'Somente visíveis', value: 'visible' },
+        { text: 'Somente ocultas', value: 'hidden' }
       ]
     }
   },
   computed: {
     filteredImages() {
       const typeValue = this.typeFilterValue
-      if (typeValue === 'all') {
-        return this.images
+      let items = this.images
+
+      if (this.visibilityFilter === 'visible') {
+        items = items.filter(
+          image => !(image?.ocultar_imagem === true || image?.ocultar_imagem === 't')
+        )
+      } else if (this.visibilityFilter === 'hidden') {
+        items = items.filter(
+          image => image?.ocultar_imagem === true || image?.ocultar_imagem === 't'
+        )
       }
-      return this.images.filter(image => String(image.tp_produto) === String(typeValue))
+
+      if (typeValue === 'all') {
+        return items
+      }
+      return items.filter(image => String(image.tp_produto) === String(typeValue))
     },
     typeFilterValue() {
       if (this.typeFilter === 'custom') {
@@ -785,6 +855,10 @@ export default {
         return ''
       }
       return this.imagePreview(this.previewImage)
+    },
+    visibilityLabel() {
+      const option = this.visibilityOptions.find(item => item.value === this.visibilityFilter)
+      return option?.text || 'Todas'
     },
     previewImageUrls() {
       if (!this.previewImage) {
@@ -875,6 +949,40 @@ export default {
         }
         this.$set(image, '_ordem_saved', Number(image.ordem ?? 0))
       })
+    },
+    normalizeImageRecord(image) {
+      if (!image) {
+        return image
+      }
+      const baseUrl = 'https://www.blumar.com.br/'
+      const toUrl = value => {
+        if (!value) return ''
+        if (value.startsWith('http://') || value.startsWith('https://')) return value
+        return baseUrl + String(value).replace(/^\/+/, '').replace(/ /g, '%20')
+      }
+
+      const urls = { ...(image.urls || {}) }
+      ;['tam_4', 'tam_3', 'tam_2', 'tam_1', 'tam_5'].forEach(key => {
+        if (!urls[key] && image[key]) {
+          const url = toUrl(image[key])
+          if (url) {
+            urls[key] = url
+          }
+        }
+      })
+
+      return {
+        ...image,
+        urls,
+        preview_url:
+          image.preview_url ||
+          urls.tam_4 ||
+          urls.tam_3 ||
+          urls.tam_2 ||
+          urls.tam_1 ||
+          urls.tam_5 ||
+          'https://via.placeholder.com/600x400?text=Sem+Imagem'
+      }
     },
     async saveOrder(image) {
       if (!image?.pk_bco_img) {
@@ -1004,6 +1112,11 @@ export default {
     async runSearch() {
       this.loading = true
       try {
+        if (this.visibilityFilter === 'hidden') {
+          await this.fetchHiddenImages()
+          return
+        }
+
         const hasSearch = !!this.searchTerm
         const hasHotel = !!this.selectedHotel?.mneu_for
         const hasCity = !!this.selectedCity
@@ -1023,7 +1136,7 @@ export default {
             results = results.filter(img => String(img.mneu_for) === String(this.selectedHotel.mneu_for))
           }
 
-          this.images = results
+          this.images = results.map(this.normalizeImageRecord)
           this.setOrderSnapshot(this.images)
           return
         }
@@ -1055,7 +1168,9 @@ export default {
         const response = await api.get(
           `${API_BASE}?action=hotel_images&hotel_id=${encodeURIComponent(this.selectedHotel.mneu_for)}`
         )
-        this.images = Array.isArray(response.data?.images) ? response.data.images : []
+        this.images = Array.isArray(response.data?.images)
+          ? response.data.images.map(this.normalizeImageRecord)
+          : []
         this.setOrderSnapshot(this.images)
       } catch (error) {
         this.showMessage(`Erro ao buscar imagens: ${error.message}`, 'error')
@@ -1075,10 +1190,32 @@ export default {
             this.selectedCity.cidade_cod
           )}`
         )
-        this.images = Array.isArray(response.data?.images) ? response.data.images : []
+        this.images = Array.isArray(response.data?.images)
+          ? response.data.images.map(this.normalizeImageRecord)
+          : []
         this.setOrderSnapshot(this.images)
       } catch (error) {
         this.showMessage(`Erro ao buscar imagens da cidade: ${error.message}`, 'error')
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchHiddenImages() {
+      this.loading = true
+      try {
+        const response = await api.get(`${API_BASE}?action=listar_imagens_ocultas`)
+        const items = Array.isArray(response.data?.data) ? response.data.data : []
+        this.images = items.map(image =>
+          this.normalizeImageRecord({
+            ...image,
+            ocultar_imagem: image.ocultar_imagem ?? 't',
+            nome_hotel: image.fornecedor_nome || image.nome_hotel || '',
+            nome_cidade: image.cidade_nome || image.nome_cidade || ''
+          })
+        )
+        this.setOrderSnapshot(this.images)
+      } catch (error) {
+        this.showMessage(`Erro ao buscar imagens ocultas: ${error.message}`, 'error')
       } finally {
         this.loading = false
       }
@@ -1088,6 +1225,7 @@ export default {
       this.selectedCity = null
       this.selectedHotel = null
       this.typeFilter = 'all'
+      this.visibilityFilter = 'all'
       this.customType = ''
       this.images = []
     },
@@ -1166,6 +1304,7 @@ export default {
           ativo_cli: data.ativo_cli === true || data.ativo_cli === 't',
           av: data.av === true || data.av === 't',
           av3: data.av3 === true || data.av3 === 't',
+          ocultar_imagem: data.ocultar_imagem === true || data.ocultar_imagem === 't',
           tam_1: data.tam_1 || '',
           tam_2: data.tam_2 || '',
           tam_3: data.tam_3 || '',
@@ -1217,6 +1356,7 @@ export default {
           ativo_cli: this.editForm.ativo_cli ? 't' : 'f',
           av: this.editForm.av ? 't' : 'f',
           av3: this.editForm.av3 ? 't' : 'f',
+          ocultar_imagem: this.editForm.ocultar_imagem ? 't' : 'f',
             data_cadastro: this.editForm.data_cadastro,
             dt_validade: this.editForm.dt_validade,
             tam_1: this.editForm.tam_1,
@@ -1263,6 +1403,8 @@ export default {
         ativo_cli: payload.ativo_cli,
         av: payload.av,
         av3: payload.av3,
+        ocultar_imagem: payload.ocultar_imagem,
+        data_ocultacao: payload.ocultar_imagem === 't' ? new Date().toISOString() : null,
         data_cadastro: payload.data_cadastro,
         dt_validade: payload.dt_validade,
         origem: payload.origem,
@@ -1278,6 +1420,63 @@ export default {
       this.$set(this.images, index, updated)
       if (this.previewImage?.pk_bco_img === payload.pk_bco_img) {
         this.previewImage = { ...this.previewImage, ...updated }
+      }
+    },
+    async toggleHideImage(image, value) {
+      if (!image?.pk_bco_img) {
+        return
+      }
+      const pk = image.pk_bco_img
+      const previousHidden = image.ocultar_imagem
+      const previousDate = image.data_ocultacao
+      const nextHidden = value ? 't' : 'f'
+
+      this.$set(this.hideSaving, pk, true)
+      this.$set(image, 'ocultar_imagem', nextHidden)
+      this.$set(image, 'data_ocultacao', value ? new Date().toISOString() : null)
+
+      try {
+        const response = await api.post(`${API_BASE}?action=toggle_ocultar_imagem`, {
+          pk_bco_img: pk
+        })
+        if (response.data?.success) {
+          const returnedHidden = response.data?.ocultar_imagem
+          const normalizedHidden =
+            returnedHidden === true || returnedHidden === 't' || returnedHidden === 'true'
+              ? 't'
+              : 'f'
+
+          this.$set(image, 'ocultar_imagem', normalizedHidden)
+          this.$set(
+            image,
+            'data_ocultacao',
+            normalizedHidden === 't' ? image.data_ocultacao || new Date().toISOString() : null
+          )
+
+          if (this.editForm?.pk_bco_img === pk) {
+            this.editForm.ocultar_imagem = normalizedHidden === 't'
+          }
+          if (this.previewImage?.pk_bco_img === pk) {
+            this.previewImage = {
+              ...this.previewImage,
+              ocultar_imagem: normalizedHidden,
+              data_ocultacao: image.data_ocultacao
+            }
+          }
+          this.showMessage(normalizedHidden === 't' ? 'Imagem ocultada.' : 'Imagem exibida novamente.')
+          await this.runSearch()
+          return
+        }
+
+        this.$set(image, 'ocultar_imagem', previousHidden)
+        this.$set(image, 'data_ocultacao', previousDate)
+        this.showMessage(response.data?.error || 'Erro ao atualizar ocultação.', 'error')
+      } catch (error) {
+        this.$set(image, 'ocultar_imagem', previousHidden)
+        this.$set(image, 'data_ocultacao', previousDate)
+        this.showMessage(`Erro ao atualizar ocultação: ${error.message}`, 'error')
+      } finally {
+        this.$set(this.hideSaving, pk, false)
       }
     },
     async submitCreate() {
@@ -1439,6 +1638,11 @@ export default {
 .image-bank__card {
   border-radius: 18px;
   overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.image-bank__card--hidden {
+  opacity: 0.72;
 }
 
 .image-bank__img {
@@ -1459,6 +1663,20 @@ export default {
   font-weight: 600;
   margin-bottom: 8px;
   color: #0f172a;
+}
+
+.image-bank__visibility {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.image-bank__visibility-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b91c1c;
 }
 
 .image-bank__meta {

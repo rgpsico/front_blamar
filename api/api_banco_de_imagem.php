@@ -239,6 +239,8 @@ switch ($action) {
                 b.nome_produto,
                 b.av3,
                 b.av,
+                b.ocultar_imagem,
+                b.data_ocultacao,
                 b.dt_validade,
                 b.fachada,
                 b.nacional,
@@ -291,6 +293,134 @@ switch ($action) {
         break;
 
 
+        case 'listar_imagens_ocultas':
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    $sql = "
+        SELECT 
+            b.pk_bco_img,
+            b.mneu_for,
+            b.fk_cidcod,
+            b.tam_1,
+            b.tam_2,
+            b.tam_3,
+            b.tam_4,
+            b.tam_5,
+            b.legenda,
+            b.nome_produto,
+            b.tp_produto,
+            b.ocultar_imagem,
+            b.data_cadastro,
+            b.data_ocultacao,
+            c.nome_pt AS cidade_nome,
+            f.nome_for AS fornecedor_nome
+        FROM banco_imagem.bco_img b
+        LEFT JOIN tarifario.cidade_tpo c 
+            ON b.fk_cidcod = c.cidade_cod
+        LEFT JOIN sbd95.fornec f 
+            ON b.mneu_for = f.mneu_for
+        WHERE b.ocultar_imagem = true
+          AND (b.excluido IS NULL OR b.excluido = false)
+        ORDER BY b.pk_bco_img DESC
+    ";
+
+    $res = pg_query($conn, $sql);
+
+    if (!$res) {
+        echo json_encode([
+            "success" => false,
+            "error" => pg_last_error($conn)
+        ]);
+        exit;
+    }
+
+    $dados = [];
+
+    while ($row = pg_fetch_assoc($res)) {
+        $dados[] = $row;
+    }
+
+    echo json_encode([
+        "success" => true,
+        "total" => count($dados),
+        "data" => $dados
+    ]);
+
+    break;
+    
+
+       case 'update_metadata':
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    // Lê o corpo da requisição (JSON)
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'JSON inválido: ' . json_last_error_msg()]);
+        exit;
+    }
+
+    if (empty($data['pk_bco_img'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'pk_bco_img é obrigatório']);
+        exit;
+    }
+
+    $pk = (int)$data['pk_bco_img'];
+
+    // Proteção básica contra SQL Injection (mesmo usando integer cast)
+    if ($pk <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'pk_bco_img inválido']);
+        exit;
+    }
+
+    $sql = "
+        UPDATE banco_imagem.bco_img
+        SET 
+            ocultar_imagem = NOT ocultar_imagem,
+            data_ocultacao = CASE 
+                WHEN ocultar_imagem = false THEN NOW()
+                ELSE NULL
+            END
+        WHERE pk_bco_img = $pk
+        RETURNING ocultar_imagem
+    ";
+
+    $res = pg_query($conn, $sql);
+
+    if (!$res) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => pg_last_error($conn)
+        ]);
+        exit;
+    }
+
+    $row = pg_fetch_assoc($res);
+
+    if (!$row) {
+        http_response_code(404);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Imagem não encontrada'
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'success'          => true,
+        'pk_bco_img'       => $pk,
+        'ocultar_imagem'   => $row['ocultar_imagem'] === 't' || $row['ocultar_imagem'] === true,
+        'timestamp'        => date('Y-m-d H:i:s')  // opcional, para debug
+    ]);
+
+    break;
 
 
     // ================================================
@@ -850,12 +980,18 @@ switch ($action) {
 
         $mneu_for = pg_escape_string(trim($_GET['hotel_id']));
 
-     $pega_img_htl = "SELECT pk_bco_img, mneu_for, tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, autor, ordem, nacional, fachada
+     $pega_img_htl = "SELECT pk_bco_img, mneu_for, tam_1, tam_2, tam_3, tam_4, tam_5, zip, legenda, autor, ordem, nacional, fachada, ocultar_imagem, data_ocultacao
         FROM banco_imagem.bco_img
         WHERE mneu_for = '" . $mneu_for . "' 
           AND excluido = '0'
           AND tp_produto = '1'
-        ORDER BY data_cadastro DESC, ordem ASC, legenda ASC";
+        ORDER BY 
+    data_cadastro DESC,
+    CASE 
+        WHEN ordem IS NULL OR ordem = 0 THEN 9999
+        ELSE ordem
+    END,
+    legenda ASC";
 
         $result_img_htl = pg_exec($conn, $pega_img_htl);
 
@@ -883,6 +1019,8 @@ switch ($action) {
                 'ordem' => pg_result($result_img_htl, $row, 'ordem'),
                 'nacional' => pg_result($result_img_htl, $row, 'nacional'),
                 'fachada' => pg_result($result_img_htl, $row, 'fachada'),
+                'ocultar_imagem' => pg_result($result_img_htl, $row, 'ocultar_imagem'),
+                'data_ocultacao' => pg_result($result_img_htl, $row, 'data_ocultacao'),
                 'urls' => []
             ];
 
@@ -1164,7 +1302,7 @@ switch ($action) {
         $cidade_cod = pg_escape_string(trim($_GET['cidade_cod']));
 
         // Busca todas as imagens da cidade com tp_produto = 10
-        $sql = "SELECT pk_bco_img, tam_1, tam_2, tam_3, tam_4, legenda, palavras_chave
+        $sql = "SELECT pk_bco_img, tam_1, tam_2, tam_3, tam_4, legenda, palavras_chave, ocultar_imagem, data_ocultacao
             FROM banco_imagem.bco_img
             WHERE fk_cidcod = '$cidade_cod'           
             AND excluido = FALSE
@@ -1185,6 +1323,8 @@ switch ($action) {
                 'legenda'        => $row['legenda'] ?? '',
                 'palavras_chave' => $row['palavras_chave'] ?? '',
                 'tp_produto'     => '10',
+                'ocultar_imagem' => $row['ocultar_imagem'] ?? 'f',
+                'data_ocultacao' => $row['data_ocultacao'] ?? null,
                 'urls'           => []
             ];
 
@@ -1267,6 +1407,7 @@ switch ($action) {
         $ativo_cli = isset($data['ativo_cli']) ? $normalize_bool($data['ativo_cli']) : null;
         $av = isset($data['av']) ? $normalize_bool($data['av']) : null;
         $av3 = isset($data['av3']) ? $normalize_bool($data['av3']) : null;
+        $ocultar_imagem = isset($data['ocultar_imagem']) ? $normalize_bool($data['ocultar_imagem']) : null;
 
         // Monta o UPDATE dinamicamente
         $updates = [];
@@ -1285,6 +1426,12 @@ switch ($action) {
         if ($ativo_cli !== null) $updates[] = "ativo_cli = '$ativo_cli'";
         if ($av !== null) $updates[] = "av = '$av'";
         if ($av3 !== null) $updates[] = "av3 = '$av3'";
+        if ($ocultar_imagem !== null) {
+            $updates[] = "ocultar_imagem = '$ocultar_imagem'";
+            $updates[] = $ocultar_imagem === 't'
+                ? "data_ocultacao = NOW()"
+                : "data_ocultacao = NULL";
+        }
         if ($id_hotel !== null) $updates[] = "mneu_for = '$id_hotel'";
         if ($id_hotel_ref !== null) $updates[] = "id_hotel = $id_hotel_ref";
         if ($id_service !== null) $updates[] = "id_service = $id_service";
@@ -1367,6 +1514,8 @@ switch ($action) {
                     b.ordem,
                     b.fachada,
                     b.nacional,
+                    b.ocultar_imagem,
+                    b.data_ocultacao,
                     b.palavras_chave,
                     b.fk_cidcod,
                     b.tam_1,
@@ -1419,6 +1568,8 @@ switch ($action) {
                 'ordem' => $row['ordem'] ?? 0,
                 'fachada' => $row['fachada'] ?? 'f',
                 'nacional' => $row['nacional'] ?? 'f',
+                'ocultar_imagem' => $row['ocultar_imagem'] ?? 'f',
+                'data_ocultacao' => $row['data_ocultacao'] ?? null,
                 'palavras_chave' => $row['palavras_chave'] ?? '',
                 'nome_hotel' => $row['nome_hotel'] ?? '',
                 'nome_cidade' => $row['nome_cidade'] ?? '',

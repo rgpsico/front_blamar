@@ -184,6 +184,7 @@
           manager-description="Cadastro de incentive venues usando a API api_venues.php."
         />
         <VenuesManager v-else-if="activePage === 'incentivos'" />
+        <ActivitiesManager v-else-if="activePage === 'activities'" />
         <IncentivosManager v-else-if="activePage === 'hotel-incentive'" />
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
@@ -263,6 +264,7 @@ import VideoBankManager from '@/components/video/VideoBankManager.vue'
 import HotelsManager from '@/components/hotels/HotelsManager.vue'
 import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 import VenuesManager from '@/components/venues/VenuesManager.vue'
+import ActivitiesManager from '@/components/activities/ActivitiesManager.vue'
 import RestaurantsManager from '@/components/restaurants/RestaurantsManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
 import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
@@ -290,6 +292,7 @@ export default {
     HotelsManager,
     IncentivosManager,
     VenuesManager,
+    ActivitiesManager,
     RestaurantsManager,
     UsersManager,
     ProfilePermissionsManager,
@@ -362,6 +365,7 @@ export default {
             { title: 'Hotel Incentive', icon: 'mdi-gift-outline', page: 'hotel-incentive' },
             { title: 'Cad. Incentive Venues', icon: 'mdi-office-building-cog', page: 'cad-incentive-venues' },
             { title: 'Venues', icon: 'mdi-office-building', page: 'incentivos' },
+            { title: 'Activities', icon: 'mdi-hiking', page: 'activities' },
             { title: 'Restaurantes', icon: 'mdi-silverware-fork-knife', page: 'restaurantes' }
           ]
         },
