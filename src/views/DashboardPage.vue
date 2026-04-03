@@ -187,6 +187,7 @@
         <ActivitiesManager v-else-if="activePage === 'activities'" />
         <IncentivosManager v-else-if="activePage === 'hotel-incentive'" />
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
+        <EntertainmentManager v-else-if="activePage === 'entertainment'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
       </v-container>
     </v-main>
@@ -266,6 +267,7 @@ import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 import VenuesManager from '@/components/venues/VenuesManager.vue'
 import ActivitiesManager from '@/components/activities/ActivitiesManager.vue'
 import RestaurantsManager from '@/components/restaurants/RestaurantsManager.vue'
+import EntertainmentManager from '@/components/entertainment/EntertainmentManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
 import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
 import NewslettersManager from '@/components/newsletters/NewslettersManager.vue'
@@ -294,6 +296,7 @@ export default {
     VenuesManager,
     ActivitiesManager,
     RestaurantsManager,
+    EntertainmentManager,
     UsersManager,
     ProfilePermissionsManager,
     NewslettersManager,
@@ -361,12 +364,11 @@ export default {
           icon: 'mdi-gift',
           open: false,
           items: [
-            { title: 'Hotel', icon: 'mdi-bed', page: 'hotel' },
             { title: 'Hotel Incentive', icon: 'mdi-gift-outline', page: 'hotel-incentive' },
             { title: 'Cad. Incentive Venues', icon: 'mdi-office-building-cog', page: 'cad-incentive-venues' },
             { title: 'Venues', icon: 'mdi-office-building', page: 'incentivos' },
             { title: 'Activities', icon: 'mdi-hiking', page: 'activities' },
-            { title: 'Restaurantes', icon: 'mdi-silverware-fork-knife', page: 'restaurantes' }
+            { title: 'Entertainment', icon: 'mdi-movie-open', page: 'entertainment' }
           ]
         },
         {
@@ -375,6 +377,15 @@ export default {
           open: false,
           items: [
             { title: 'Atualizacoes', icon: 'mdi-history', page: 'atualizacoes' }
+          ]
+        },
+        {
+          title: 'Legado Gestao',
+          icon: 'mdi-archive-clock-outline',
+          open: false,
+          items: [
+            { title: 'Hotel', icon: 'mdi-bed', page: 'hotel' },
+            { title: 'Restaurantes', icon: 'mdi-silverware-fork-knife', page: 'restaurantes' }
           ]
         }
       ],
