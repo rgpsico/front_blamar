@@ -72,6 +72,71 @@ function formatBool($val) {
     return filter_var($val, FILTER_VALIDATE_BOOLEAN) ? true : false;
 }
 
+function resolveEntertainmentCategoryId($conn, $value, $createIfMissing = false) {
+    if ($value === null || $value === '') return null;
+
+    $intValue = formatInt($value);
+    if ($intValue !== null) {
+        return $intValue;
+    }
+
+    $slug = formatString($value);
+    if (!$slug) return null;
+
+    $res = pg_query_params(
+        $conn,
+        "SELECT id FROM incentive.entertainment_categories WHERE LOWER(slug) = LOWER($1) LIMIT 1",
+        [$slug]
+    );
+    if ($res && pg_num_rows($res) > 0) {
+        return (int)pg_fetch_result($res, 0, 0);
+    }
+
+    if (!$createIfMissing) {
+        return null;
+    }
+
+    $insertRes = pg_query_params(
+        $conn,
+        "INSERT INTO incentive.entertainment_categories (slug) VALUES ($1) RETURNING id",
+        [$slug]
+    );
+    if (!$insertRes || pg_num_rows($insertRes) === 0) {
+        return null;
+    }
+
+    return (int)pg_fetch_result($insertRes, 0, 0);
+}
+
+function resolveEntertainmentCityId($conn, $value) {
+    if ($value === null || $value === '') return null;
+
+    $intValue = formatInt($value);
+    if ($intValue !== null) {
+        return $intValue;
+    }
+
+    $raw = formatString($value);
+    if (!$raw) return null;
+
+    $res = pg_query_params(
+        $conn,
+        "SELECT cidade_cod
+         FROM tarifario.cidade_tpo
+         WHERE CAST(cidade_cod AS TEXT) = $1
+            OR LOWER(nome_en) = LOWER($1)
+            OR LOWER(nome_pt) = LOWER($1)
+         ORDER BY nome_en
+         LIMIT 1",
+        [$raw]
+    );
+    if (!$res || pg_num_rows($res) === 0) {
+        return null;
+    }
+
+    return pg_fetch_result($res, 0, 0);
+}
+
 function getBearerToken() {
     $headers = getallheaders();
     $auth = $headers['authorization'] ?? $headers['Authorization'] ?? '';
@@ -323,8 +388,15 @@ try {
             try {
                 // Campos obrigatórios
                 $title       = formatString($input['title'] ?? '');
-                $category_id = formatInt($input['category_id'] ?? null);
-                $city_id     = formatInt($input['city_id'] ?? null);
+                $category_id = resolveEntertainmentCategoryId(
+                    $conn,
+                    $input['category_id'] ?? ($input['category_slug'] ?? null),
+                    true
+                );
+                $city_id     = resolveEntertainmentCityId(
+                    $conn,
+                    $input['city_id'] ?? ($input['city_name'] ?? ($input['cidade_nome'] ?? null))
+                );
                 $type        = formatString($input['type'] ?? '');
 
                 if (!$title)       throw new Exception("Campo 'title' é obrigatório");
@@ -435,7 +507,7 @@ try {
                     'title', 'slug', 'type', 'short_desc', 'description',
                     'cover_image_url', 'price_range', 'personal_note',
                 ];
-                $allowed_ints = ['category_id', 'city_id', 'location_id'];
+                $allowed_ints = ['location_id'];
                 $allowed_bools = ['is_active'];
 
                 foreach ($allowed_strings as $field) {
@@ -456,6 +528,29 @@ try {
                             $params[]  = $val;
                             $idx++;
                         }
+                    }
+                }
+                if (array_key_exists('city_id', $input) || array_key_exists('city_name', $input) || array_key_exists('cidade_nome', $input)) {
+                    $val = resolveEntertainmentCityId(
+                        $conn,
+                        $input['city_id'] ?? ($input['city_name'] ?? ($input['cidade_nome'] ?? null))
+                    );
+                    if ($val !== null) {
+                        $updates[] = "city_id = \$$idx";
+                        $params[]  = $val;
+                        $idx++;
+                    }
+                }
+                if (array_key_exists('category_id', $input) || array_key_exists('category_slug', $input)) {
+                    $val = resolveEntertainmentCategoryId(
+                        $conn,
+                        $input['category_id'] ?? ($input['category_slug'] ?? null),
+                        true
+                    );
+                    if ($val !== null) {
+                        $updates[] = "category_id = \$$idx";
+                        $params[]  = $val;
+                        $idx++;
                     }
                 }
                 foreach ($allowed_bools as $field) {

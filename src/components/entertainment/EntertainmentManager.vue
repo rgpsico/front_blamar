@@ -185,12 +185,18 @@
               <v-col cols="12" md="6">
                 <v-autocomplete
                   v-model="editedItem.city_id"
-                  :items="cidades"
-                  item-text="label"
+                  :items="citySelectItems"
+                  :loading="cityLoading"
+                  :search-input.sync="citySearch"
+                  item-text="text"
                   item-value="value"
                   label="Cidade *"
                   dense
                   outlined
+                  clearable
+                  hide-no-data
+                  no-data-text="Nenhuma cidade encontrada"
+                  @update:search-input="onCitySearch"
                   @change="onCityChange"
                 ></v-autocomplete>
               </v-col>
@@ -354,6 +360,16 @@
 import api from '@/services/api'
 
 const API_BASE = `${api.defaults.baseURL}/`
+const DEFAULT_ENTERTAINMENT_CATEGORIES = [
+  { id: 'show', slug: 'show' },
+  { id: 'music', slug: 'music' },
+  { id: 'festival', slug: 'festival' },
+  { id: 'nightlife', slug: 'nightlife' },
+  { id: 'cultural', slug: 'cultural' },
+  { id: 'theater', slug: 'theater' },
+  { id: 'family', slug: 'family' },
+  { id: 'outdoor', slug: 'outdoor' }
+]
 
 export default {
   name: 'EntertainmentManager',
@@ -362,10 +378,13 @@ export default {
       loading: false,
       saving: false,
       loadingLocations: false,
+      cityLoading: false,
       items: [],
       categorias: [],
       cidades: [],
       locations: [],
+      citySearch: '',
+      citySearchDebounce: null,
       dialog: false,
       dialogDelete: false,
       editedIndex: -1,
@@ -407,6 +426,20 @@ export default {
   computed: {
     dialogTitle() {
       return this.editedIndex === -1 ? 'Novo Entertainment' : 'Editar Entertainment'
+    },
+    cityOptions() {
+      return Array.isArray(this.cidades) ? this.cidades : []
+    },
+    citySelectItems() {
+      return this.cityOptions
+        .map((city) => ({
+          text: String(city.name || '').trim(),
+          value:
+            city.id !== null && city.id !== undefined && city.id !== ''
+              ? city.id
+              : String(city.name || '').trim()
+        }))
+        .filter((city) => city.text !== '' && city.value !== null && city.value !== undefined && city.value !== '')
     }
   },
   mounted() {
@@ -477,20 +510,63 @@ export default {
     },
     async fetchSupportLists() {
       try {
-        const [catRes, cidadesRes] = await Promise.all([
-          fetch(`${API_BASE}api_entertainments.php?request=listar_categorias`),
-          fetch(`${API_BASE}cidades.php?request=listar_cidades`)
-        ])
-        const [catData, cidadesData] = await Promise.all([
-          catRes.json(),
-          cidadesRes.json()
-        ])
-        this.categorias = Array.isArray(catData) ? catData : []
-        this.cidades = Array.isArray(cidadesData)
-          ? cidadesData.map(c => ({ value: c.value, label: `${c.label_pt} (${c.label_en})` }))
-          : []
+        const catRes = await fetch(`${API_BASE}api_entertainments.php?request=listar_categorias`)
+        const catData = await catRes.json()
+        const apiCategories = Array.isArray(catData) ? catData : []
+        const seen = new Set()
+        this.categorias = [...apiCategories, ...DEFAULT_ENTERTAINMENT_CATEGORIES].filter((category) => {
+          const key = String(category.slug || category.id || '').trim().toLowerCase()
+          if (!key || seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        await this.fetchCities()
       } catch (error) {
+        this.categorias = [...DEFAULT_ENTERTAINMENT_CATEGORIES]
         this.showMessage(`Erro ao carregar listas: ${error.message}`, 'error')
+      }
+    },
+    async fetchCities(searchTerm = '') {
+      const mapCity = (city) => ({
+        id:
+          city.id ??
+          city.cidade_cod ??
+          city.cod_cid ??
+          city.pk_cidade_tpo ??
+          city.city_id ??
+          city.name ??
+          city.nome_en ??
+          city.nome_pt ??
+          null,
+        name: city.name || city.nome_en || city.nome_pt || city.nome_cid || city.city || ''
+      })
+      const normalizeCitiesResponse = (data) => {
+        if (Array.isArray(data)) return data
+        if (Array.isArray(data?.data)) return data.data
+        if (Array.isArray(data?.items)) return data.items
+        return []
+      }
+      const sortCities = (list) =>
+        list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }))
+
+      this.cityLoading = true
+      const filtroNome = String(searchTerm || '').trim()
+      const query = new URLSearchParams()
+      query.append('request', 'listar_cidades')
+      query.append('limit', '100')
+      if (filtroNome) query.append('filtro_nome', filtroNome)
+
+      try {
+        const response = await fetch(`${API_BASE}cidades.php?${query.toString()}`, {
+          headers: this.authHeaders()
+        })
+        const data = await response.json()
+        const list = normalizeCitiesResponse(data)
+        this.cidades = sortCities(list.map(mapCity).filter((c) => c.id !== null && c.id !== undefined && c.name))
+      } catch (error) {
+        this.cidades = []
+      } finally {
+        this.cityLoading = false
       }
     },
     async fetchLocations(cityId) {
@@ -515,6 +591,30 @@ export default {
       this.editedItem.location_id = null
       this.fetchLocations(cityId)
     },
+    onCitySearch(value) {
+      this.citySearch = value || ''
+      if (this.citySearchDebounce) {
+        clearTimeout(this.citySearchDebounce)
+      }
+      this.citySearchDebounce = setTimeout(() => {
+        this.fetchCities(this.citySearch)
+      }, 300)
+    },
+    reconcileEditedCitySelection(cityName = '') {
+      const current = this.editedItem.city_id
+      const currentRaw = current === null || current === undefined ? '' : String(current).trim()
+      const hasDirectMatch =
+        currentRaw !== '' && this.citySelectItems.some((item) => String(item.value) === currentRaw)
+      if (hasDirectMatch) return
+
+      const cityNameRaw = String(cityName || '').trim().toLowerCase()
+      if (!cityNameRaw) return
+
+      const byName = this.citySelectItems.find((item) => String(item.text || '').trim().toLowerCase() === cityNameRaw)
+      if (byName) {
+        this.editedItem.city_id = byName.value
+      }
+    },
     applyFilters() {
       this.pagination.page = 1
       this.fetchEntertainments()
@@ -538,6 +638,7 @@ export default {
       this.editedIndex = -1
       this.editedItem = this.emptyItemFn()
       this.locations = []
+      this.fetchCities()
       this.dialog = true
     },
     async openEdit(item) {
@@ -569,6 +670,10 @@ export default {
               caption: img.caption || '',
               position: img.position || 0
             })) : []
+          }
+          if (data.cidade_nome) {
+            await this.fetchCities(data.cidade_nome)
+            this.reconcileEditedCitySelection(data.cidade_nome)
           }
           if (data.city_id) await this.fetchLocations(data.city_id)
           this.dialog = true

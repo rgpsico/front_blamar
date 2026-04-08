@@ -186,6 +186,7 @@
         <VenuesManager v-else-if="activePage === 'incentivos'" />
         <ActivitiesManager v-else-if="activePage === 'activities'" />
         <IncentivosManager v-else-if="activePage === 'hotel-incentive'" />
+        <IncentiveRestaurantsManager v-else-if="activePage === 'restaurants-incentive'" />
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
         <EntertainmentManager v-else-if="activePage === 'entertainment'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
@@ -267,6 +268,7 @@ import IncentivosManager from '@/components/hotels/IncentivosManager.vue'
 import VenuesManager from '@/components/venues/VenuesManager.vue'
 import ActivitiesManager from '@/components/activities/ActivitiesManager.vue'
 import RestaurantsManager from '@/components/restaurants/RestaurantsManager.vue'
+import IncentiveRestaurantsManager from '@/components/restaurants/IncentiveRestaurantsManager.vue'
 import EntertainmentManager from '@/components/entertainment/EntertainmentManager.vue'
 import UsersManager from '@/components/users/UsersManager.vue'
 import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
@@ -296,6 +298,7 @@ export default {
     VenuesManager,
     ActivitiesManager,
     RestaurantsManager,
+    IncentiveRestaurantsManager,
     EntertainmentManager,
     UsersManager,
     ProfilePermissionsManager,
@@ -368,6 +371,7 @@ export default {
             { title: 'Cad. Incentive Venues', icon: 'mdi-office-building-cog', page: 'cad-incentive-venues' },
             { title: 'Venues', icon: 'mdi-office-building', page: 'incentivos' },
             { title: 'Activities', icon: 'mdi-hiking', page: 'activities' },
+            { title: 'Restaurants', icon: 'mdi-silverware-fork-knife', page: 'restaurants-incentive' },
             { title: 'Entertainment', icon: 'mdi-movie-open', page: 'entertainment' }
           ]
         },
