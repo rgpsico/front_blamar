@@ -194,3 +194,38 @@ CREATE INDEX idx_inc_room_cat_incid      ON inc_room_category(inc_id);
 CREATE INDEX idx_inc_dining_incid        ON inc_dining(inc_id);
 CREATE INDEX idx_inc_facility_incid      ON inc_facility(inc_id);
 CREATE INDEX idx_inc_note_incid          ON inc_note(inc_id);
+
+
+
+-- Tabela principal de add-ons
+CREATE TABLE incentive.addon (
+    id              SERIAL PRIMARY KEY,
+    titulo          VARCHAR(200)  NOT NULL,
+    descricao       TEXT,
+    cidade          VARCHAR(100),
+    fk_cidade_id    INTEGER,                        -- opcional, FK p/ tabela de cidades
+    ativo           BOOLEAN       DEFAULT TRUE,
+    destaque        BOOLEAN       DEFAULT FALSE,
+    ordem           INTEGER       DEFAULT 0,
+    criado_em       TIMESTAMP     DEFAULT NOW(),
+    atualizado_em   TIMESTAMP     DEFAULT NOW()
+);
+
+-- Imagens do add-on (pode ter mais de uma)
+CREATE TABLE incentive.addon_imagem (
+    id          SERIAL PRIMARY KEY,
+    fk_addon_id INTEGER NOT NULL REFERENCES incentive.addon(id) ON DELETE CASCADE,
+    url_imagem  TEXT    NOT NULL,
+    principal   BOOLEAN DEFAULT FALSE,
+    ordem       INTEGER DEFAULT 0
+);
+
+-- Localização/ponto do add-on (ex: "Pão de Açúcar", "Cristo Redentor")
+CREATE TABLE incentive.addon_localizacao (
+    id          SERIAL PRIMARY KEY,
+    fk_addon_id INTEGER NOT NULL REFERENCES incentive.addon(id) ON DELETE CASCADE,
+    nome        VARCHAR(200),
+    endereco    TEXT,
+    latitude    NUMERIC(10,7),
+    longitude   NUMERIC(10,7)
+);
