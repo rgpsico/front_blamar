@@ -12,6 +12,149 @@
 
 <!-- ── STYLES: colar dentro do <head> ou no estilo.css ── -->
 <style>
+    /* ── Header page section ── */
+    #header_page {
+        background: #F9F6F6;
+        overflow: hidden;
+    }
+    #header_page > .container {
+        display: flex;
+        align-items: center;
+        padding: 1.5vw 0;
+    }
+    .page_title {
+        display: flex;
+        align-items: baseline;
+        gap: 0.6vw;
+    }
+    #header_page h2 {
+        color: #4C4B4B;
+        font-size: 2vw;
+        font-weight: 700;
+        margin: 0;
+        float: none;
+    }
+    #header_page h3 {
+        color: #888;
+        font-size: 0.85vw;
+        font-weight: 400;
+        margin: 0;
+        float: none;
+        padding: 0;
+    }
+    #header_page h3 strong {
+        font-weight: 700;
+        color: #4C4B4B;
+    }
+    .chose_city {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85vw;
+        color: #555;
+        cursor: pointer;
+        margin-left: auto;
+    }
+    .chose_city .material-icons {
+        font-size: 1.1vw;
+    }
+
+    /* ── Filter bar ── */
+    #header_page .container_max.ct01 {
+        background: #4a8bbe;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    #header_page .container_max.ct01 .container {
+        display: flex;
+        align-items: center;
+        gap: 1.5vw;
+        padding: 0.7vw 0;
+    }
+    .filter_box01 {
+        flex-shrink: 0;
+    }
+    .filter_box02 {
+        flex: 1;
+    }
+    .filters_hotel {
+        display: flex;
+        align-items: center;
+        gap: 0.5vw;
+    }
+    .filters_hotel h3 {
+        color: #fff;
+        font-size: 0.8vw;
+        font-weight: 500;
+        margin: 0;
+        float: none;
+    }
+    .filters_hotel .material-icons {
+        color: #fff;
+        font-size: 1vw;
+    }
+    .filters_hotel_inner {
+        display: flex;
+        align-items: center;
+        gap: 1vw;
+    }
+    .select_hotel,
+    .select_stars {
+        border: 0;
+        padding: 0.4vw 1vw;
+        border-radius: 0.3vw;
+        font-size: 0.75vw;
+        color: #7e7e7e;
+        font-style: italic;
+        background: #fff;
+        cursor: pointer;
+    }
+    .btn_apply_filter {
+        background: transparent;
+        border: 1.5px solid rgba(255,255,255,0.85);
+        color: #fff;
+        padding: 0.3vw 1.1vw;
+        font-size: 0.75vw;
+        border-radius: 0.3vw;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s, color 0.2s;
+    }
+    .btn_apply_filter:hover {
+        background: #fff;
+        color: #2c6e9e;
+    }
+
+    /* ── Breadcrumb bar ── */
+    #header_page .container_max.ct02 {
+        border-top: 1px solid #e8e8e8;
+    }
+    #header_page .container_max.ct02 .container {
+        padding: 0.5vw 0;
+    }
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.3vw;
+        font-size: 0.75vw;
+        color: #888;
+        padding: 0;
+        background: none;
+    }
+    .breadcrumb a {
+        color: #888;
+        text-decoration: none;
+    }
+    .breadcrumb a:hover {
+        color: #4a8bbe;
+        text-decoration: underline;
+    }
+    .breadcrumb .material-icons {
+        font-size: 0.9vw;
+        color: #bbb;
+    }
+</style>
+
+<style>
     /* ── Menu interno: alinha switcher + botão ── */
     .menu_interno {
         display: flex;
@@ -209,6 +352,57 @@
         </div>
     </div>
 </header>
+
+<!-- ── HEADER PAGE: título, filtros e breadcrumb ── -->
+<section id="header_page">
+    <div class="container">
+        <div class="page_title">
+            <h2>Hotels</h2>
+            <h3 id="city_subtitle">hotels selection</h3>
+        </div>
+        <div class="chose_city">
+            <span>Change the city</span>
+            <i class="material-icons">expand_more</i>
+        </div>
+    </div>
+
+    <div class="container_max ct01">
+        <div class="container">
+            <div class="filter_box01">
+                <div class="filters_hotel">
+                    <h3>Filters</h3>
+                    <i class="material-icons">&#xe152;</i>
+                </div>
+            </div>
+            <div class="filter_box02">
+                <div class="filters_hotel filters_hotel_inner">
+                    <select class="select_hotel" id="selectLocation" name="city">
+                        <option value="">select the location</option>
+                    </select>
+                    <select class="select_stars" id="selectStars" name="stars">
+                        <option value="">Stars Filter</option>
+                        <option value="3">3 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="5">5 Stars</option>
+                    </select>
+                    <button class="btn_apply_filter" id="btnApply">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container_max ct02">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="../../index.php">Incentive Area</a>
+                <i class="material-icons">&#xe315;</i>
+                <a href="hotel_list.php">Hotels</a>
+                <i class="material-icons">&#xe315;</i>
+                <a href="" id="breadcrumb_city">Hotels</a>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- ── SCRIPT: colar antes do </body> ── -->
 <script>

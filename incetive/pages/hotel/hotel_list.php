@@ -100,13 +100,24 @@
 
                 // Popula select de cidades
                 const citiesSet = new Set();
+                const cityCount = {};
                 allHotels.forEach(h => {
                     const city = (h.city_name || '').trim();
-                    if (city.length > 2) citiesSet.add(city);
+                    if (city.length > 2) {
+                        citiesSet.add(city);
+                        cityCount[city] = (cityCount[city] || 0) + 1;
+                    }
                 });
                 const sortedCities = [...citiesSet].sort();
                 $citySelect.empty().append('<option value="">select the location</option>');
                 sortedCities.forEach(city => $citySelect.append(`<option value="${city}">${city}</option>`));
+
+                // Atualiza subtítulo e breadcrumb com a cidade principal
+                const mainCity = Object.keys(cityCount).sort((a, b) => cityCount[b] - cityCount[a])[0] || '';
+                if (mainCity) {
+                    $('#city_subtitle').html(`<strong>${mainCity}</strong>'s hotels selection`);
+                    $('#breadcrumb_city').text(mainCity);
+                }
             })
             .fail((jqXHR, textStatus, error) => {
                 console.error('Erro na API:', jqXHR.status, textStatus, error);
@@ -138,6 +149,7 @@
             loadHotels();
             $citySelect.on('change', filterHotels);
             $starsSelect.on('change', filterHotels);
+            $('#btnApply').on('click', filterHotels);
         });
     </script>
 </body>
