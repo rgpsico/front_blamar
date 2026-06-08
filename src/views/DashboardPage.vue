@@ -191,6 +191,7 @@
         <RestaurantsManager v-else-if="activePage === 'restaurantes'" />
         <EntertainmentManager v-else-if="activePage === 'entertainment'" />
         <NewslettersManager v-else-if="activePage === 'newsletters'" />
+        <GuiasManager v-else-if="activePage === 'guias'" />
       </v-container>
     </v-main>
 
@@ -276,6 +277,7 @@ import UsersManager from '@/components/users/UsersManager.vue'
 import ProfilePermissionsManager from '@/components/users/ProfilePermissionsManager.vue'
 import NewslettersManager from '@/components/newsletters/NewslettersManager.vue'
 import ApiUsersManager from '@/components/users/ApiUsersManager.vue'
+import GuiasManager from '@/components/guias/GuiasManager.vue'
 import AtualizacoesSistema from '@/components/system/AtualizacoesSistema.vue'
 import RoadmapModal from '@/components/system/RoadmapModal.vue'
 
@@ -306,7 +308,8 @@ export default {
     UsersManager,
     ProfilePermissionsManager,
     NewslettersManager,
-    ApiUsersManager
+    ApiUsersManager,
+    GuiasManager
   },
   data() {
     return {
@@ -361,7 +364,7 @@ export default {
           items: [
             { title: 'Deluxe', icon: 'mdi-diamond-stone', page: 'deluxe' },
             { title: 'File Web', icon: 'mdi-file-link' },
-            { title: 'Guias', icon: 'mdi-map-marker-path' }
+            { title: 'Guias', icon: 'mdi-map-marker-path', page: 'guias' }
          
           ]
         },

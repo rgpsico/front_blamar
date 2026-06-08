@@ -1,334 +1,607 @@
-   /* --- Cores e Variáveis --- */
-        :root {
-            --primary-blue: #0f3045;
-            --secondary-blue: #9abacf;
-            --accent-orange: #e69928;
-            --text-gray: #555;
-            --bg-light: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-            background-color: #fff;
-        }
-
-        /* --- Header & Nav --- */
-        .top-bar { background-color: var(--primary-blue); color: white; padding: 10px 0; }
-        .brand-logo { font-weight: bold; font-size: 1.5rem; letter-spacing: 1px; text-transform: uppercase; }
-        .page-header { padding: 15px 0; background-color: #fff; border-bottom: 1px solid #ddd; }
-        .breadcrumb-area { font-size: 0.75rem; color: #999; margin: 15px 0; }
-        
-        /* --- Layout Principal --- */
-        h1.hotel-main-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        /* Galeria do Topo (Grid) */
-        .gallery-main img {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        .gallery-thumbs img {
-            width: 100%;
-            height: 128px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        
-        /* Botão "Ver mais fotos" */
-        .gallery-trigger {
-            cursor: pointer;
-            position: relative;
-        }
-        .gallery-more-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-        .gallery-trigger:hover .gallery-more-overlay {
-            background: rgba(0,0,0,0.7);
-        }
-
-        /* --- Estilos do Modal (Lightbox) --- */
-        .gallery-modal-content {
-            border: none;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 16px;
-        }
-        .gallery-card {
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #f2f2f2;
-        }
-        .gallery-card img {
-            width: 100%;
-            height: 220px;
-            object-fit: cover;
-            display: block;
-        }
-        .gallery-caption {
-            position: absolute;
-            left: 10px;
-            bottom: 8px;
-            background: rgba(0,0,0,0.55);
-            color: #fff;
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 10px;
-        }
-        @media (max-width: 992px) {
-            .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (max-width: 576px) {
-            .gallery-grid { grid-template-columns: 1fr; }
-        }
-
-        .modal-gallery-content {
-            background-color: transparent;
-            border: none;
-            box-shadow: none;
-        }
-        .modal-backdrop.show { opacity: 0.95; } /* Fundo bem escuro */
-        
-        .carousel-item {
-            text-align: center;
-            background-color: #000; /* Fundo preto para as fotos */
-        }
-        .carousel-item img {
-            max-height: 85vh; /* Altura máxima de 85% da tela */
-            width: auto;
-            max-width: 100%;
-            margin: 0 auto;
-            object-fit: contain;
-        }
-        .carousel-caption {
-            background: rgba(0,0,0,0.5);
-            border-radius: 10px;
-            padding: 5px 20px;
-        }
-
-        /* --- Seções de Conteúdo --- */
-        .section-separator {
-            width: 40px;
-            height: 4px;
-            background-color: var(--accent-orange);
-            margin: 30px 0 10px 0;
-        }
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .section-icon { color: var(--secondary-blue); }
-
-        /* --- Sidebar (Direita) --- */
-        .sidebar-box {
-            border: 1px solid #eee;
-            padding: 20px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-        .btn-proposal {
-            color: var(--accent-orange);
-            border: 1px solid var(--accent-orange);
-            background: white;
-            width: 100%;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-        .btn-proposal:hover {
-            background: var(--accent-orange);
-            color: white;
-        }
-        .personal-note {
-            background-color: #f9f9f9;
-            border-left: 3px solid var(--secondary-blue);
-            padding: 15px;
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 20px;
-        }
-
-        /* --- Itens de Restaurante --- */
-        .dining-item {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
-        }
-        .dining-img {
-            width: 150px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
-
-        /* --- Lista de Facilidades --- */
-        .facility-list { list-style: none; padding: 0; }
-        .facility-list li { margin-bottom: 8px; font-size: 0.9rem; color: #555; }
-        .facility-list li i { color: var(--secondary-blue); margin-right: 8px; width: 15px; }
-
-        /* --- Tabela de Capacidade --- */
-        .capacity-table { font-size: 0.8rem; }
-        .capacity-table thead th {
-            background-color: #f0edea;
-            color: #555;
-            vertical-align: middle;
-            text-align: center;
-        }
-        .capacity-table td { vertical-align: middle; text-align: center; }
-        .capacity-table td:first-child { text-align: left; font-weight: 600; }
-
-        /* --- Footer --- */
-        .footer-top { background-color: var(--primary-blue); color: white; padding: 15px 0; font-size: 0.8rem; }
-        .logo-placeholder { opacity: 0.6; filter: grayscale(100%); margin: 10px 15px; max-height: 30px; }
-
-        /* --- Ajustes Globais --- */
-:root {
-    --primary-blue: #0b2a3f;
-    --accent-orange: #f29f05;
-    --border-gray: #e0e0e0;
-    --text-muted: #777;
-}
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 body {
-    font-family: 'Inter', sans-serif; /* Uma fonte mais moderna e limpa */
-    background-color: #fff;
+  font-family: "Roboto", sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-/* --- Header Ajustado --- */
-.top-bar { 
-    background-color: var(--primary-blue); 
-    height: 60px;
+p {
+  font-weight: 400;
+  color: #303030;
+  font-size: 1.05vw;
 }
 
-.page-header {
-    background-color: #fff;
-    border-bottom: 1px solid var(--border-gray);
-    padding: 10px 0;
+h2 {
+  font-weight: 500;
+  font-size: 2.5vw;
+  color: #303030;
 }
 
-/* --- Sidebar (O grande diferencial do layout) --- */
-.sidebar-box {
-    border: 1px solid var(--border-gray);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 15px;
+h3 {
+  color: #303030;
 }
 
-/* Botão Link do Produto */
-.btn-product-link {
-    background: transparent;
-    border: 1px solid var(--accent-orange);
-    color: var(--accent-orange);
-    border-radius: 5px;
-    width: 100%;
-    padding: 8px;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-transform: lowercase; /* Como na imagem */
+section {
+  float: left;
+  width: 100%;
 }
 
-/* Ícones de Categoria (Unique / Favorite) */
-.category-icons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 20px 0;
+.container{
+    width: 80%;
+    margin-left: 10%;
+}
+.container_max{
+  width: 100%;
+  float: left;
 }
 
-.icon-badge {
-    width: 50px;
-    text-align: center;
+header {
+  width: 100%;
+  background: #103349; 
 }
-
-.icon-badge img { width: 40px; height: 40px; }
-.icon-badge span { 
-    display: block; 
-    font-size: 10px; 
-    font-weight: bold; 
-    color: #c41e3a; /* Cor rubi */
-    text-transform: uppercase;
+header .container{
+  display: flex;
+  padding: 2vw 0 1vw 0;
 }
-
-/* Stats (Estrelas e Quartos) */
-.hotel-stats {
-    display: flex;
-    border-top: 1px solid var(--border-gray);
-    border-bottom: 1px solid var(--border-gray);
-    margin: 15px -20px; /* Alinhado com as bordas do box */
+.logo_topo{
+  width: 12%;
 }
-
-.stat-item {
-    flex: 1;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+.logo_topo img{
+  width: 100%;
 }
-
-.stat-item:first-child { border-right: 1px solid var(--border-gray); }
-
-/* Personal Note (Estilo igual ao layout) */
-.personal-note-title {
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: #444;
-    text-align: center;
-    margin-bottom: 10px;
+.menu_interno{
+  float: right;
+  width: 20%;
+  margin-left: 68%;
+  text-align: right;
 }
+/* .menu_interno button{
+  background: #78AAC3;
+  color: #fff;
+  border: none;
+  padding: 0.3vw 1vw;
+  font-size: 0.8vw;
+  border-radius: 0.3vw;
+} */
+ #languageToggle{
 
-.personal-note-content {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    line-height: 1.5;
+ }
+
+#incentive_area h1{
+  color: #103349;
+  font-size: 2.1vw;
 }
-
-/* --- Galeria --- */
-.gallery-thumbs {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+#incentive_area p{
+    line-height: 1.7vw;
 }
+.box_menu_grid{
+    width: 19.7vw;
+    height: 19.7vw;
+    float: left;
+    margin-right: 0.1vw;
+    margin-bottom: 0.1vw;
+    background-size: cover !important;
+}
+.menu_grid .bmg01, .menu_grid .bmg12{
+  background: #78AAC3;
+}
+.menu_grid .bmg02{
+  background: #fff;
+}
+.menu_grid .bmg03{
+  background: url("../img/venues_bg.jpg");
+}
+.menu_grid .bmg04{
+  background: url("../img/venues_02_bg.jpg");
+}
+.menu_grid .bmg05{
+  background: url("../img/carnaval_bg.jpg");
+}
+.menu_grid .bmg06{
+  background: url("../img/carnaval_02_bg.jpg");
+}
+.menu_grid .bmg07{
+  background: #EBEBEB;
+}
+.menu_grid .bmg08{
+  background: #E89127;
+}
+.menu_grid .bmg09{
+  background: #E89127;
+}
+.menu_grid .bmg10{
+  background: url("../img/galeria_bg.jpg");
+}
+.menu_grid .bmg11{
+  background: url("../img/galeria_02_bg.jpg");
+}
+.menu_grid .bmg12{
+  background: #78AAC3;
+}
+.menu_grid .bmg02 h3, .menu_grid .bmg02 p, .menu_grid .bmg07 h3, .menu_grid .bmg07 p, .menu_grid .bmg11 h3, .menu_grid .bmg11 p{
+  color: #4C4B4B !important;
+}
+.menu_grid .bmg04 h3, .menu_grid .bmg04 p{
+  color: #fff !important;
+}
+.menu_grid .bmg04 .line, .menu_grid .bmg06 .line{
+  background: #fff;
+}
+.box_menu_grid h3{
+  color: #fff;
+  padding: 2vw;
+  font-size: 1.7vw;
+  font-weight: 400;
+}
+.box_menu_grid .line{
+  width: 10%;
+  height: 0.3vw;
+  background: #e89127;
+  margin-left: 2vw;
+}
+.box_menu_grid p{
+  color: #fff;
+  padding: 0vw 2vw 2vw 2vw;
+}
+#backToMainSite{
+  background: #78AAC3;
+  color: #fff;
+  border: none;
+  padding: 0.3vw 1vw;
+  font-size: 0.8vw;
+  border-radius: 0.3vw;
+}
+/* HOTELS */
+#header_page{
+  background: #F9F6F6;
 
-.more-photos-overlay {
+   position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.language-toggle{
+      background: none !important;
+    border: none !important;
+}
+.language-switcher img{
+  width: 1.7vw;
+  height: 1.2vw;
+}
+.language-toggle .material-icons{
+  font-size: 1vw;
+  color: #85a7bd;
+}
+.star_check_label input[type="checkbox"]{
+  width: 1.2vw !important;
+  height: 1.2vw !important;
+}
+#header_page .container{
+  float: left;
+}
+#header_page .ct01 .container{
+    padding: 1vw 0;
+    display: block;
+}
+#header_page .ct01{
+  background: #4a8bbe8f;
+  box-shadow: 0px 0px 0.4vw #0000004f;
+}
+#header_page .ct02{
+  background: #fff;
+  border-bottom: 0.1vw solid #dedede;
+}
+#header_page .breadcrumb{
+  margin-left: -0.8vw;
+}
+#header_page .breadcrumb a{
+  text-decoration: none;
+  font-size: 0.8vw;
+  color: #999;
+  padding: 0.8vw;
+  float: left;
+}
+#header_page .breadcrumb a:nth-of-type(4) {
+  color: #717171;
+  font-weight: 700;
+}
+#header_page .breadcrumb .material-icons{
+    color: #e89127;
+    font-size: 1vw;
     position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: rgba(15, 48, 69, 0.7); /* Azul escuro semi-transparente */
-    color: white;
-    text-align: center;
-    padding: 10px;
-    font-size: 0.8rem;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
+    /* padding: 0; */
+    margin: 0.8vw 0vw 0.8vw -0.5vw;
+}
+#header_page h2{
+  color: #4C4B4B;
+  font-size: 2vw;
+  float: left;
+}
+#header_page .page_title h3{
+  float: left;
+  margin: 2.3vw 0vw 0vw 0vw;
+  padding-left: 1vw;
+  font-size: 1.2vw;
+}
+.filters_hotel h3{
+  color: #fff;
+  font-size: 1vw;
+  font-weight: 400;
+  margin: 0 !important;
+  float: left;
+}
+.filters_hotel .material-icons{
+  font-size: 1.2vw;
+  padding-left: 0.5vw;
+  color: #fff;
+}
+.filter_box01{
+float: left;
+}
+.filter_box02{
+float: right;
+}
+#hotels_result{
+  padding-top: 2vw;
+}
+#hotels_result_inner{
+  background: #F9F6F6;
+  padding: 2vw 0 4vw;
+}
+.box_hotels{
+  float: left;
+  width: 30%;
+}
+.box_hotels {
+  margin-right: 5%;
+}
+ .box_hotels:nth-child(3n) {
+  margin-right: 0%;
+}
+.box_hotels img{
+  width: 100%;
+  border-radius: 0.5vw;
+  object-fit: cover;
+  height: 15vw;
+}
+.box_hotels_conteudo{
+  padding: 1vw;
+}
+.box_hotels .line{
+  width: 10%;
+  height: 0.2vw;
+  background: #e89127;
+}
+.box_hotels h3{
+  margin: 0.7vw 0;
+  font-size: 0.9vw;
+  font-weight: 400;
+}
+.box_hotels span{
+  font-size: 1.1vw;
+}
+.box_hotels h4{
+  color: #4C4B4B;
+  margin-bottom: 0;
+  font-size: 1vw;
+}
+.box_hotels p{
+  font-size: 0.9vw;
+  line-height: 1.4vw;
+}
+.box_hotels .hotels_description{
+
+}
+.box_hotels button{
+  border: 0;
+  background: #e89127;
+  padding: 0.6vw 1.6vw;
+  color: #fff;
+  border-radius: 0.4vw;
+}
+.select_hotel, .select_stars{
+    border: 0;
+    padding: 0.3vw 1vw;
+    border-radius: 0.3vw;
+    font-size: 0.7vw;
+    color: #7e7e7e;
+    font-style: italic;
+}
+.select_stars{
+
 }
 
+/* HOTEL SELECT */
+
+.container_description{
+  width: 78%;
+  float: left;
+}
+.container_description h2{
+  margin: 3vw 0 1vw 0;
+  font-size: 1.5vw;
+}
+.container_description h3{
+  font-size: 1.2vw;
+}
+.featurs_right{
+  width: 20%;
+  float: right;
+  height: 24vw;
+  margin-top: 3vw;
+}
+.galeria_hotel{
+  float: left;
+  width: 100%;
+}
+.galeria_box01{
+  width: 68%;
+  float: left;
+}
+.galeria_box01 iframe{
+  width: 100%;
+  height: 32vw;
+  border-radius: 0.7vw;
+}
+.galeria_box01 img{
+  width: 100%;
+  height: 32vw;
+  object-fit: cover;
+  border-radius: 0.7vw;
+  display: block;
+}
+.galeria_box02{
+  width: 30%;
+  float: right;
+}
+.galeria_box02 img{
+  width: 100%;
+  object-fit: cover;
+  height: 10vw;
+  border-radius: 0.7vw;
+  margin-bottom: 0.8vw;
+  cursor: pointer;
+}
+.galeria_box02 img:nth-of-type(3){
+  opacity: 0.5;
+  background-color: #103349;
+}
+.galeria_box02 p{
+  position: relative;
+  margin: -11vw 0 0 0%;
+  color: #fff;
+  width: 100%;
+  background: #103349ba;
+  height: 10vw;
+  border-radius: 0.7vw;
+  cursor: pointer;
+
+  /* Novas propriedades para centralizar tudo */
+  display: flex;
+  justify-content: center; /* Centraliza horizontalmente */
+  align-items: center;     /* Centraliza verticalmente */
+  text-align: center;
+}
+.hotel_description, .rooms_categories, .dining_experiences, .hotel_facilities, .convention{
+  float: left;
+  padding-top: 2vw;
+  border-bottom: 0.1vw solid #d2d2d2;
+  padding-bottom: 2vw;
+  width: 100%;
+}
+.hotel_description p, .rooms_categories p, .dining_experiences p, .hotel_facilities p, .convention p{
+  font-size: 0.9vw;
+  line-height: 1.5vw;
+}
+.hotel_description .line{
+  width: 4%;
+  height: 0.2vw;
+  background: #e89127;
+}
+.rooms_categories h3{
+  background: url("../img/icon_desc_hot_01.png");
+  background-repeat: no-repeat;
+  padding: 0.4vw 3vw;
+  background-size: contain;
+}
+.rooms_categories h4{
+  font-size: 1vw;
+}
+.rooms_categories li{
+   background: url("../img/ic_maquina.png");
+  background-repeat: no-repeat;
+  padding: 0.4vw 2.5vw;
+  font-size: 0.9vw;
+  background-position: left;
+  list-style: none;
+  background-size: 6%;
+}
+.room_divide{
+  border-right: 0.1vw solid #cacaca;
+  padding-right: 10%;
+}
+.room_divide, .room_divide02{
+  float: left;
+  width: 40%;
+}
+.room_divide02{
+  padding-left: 7%;
+}
+.dining_experiences h3{
+  background: url("../img/icon_desc_hot_02.png");
+  background-repeat: no-repeat;
+  padding: 0.4vw 3vw;
+  background-size: contain;
+}
+.dining_experiences h4, .hotel_facilities h4, .coventio_title h4{
+  font-size: 1vw;
+}
+.dining_experiences h5{
+  font-size: 0.9vw;
+}
+.dining_experiences_box{
+  float: left;
+  padding-top: 2vw;
+}
+.dining_experiences_box_inner01 img{
+  object-fit: cover;
+  height: 10vw;
+  width: 15vw;
+  border-radius: 0.7vw;
+}
+.dining_experiences_box_inner01{
+  float: left;
+  width: 18vw;
+}
+.dining_experiences_box_inner02{
+  float: left;
+  width: 42vw;
+}
+.dining_experiences_box_inner02 h4{
+  padding-top: 0;
+  margin-top: 0;
+  font-size: 0.9vw;
+}
+.hotel_facilities ul{
+  padding: 0;
+  float: left;
+  padding-right: 3vw;
+}
+.hotel_facilities li{
+  background: url("../img/check.png");
+  background-repeat: no-repeat;
+  padding: 0.4vw 1.5vw;
+  font-size: 0.9vw;
+  background-position: left;
+  list-style: none;
+  background-size: 10%;
+}
+.coventio_title{
+  float: left;
+  width: 100%;
+}
+.coventio_title h4{
+  float: left;
+}
+.coventio_title button, .featurs_right button{
+  border: 0.1vw solid #e89127;
+  background: none;
+  border-radius: 0.3vw;
+  padding: 0.4vw 1vw;
+  color: #e89127;
+  float: left;
+  margin: 1vw 1vw 1vw 3vw;
+  font-size: 0.9vw;
+}
+.convention img{
+  width: 70%;
+}
+.featurs_right button{
+  width: 100%;
+  margin: 0;
+  font-size: 0.9vw;
+}
+.featurs_inner{
+  border: 0.1vw solid #78AAC3;
+  float: left;
+  margin-top: 1vw;
+  border-radius: 0.6vw;
+  width: 100%;
+}
+.featurs_inner .selos, .featurs_inner .avaliacao, .featurs_inner .description, .featurs_inner .map{
+  border-bottom: 0.1vw solid #78AAC3;
+  float: left;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5% 6%;
+}
+.featurs_inner .selos img{
+  width: 23%;
+}
+.featurs_inner .avalia_01, .featurs_inner .avalia_02{
+  width: 49%;
+  float: left;
+  text-align: center;
+  display: ruby;
+}
+.featurs_inner .avalia_01{
+  border-right: 0.1vw solid #78AAC3;
+}
+.avaliacao img, .avaliacao p{
+  float: left;
+}
+.avaliacao img{
+  width: 27%;
+  margin-bottom: -0.3vw;
+}
+.featurs_inner .description{
+  padding: 5% 12%;
+}
+.featurs_inner .description h4{
+  font-weight: 400;
+  font-size: 1vw;
+  border-bottom: 0.1vw solid #78AAC3;
+  padding-bottom: 1vw;
+  text-align: center;
+}
+.featurs_inner .description p{
+  font-size: 0.9vw;
+  line-height: 1.5vw;
+}
+
+/* PHOTOS GALERIA >>>>>>> */
+
+#hotel_galeria{
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  overflow: auto;
+  padding: 4vw 0;
+}
+#hotel_galeria .hotel_galeria_content{
+  width: 80%;
+  margin: 0 auto;
+  background: #f9f6f6;
+  border-radius: 2vw 2vw 0 0;
+  overflow: hidden;
+}
+#hotel_galeria .title_gallery{
+  margin-bottom: 3vw;
+  border-bottom: 0.2vw solid #dddddd;
+  width: 100%;
+  float: left;
+  box-sizing: border-box;
+  padding: 1vw 4vw 0vw 4vw;
+}
+#hotel_galeria h3{
+  font-weight: 300;
+  /* margin-bottom: 3vw; */
+  /* border-bottom: 0.2vw solid #dddddd;
+  padding: 1vw 5%; */
+  float: left;
+}
+#hotel_galeria .title_gallery i{
+  float: right;
+  color: #78AAC3;
+  font-size: 3vw;
+  padding: 1vw;
+  cursor: pointer;
+}
+
+#hotel_galeria .container_photos{
+  padding: 0vw 5% 1vw 5%;
+  overflow: auto;
+  max-height: 70vh;
+}
+#hotel_galeria .container_photos img{
+  border-radius: 0.8vw;
+  width: 31%;
+  margin: 0 2% 2% 0;
+  object-fit: cover;
+  height: 15vw;
+}
+#hotel_galeria .container_photos img:nth-child(3n){
+  margin-right: 0;
+}

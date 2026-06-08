@@ -1,10 +1,5 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-require_once '../../session_middleware.php';
-requireAuthenticatedSession();
-
-
+require_once __DIR__ . '/../../includes/url_helpers.php';
 require_once __DIR__ . '/../../../util/connection.php';
 
 if (!function_exists('h')) {
@@ -41,8 +36,8 @@ if ($id > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <link rel="stylesheet" href="../../css/estilo.css">
-    <link rel="stylesheet" href="../../css/estilo_mobile.css">
+    <link rel="stylesheet" href="<?php echo h(asset_url('css/estilo.css')); ?>">
+    <link rel="stylesheet" href="<?php echo h(asset_url('css/estilo_mobile.css')); ?>">
     <style>
         .menu_interno {
             display: flex;
@@ -154,23 +149,23 @@ if ($id > 0) {
     <header>
         <div class="container">
             <div class="logo_topo">
-                <img src="../../img/logo_blumar.png" alt="">
+                <img src="<?php echo h(asset_url('img/logo_blumar.png')); ?>" alt="">
             </div>
             <div class="menu_interno">
                 <div class="language-switcher" aria-label="Language switcher">
                     <button type="button" id="languageToggle" class="language-toggle" title="Language">
-                        <img id="currentLanguageFlag" src="../../img/flags/us.png" alt="Language">
+                        <img id="currentLanguageFlag" src="<?php echo h(asset_url('img/flags/us.png')); ?>" alt="Language">
                         <span class="material-icons">expand_more</span>
                     </button>
                     <div id="languageMenu" class="language-menu" role="listbox" aria-label="Language options">
                         <button type="button" class="language-option" data-lang="en" title="English">
-                            <img src="../../img/flags/us.png" alt="English">
+                            <img src="<?php echo h(asset_url('img/flags/us.png')); ?>" alt="English">
                         </button>
                         <button type="button" class="language-option" data-lang="pt" title="Portugues">
-                            <img src="../../img/flags/br.png" alt="Portugues">
+                            <img src="<?php echo h(asset_url('img/flags/br.png')); ?>" alt="Portugues">
                         </button>
                         <button type="button" class="language-option" data-lang="es" title="Espanol">
-                            <img src="../../img/flags/es.png" alt="Espanol">
+                            <img src="<?php echo h(asset_url('img/flags/es.png')); ?>" alt="Espanol">
                         </button>
                     </div>
                 </div>
@@ -192,7 +187,7 @@ if ($id > 0) {
         <div class="container_max ct02">
             <div class="container">
                 <div class="breadcrumb">
-                    <a href="../../index.php">Incentive Area</a><i class="material-icons">&#xe315;</i>
+                    <a href="<?php echo h(app_url('index.php')); ?>">Incentive Area</a><i class="material-icons">&#xe315;</i>
                     <a href="venues.php">Venues</a><i class="material-icons">&#xe315;</i>
                     <a href=""><?php echo isset($city_name) && $city_name !== '' ? h($city_name) : 'City'; ?></a><i class="material-icons">&#xe315;</i>
                     <a href=""><?php echo $venue_name !== '' ? h($venue_name) : 'Venue'; ?></a>
@@ -238,9 +233,9 @@ if ($id > 0) {
             var flag = document.getElementById('currentLanguageFlag');
             var options = document.querySelectorAll('.language-option[data-lang]');
             var flagMap = {
-                pt: '../../img/flags/br.png',
-                en: '../../img/flags/us.png',
-                es: '../../img/flags/es.png'
+                pt: '<?php echo h(asset_url('img/flags/br.png')); ?>',
+                en: '<?php echo h(asset_url('img/flags/us.png')); ?>',
+                es: '<?php echo h(asset_url('img/flags/es.png')); ?>'
             };
 
             if (flag && flagMap[current]) {

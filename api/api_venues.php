@@ -4,6 +4,7 @@
  * Corrige erro: bind message supplies X parameters, but prepared statement requires Y
  */
 
+
 date_default_timezone_set('America/Sao_Paulo');
 
 header("Access-Control-Allow-Origin: *");
